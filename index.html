@@ -1,10 +1,18 @@
 <!doctype html>
-<html lang="en">
+<html lang="it">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React</title>
+    <meta name="color-scheme" content="light dark" />
+    <title>UniPlanner</title>
+    <script>
+      (function() {
+        const savedTheme = localStorage.getItem('uniplanner_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.documentElement.style.colorScheme = savedTheme;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

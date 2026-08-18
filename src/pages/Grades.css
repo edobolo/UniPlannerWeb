@@ -30,21 +30,24 @@
   gap: 20px;
   border-radius: 16px;
   border: 1px solid var(--glass-border);
+  background: var(--card-bg-gradient);
+  box-shadow: var(--glass-shadow);
 }
 
 .main-stat {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+  background: var(--card-bg-gradient);
 }
 
 .goal-card {
   cursor: pointer;
   transition: all 0.2s ease;
-  background: var(--bg-secondary);
+  background: var(--card-bg-gradient);
 }
 
 .goal-card:hover {
   background: var(--bg-hover);
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: var(--accent-primary);
+  transform: translateY(-2px);
 }
 
 .goal-card .edit-icon {
@@ -92,7 +95,7 @@
 }
 
 .stat-value.highlight {
-  color: #3b82f6;
+  color: var(--accent-primary);
 }
 
 .stat-value.highlight-purple {
@@ -116,12 +119,13 @@
   margin-top: 4px;
 }
 
-.goal-diff.positive { color: #22c55e; }
-.goal-diff.negative { color: #ef4444; }
+.goal-diff.positive { color: var(--success); }
+.goal-diff.negative { color: var(--danger); }
 
 .progress-bar-bg {
   height: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--input-bg);
+  border: 1px solid var(--glass-border);
   border-radius: 4px;
   margin-top: 8px;
   overflow: hidden;
@@ -129,7 +133,7 @@
 
 .progress-bar-fill {
   height: 100%;
-  background: #22c55e;
+  background: var(--success);
   border-radius: 4px;
   transition: width 0.5s ease-out;
 }
@@ -141,6 +145,9 @@
   flex-direction: column;
   gap: 16px;
   min-height: 300px;
+  background: var(--card-bg-gradient);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
 }
 
 .chart-title {
