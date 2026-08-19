@@ -35,90 +35,10 @@ const PRESET_COLORS = [
   '#38bdf8', '#818cf8', '#34d399', '#fbbf24', '#f472b6', '#a78bfa', '#fb7185', '#60a5fa'
 ];
 
-const DEFAULT_LESSONS = [
-  {
-    id: 'les_1',
-    subject: 'Algoritmi e Strutture Dati',
-    professor: 'Prof. S. Rossi',
-    room: 'Aula Delta 3',
-    dayIndex: 0, // Lunedì
-    date: null,
-    startTime: '09:00',
-    endTime: '11:00',
-    color: '#38bdf8'
-  },
-  {
-    id: 'les_2',
-    subject: 'Basi di Dati',
-    professor: 'Prof.ssa E. Bianchi',
-    room: 'Aula Magna Inf.',
-    dayIndex: 0, // Lunedì
-    date: null,
-    startTime: '11:30',
-    endTime: '13:30',
-    color: '#818cf8'
-  },
-  {
-    id: 'les_3',
-    subject: 'Architettura Elaboratori',
-    professor: 'Prof. M. Conti',
-    room: 'Lab Gamma 2',
-    dayIndex: 1, // Martedì
-    date: null,
-    startTime: '14:00',
-    endTime: '16:00',
-    color: '#34d399'
-  },
-  {
-    id: 'les_4',
-    subject: 'Algoritmi e Strutture Dati',
-    professor: 'Prof. S. Rossi',
-    room: 'Aula Delta 3',
-    dayIndex: 2, // Mercoledì
-    date: null,
-    startTime: '09:00',
-    endTime: '11:00',
-    color: '#38bdf8'
-  },
-  {
-    id: 'les_5',
-    subject: 'Reti di Calcolatori',
-    professor: 'Prof. A. Ferrari',
-    room: 'Aula Omega',
-    dayIndex: 3, // Giovedì
-    date: null,
-    startTime: '10:00',
-    endTime: '12:00',
-    color: '#fbbf24'
-  },
-  {
-    id: 'les_6',
-    subject: 'Basi di Dati (Lab)',
-    professor: 'Prof.ssa E. Bianchi',
-    room: 'Lab Turing',
-    dayIndex: 3, // Giovedì
-    date: null,
-    startTime: '14:30',
-    endTime: '17:30',
-    color: '#818cf8'
-  },
-  {
-    id: 'les_7',
-    subject: 'Reti di Calcolatori',
-    professor: 'Prof. A. Ferrari',
-    room: 'Aula Omega',
-    dayIndex: 4, // Venerdì
-    date: null,
-    startTime: '11:00',
-    endTime: '13:00',
-    color: '#fbbf24'
-  }
-];
-
 const Schedule = () => {
   const [lessons, setLessons] = useState(() => {
-    const saved = safeJsonParse(localStorage.getItem(STORAGE_SCHEDULE_KEY), null);
-    if (!saved || saved.length === 0) return DEFAULT_LESSONS;
+    const saved = safeJsonParse(localStorage.getItem(STORAGE_SCHEDULE_KEY), []);
+    if (!saved || saved.length === 0) return [];
     // Map legacy string days to dayIndex if needed
     return saved.map(l => {
       if (typeof l.dayIndex !== 'number') {
