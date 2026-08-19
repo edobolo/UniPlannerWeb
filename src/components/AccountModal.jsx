@@ -19,6 +19,8 @@ import {
   Scale
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { generateShareLink } from '../utils/cloudSync';
+import { safeJsonParse } from '../utils/security';
 import './AccountModal.css';
 
 const AccountModal = ({ onOpenLegal }) => {
@@ -225,15 +227,15 @@ const AccountModal = ({ onOpenLegal }) => {
 
                 <div className="friend-code-box">
                   <div className="friend-code-left">
-                    <span className="code-label">Il tuo Codice Amico:</span>
-                    <strong className="code-value">{currentUser.friendCode}</strong>
+                    <span className="code-label">Link di Condivisione Profilo:</span>
+                    <strong className="code-value" style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Invita amici con 1 clic</strong>
                   </div>
                   <button 
-                    className={`copy-code-btn ${copiedCode ? 'copied' : ''}`}
-                    onClick={handleCopyCode}
+                    className={`copy-code-btn ${copiedLink ? 'copied' : ''}`}
+                    onClick={handleCopyShareLink}
                   >
-                    {copiedCode ? <Check size={16} /> : <Copy size={16} />}
-                    <span>{copiedCode ? 'Copiato!' : 'Copia'}</span>
+                    {copiedLink ? <Check size={16} /> : <Copy size={16} />}
+                    <span>{copiedLink ? 'Link Copiato!' : 'Copia Link'}</span>
                   </button>
                 </div>
 

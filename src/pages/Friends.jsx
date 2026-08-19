@@ -27,8 +27,8 @@ import {
   Link as LinkIcon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { sanitizeText, safeJsonParse } from '../utils/security';
-import { fetchUserProfile, publishUserProfile, normalizeFriendCode, generateShareLink, decodeStudentData } from '../utils/cloudSync';
+import { safeJsonParse } from '../utils/security';
+import { generateShareLink, decodeStudentData } from '../utils/cloudSync';
 import './Friends.css';
 
 const STORAGE_FRIENDS_KEY = 'uniplanner_friends_db_v2';
@@ -64,86 +64,53 @@ const Friends = () => {
   // Add Friend Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [newFriendCode, setNewFriendCode] = useState('');
+  const [newFriendLink, setNewFriendLink] = useState('');
   const [addError, setAddError] = useState('');
   const [addSuccess, setAddSuccess] = useState('');
-  const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_FRIENDS_KEY, JSON.stringify(friends));
   }, [friends]);
 
-  // Sync current user's profile to cloud when loaded
-  useEffect(() => {
-    if (currentUser && currentUser.friendCode) {
-      try {
-        const savedExams = safeJsonParse(localStorage.getItem('uniplanner_exams'), []);
-        const savedSchedule = safeJsonParse(localStorage.getItem('uniplanner_schedule_v1'), []);
-        const savedDeadlines = safeJsonParse(localStorage.getItem('uniplanner_deadlines'), []);
-        publishUserProfile(currentUser, savedExams, savedSchedule, savedDeadlines);
-      } catch (e) {
-        console.warn('Sync profile error:', e);
-      }
-    }
-  }, [currentUser]);
-
-  const handleCopyMyCode = () => {
-    if (!currentUser?.friendCode) return;
-    navigator.clipboard.writeText(currentUser.friendCode);
-    setCopiedCode(true);
-    setTimeout(() => setCopiedCode(false), 2000);
-  };
-
-  const handleAddFriend = async (e) => {
+  const handleAddFriend = (e) => {
     e.preventDefault();
     setAddError('');
     setAddSuccess('');
 
-    const cleanInput = normalizeFriendCode(newFriendCode);
+    const cleanInput = newFriendLink.trim();
     if (!cleanInput) {
-      setAddError('Inserisci un codice amico valido (es. UP-AB12C).');
+      setAddError('Incolla il link di invito generato dal tuo compagno di corso.');
       return;
     }
 
-    if (currentUser && (cleanInput === normalizeFriendCode(currentUser.friendCode) || cleanInput === currentUser.username?.toUpperCase())) {
+    const realFriendProfile = decodeStudentData(cleanInput);
+    if (!realFriendProfile || (!realFriendProfile.fullName && !realFriendProfile.username)) {
+      setAddError('Link non valido. Assicurati di aver incollato il link esatto condiviso dal tuo amico.');
+      return;
+    }
+
+    if (currentUser && currentUser.username && realFriendProfile.username === currentUser.username) {
       setAddError('Non puoi aggiungere te stesso come amico.');
       return;
     }
 
     const alreadyFriend = friends.some(
-      f => normalizeFriendCode(f.friendCode) === cleanInput || f.username?.toUpperCase() === cleanInput
+      f => (f.username && f.username === realFriendProfile.username) || (f.fullName && f.fullName === realFriendProfile.fullName)
     );
     if (alreadyFriend) {
       setAddError('Questo studente è già presente nella tua lista amici.');
       return;
     }
 
-    setIsSearching(true);
-    try {
-      // Cerca il VERO profilo dell'amico nel cloud
-      const realFriendProfile = await fetchUserProfile(cleanInput);
-
-      if (!realFriendProfile) {
-        setAddError(`Nessun account trovato per il codice "${cleanInput}". Chiedi al tuo amico di registrarsi su UniPlanner e di condividerti il suo Codice Amico esatto.`);
-        setIsSearching(false);
-        return;
-      }
-
-      setFriends(prev => [realFriendProfile, ...prev]);
-      setSelectedFriend(realFriendProfile);
-      setAddSuccess(`Amico ${realFriendProfile.fullName || realFriendProfile.username} aggiunto con successo!`);
-      setNewFriendCode('');
-      setTimeout(() => {
-        setIsAddModalOpen(false);
-        setAddSuccess('');
-      }, 1200);
-    } catch (err) {
-      setAddError('Impossibile raggiungere il server di sincronizzazione. Verifica la connessione e riprova.');
-    } finally {
-      setIsSearching(false);
-    }
+    setFriends(prev => [realFriendProfile, ...prev]);
+    setSelectedFriend(realFriendProfile);
+    setAddSuccess(`Amico ${realFriendProfile.fullName || realFriendProfile.username} aggiunto con successo!`);
+    setNewFriendLink('');
+    setTimeout(() => {
+      setIsAddModalOpen(false);
+      setAddSuccess('');
+    }, 1200);
   };
 
   const handleRemoveFriend = (friendId) => {
@@ -226,45 +193,29 @@ const Friends = () => {
         </div>
 
         <div className="header-actions-group">
-          {/* User's Friend Code Badge */}
-          <div className="my-friend-code-card">
-            <span className="code-label">Il tuo Codice Amico:</span>
-            <div className="code-pill">
-              <strong>{currentUser?.friendCode || 'Accedi o Registrati'}</strong>
-              {currentUser ? (
-                <button 
-                  className="code-copy-btn" 
-                  onClick={handleCopyMyCode}
-                  title="Copia codice"
-                >
-                  {copiedCode ? <Check size={14} className="copied-icon" /> : <Copy size={14} />}
-                </button>
-              ) : (
-                <button 
-                  className="code-copy-btn" 
-                  onClick={() => setIsAuthModalOpen(true)}
-                  title="Accedi o crea un account"
-                >
-                  <UserPlus size={14} />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {currentUser && (
+          {currentUser ? (
             <button 
-              className="ghost-btn share-profile-btn" 
+              className="primary-btn share-profile-btn-main" 
               onClick={() => setIsShareModalOpen(true)}
-              title="Condividi il tuo profilo tramite Link o WhatsApp"
+              title="Condividi il tuo link o invia su WhatsApp"
             >
               <Share2 size={17} />
-              <span>Condividi Profilo</span>
+              <span>Condividi il mio Profilo</span>
+            </button>
+          ) : (
+            <button 
+              className="ghost-btn" 
+              onClick={() => setIsAuthModalOpen(true)}
+              title="Crea un account per condividere il tuo piano di studi"
+            >
+              <UserPlus size={16} />
+              <span>Accedi per Condividere</span>
             </button>
           )}
 
-          <button className="primary-btn add-friend-btn" onClick={() => setIsAddModalOpen(true)}>
-            <UserPlus size={18} />
-            <span>Aggiungi Amico</span>
+          <button className="secondary-btn add-friend-btn" onClick={() => setIsAddModalOpen(true)}>
+            <LinkIcon size={16} />
+            <span>Aggiungi da Link</span>
           </button>
         </div>
       </div>
@@ -344,7 +295,7 @@ const Friends = () => {
                   <div>
                     <div className="detail-name-row">
                       <h2>{selectedFriend.fullName}</h2>
-                      <span className="friend-code-tag">{selectedFriend.friendCode}</span>
+                      <span className="friend-code-tag">{selectedFriend.university}</span>
                     </div>
                     <span className="detail-sub">@{selectedFriend.username} • {selectedFriend.status}</span>
                     <p className="detail-bio">{selectedFriend.bio}</p>
@@ -674,17 +625,16 @@ const Friends = () => {
 
               <form onSubmit={handleAddFriend} className="add-friend-form">
                 <p className="add-friend-desc">
-                  Inserisci il <strong>Codice Amico</strong> (es. <code>UP-MARCO</code>, <code>UP-GIULI</code>) oppure l'username dello studente per collegarvi.
+                  Incolla il <strong>link di invito</strong> condiviso dal tuo compagno di corso per collegare i vostri profili:
                 </p>
 
                 <div className="form-group">
-                  <label>Codice Amico o Username</label>
+                  <label>Link di Invito dell'Amico</label>
                   <input 
                     type="text" 
-                    placeholder="Es. UP-8K3X9 o marco_rossi"
-                    value={newFriendCode}
-                    onChange={(e) => setNewFriendCode(e.target.value)}
-                    maxLength={25}
+                    placeholder="Incolla il link ricevuto (es. https://.../?p=...)"
+                    value={newFriendLink}
+                    onChange={(e) => setNewFriendLink(e.target.value)}
                     required
                   />
                 </div>
@@ -704,12 +654,12 @@ const Friends = () => {
                 )}
 
                 <div className="modal-actions-custom">
-                  <button type="button" className="ghost-btn" onClick={() => setIsAddModalOpen(false)} disabled={isSearching}>
+                  <button type="button" className="ghost-btn" onClick={() => setIsAddModalOpen(false)}>
                     Annulla
                   </button>
-                  <button type="submit" className="primary-btn" disabled={isSearching}>
+                  <button type="submit" className="primary-btn">
                     <UserPlus size={16} />
-                    <span>{isSearching ? 'Ricerca in corso...' : 'Cerca e Aggiungi'}</span>
+                    <span>Collega Amico</span>
                   </button>
                 </div>
               </form>
@@ -740,26 +690,14 @@ const Friends = () => {
 
               <div className="share-modal-body">
                 <p className="add-friend-desc">
-                  Invia il tuo link di invito ai tuoi compagni di corso per sincronizzare i vostri orari delle lezioni ed esami con 1 clic:
+                  Invia il tuo link di invito ai tuoi compagni di corso: aprendolo potranno visualizzare e sincronizzare subito il tuo orario delle lezioni ed esami con 1 clic.
                 </p>
 
-                {/* Friend Code Display */}
-                <div className="share-code-box">
-                  <span className="share-code-label">Il tuo Codice Amico:</span>
-                  <div className="share-code-row">
-                    <span className="share-code-text">{currentUser.friendCode}</span>
-                    <button className="sm-btn primary-btn" onClick={handleCopyMyCode}>
-                      {copiedCode ? <Check size={14} /> : <Copy size={14} />}
-                      <span>{copiedCode ? 'Copiato!' : 'Copia'}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Magic Share Link */}
+                {/* Magic Share Link Box */}
                 <div className="share-actions-group">
                   <button className="primary-btn share-action-wide" onClick={handleCopyShareLink}>
                     <LinkIcon size={16} />
-                    <span>{copiedLink ? 'Link Copiato negli Appunti!' : 'Copia Link Diretto di Invito'}</span>
+                    <span>{copiedLink ? 'Link Copiato negli Appunti! ✓' : 'Copia il mio Link di Invito'}</span>
                   </button>
 
                   <button className="ghost-btn whatsapp-share-btn" onClick={handleSendWhatsApp}>

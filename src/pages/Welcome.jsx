@@ -75,7 +75,7 @@ const Welcome = ({ onNavigate, onOpenDownload, onOpenLegal }) => {
     {
       id: 'amici',
       title: 'Social & Orari Compagni di Corso',
-      desc: 'Connettiti con gli amici tramite Codice Amico: scopri quando sono liberi per un caffè ☕ o per studiare insieme.',
+      desc: 'Connettiti con i tuoi amici con un link di invito diretto: confronta i piani di studio e scopri quando siete liberi per studiare insieme.',
       icon: Users,
       color: '#ec4899'
     }
