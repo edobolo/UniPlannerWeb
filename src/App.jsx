@@ -40,8 +40,8 @@ function MainApp() {
     if (typeof window !== 'undefined' && (window.location.search.includes('u=') || window.location.search.includes('importFriend='))) {
       return 'amici';
     }
-    const welcomeSeen = localStorage.getItem('uniplanner_welcome_seen');
-    return !welcomeSeen ? 'benvenuto' : 'esami';
+    // Default sempre sul Piano di Studi (esami)
+    return 'esami';
   });
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('uniplanner_theme') || 'dark';
@@ -555,8 +555,9 @@ function MainApp() {
 
               <div className="download-actions-grid">
                 <a 
-                  href="/downloads/UniPlanner-Setup.exe" 
-                  download="UniPlanner-Setup.exe"
+                  href="https://github.com/edobolo/UniPlannerWeb/releases/latest" 
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="primary-btn download-action-btn"
                 >
                   <Download size={18} />
@@ -564,8 +565,9 @@ function MainApp() {
                 </a>
 
                 <a 
-                  href="/downloads/UniPlanner.exe" 
-                  download="UniPlanner-Portable.exe"
+                  href="https://github.com/edobolo/UniPlannerWeb/releases" 
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="secondary-btn download-action-btn"
                 >
                   <Download size={18} />
