@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { safeJsonParse } from '../utils/security';
-import { generateShareLink, decodeStudentData } from '../utils/cloudSync';
+import { generateShareLink, fetchUserProfile, publishUserProfile } from '../utils/cloudSync';
 import './Friends.css';
 
 const STORAGE_FRIENDS_KEY = 'uniplanner_friends_db_v2';
@@ -64,53 +64,105 @@ const Friends = () => {
   // Add Friend Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [newFriendLink, setNewFriendLink] = useState('');
+  const [newFriendInput, setNewFriendInput] = useState('');
   const [addError, setAddError] = useState('');
   const [addSuccess, setAddSuccess] = useState('');
+  const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_FRIENDS_KEY, JSON.stringify(friends));
   }, [friends]);
 
-  const handleAddFriend = (e) => {
+  // Sync current user's profile to Raspberry Pi backend on mount/update
+  useEffect(() => {
+    if (currentUser && currentUser.friendCode) {
+      try {
+        const savedExams = safeJsonParse(localStorage.getItem('uniplanner_exams'), []);
+        const savedSchedule = safeJsonParse(localStorage.getItem('uniplanner_schedule_v1'), []);
+        const savedDeadlines = safeJsonParse(localStorage.getItem('uniplanner_deadlines'), []);
+        publishUserProfile(currentUser, savedExams, savedSchedule, savedDeadlines);
+      } catch (e) {
+        console.warn('Sync profile err:', e);
+      }
+    }
+  }, [currentUser]);
+
+  const handleCopyMyCode = () => {
+    if (!currentUser?.friendCode) return;
+    navigator.clipboard.writeText(currentUser.friendCode);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  const handleCopyShareLink = () => {
+    if (!currentUser) return;
+    const link = generateShareLink(currentUser);
+    if (!link) return;
+    navigator.clipboard.writeText(link);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const handleSendWhatsApp = () => {
+    if (!currentUser) return;
+    const link = generateShareLink(currentUser);
+    if (!link) return;
+    const text = encodeURIComponent(`Ciao! Aggiungimi su UniPlanner con il mio Codice Amico ${currentUser.friendCode} oppure tramite link diretto: ${link}`);
+    window.open(`https://wa.me/?text=${text}`, '_blank');
+  };
+
+  const handleAddFriend = async (e) => {
     e.preventDefault();
     setAddError('');
     setAddSuccess('');
 
-    const cleanInput = newFriendLink.trim();
+    const cleanInput = newFriendInput.trim();
     if (!cleanInput) {
-      setAddError('Incolla il link di invito generato dal tuo compagno di corso.');
+      setAddError('Inserisci il Codice Amico, l\'username o il link del tuo compagno di corso.');
       return;
     }
 
-    const realFriendProfile = decodeStudentData(cleanInput);
-    if (!realFriendProfile || (!realFriendProfile.fullName && !realFriendProfile.username)) {
-      setAddError('Link non valido. Assicurati di aver incollato il link esatto condiviso dal tuo amico.');
-      return;
-    }
-
-    if (currentUser && currentUser.username && realFriendProfile.username === currentUser.username) {
+    if (currentUser && (cleanInput.toUpperCase() === currentUser.friendCode?.toUpperCase() || cleanInput.toLowerCase() === currentUser.username?.toLowerCase())) {
       setAddError('Non puoi aggiungere te stesso come amico.');
       return;
     }
 
-    const alreadyFriend = friends.some(
-      f => (f.username && f.username === realFriendProfile.username) || (f.fullName && f.fullName === realFriendProfile.fullName)
-    );
-    if (alreadyFriend) {
-      setAddError('Questo studente è già presente nella tua lista amici.');
-      return;
-    }
+    setIsSearching(true);
+    try {
+      // Interroga il server sul Raspberry Pi!
+      const realFriendProfile = await fetchUserProfile(cleanInput);
 
-    setFriends(prev => [realFriendProfile, ...prev]);
-    setSelectedFriend(realFriendProfile);
-    setAddSuccess(`Amico ${realFriendProfile.fullName || realFriendProfile.username} aggiunto con successo!`);
-    setNewFriendLink('');
-    setTimeout(() => {
-      setIsAddModalOpen(false);
-      setAddSuccess('');
-    }, 1200);
+      if (!realFriendProfile || (!realFriendProfile.fullName && !realFriendProfile.username)) {
+        setAddError(`Nessun account trovato per "${cleanInput}". Assicurati che il tuo amico si sia registrato su UniPlanner e ti abbia fornito il suo Codice Amico esatto.`);
+        setIsSearching(false);
+        return;
+      }
+
+      const alreadyFriend = friends.some(
+        f => (f.friendCode && f.friendCode.toUpperCase() === realFriendProfile.friendCode?.toUpperCase()) ||
+             (f.username && f.username.toLowerCase() === realFriendProfile.username?.toLowerCase())
+      );
+      if (alreadyFriend) {
+        setAddError('Questo studente è già presente nella tua lista amici.');
+        setIsSearching(false);
+        return;
+      }
+
+      setFriends(prev => [realFriendProfile, ...prev]);
+      setSelectedFriend(realFriendProfile);
+      setAddSuccess(`Amico ${realFriendProfile.fullName || realFriendProfile.username} aggiunto con successo!`);
+      setNewFriendInput('');
+      setTimeout(() => {
+        setIsAddModalOpen(false);
+        setAddSuccess('');
+      }, 1200);
+    } catch (err) {
+      setAddError('Errore di connessione al server. Verifica che il server sia attivo e riprova.');
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const handleRemoveFriend = (friendId) => {
@@ -158,29 +210,6 @@ const Friends = () => {
     return Math.max(26, (durationMinutes / 60) * MINI_HOUR_HEIGHT);
   };
 
-  const handleGetShareLink = () => {
-    if (!currentUser) return '';
-    const savedExams = safeJsonParse(localStorage.getItem('uniplanner_exams'), []);
-    const savedSchedule = safeJsonParse(localStorage.getItem('uniplanner_schedule_v1'), []);
-    const savedDeadlines = safeJsonParse(localStorage.getItem('uniplanner_deadlines'), []);
-    return generateShareLink(currentUser, savedExams, savedSchedule, savedDeadlines);
-  };
-
-  const handleCopyShareLink = () => {
-    const link = handleGetShareLink();
-    if (!link) return;
-    navigator.clipboard.writeText(link);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2200);
-  };
-
-  const handleSendWhatsApp = () => {
-    const link = handleGetShareLink();
-    if (!link) return;
-    const text = encodeURIComponent(`Ciao! Aggiungimi su UniPlanner per visualizzare il mio piano di studi e orario lezioni: ${link}`);
-    window.open(`https://wa.me/?text=${text}`, '_blank');
-  };
-
   return (
     <div className="friends-page-container">
       {/* Top Header */}
@@ -193,29 +222,45 @@ const Friends = () => {
         </div>
 
         <div className="header-actions-group">
-          {currentUser ? (
+          {/* My Friend Code Badge */}
+          <div className="my-friend-code-card">
+            <span className="code-label">Il tuo Codice Amico:</span>
+            <div className="code-pill">
+              <strong>{currentUser?.friendCode || 'Accedi o Registrati'}</strong>
+              {currentUser ? (
+                <button 
+                  className="code-copy-btn" 
+                  onClick={handleCopyMyCode}
+                  title="Copia codice amico"
+                >
+                  {copiedCode ? <Check size={14} className="copied-icon" /> : <Copy size={14} />}
+                </button>
+              ) : (
+                <button 
+                  className="code-copy-btn" 
+                  onClick={() => setIsAuthModalOpen(true)}
+                  title="Accedi o crea un account"
+                >
+                  <UserPlus size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {currentUser && (
             <button 
-              className="primary-btn share-profile-btn-main" 
+              className="ghost-btn share-profile-btn" 
               onClick={() => setIsShareModalOpen(true)}
               title="Condividi il tuo link o invia su WhatsApp"
             >
               <Share2 size={17} />
-              <span>Condividi il mio Profilo</span>
-            </button>
-          ) : (
-            <button 
-              className="ghost-btn" 
-              onClick={() => setIsAuthModalOpen(true)}
-              title="Crea un account per condividere il tuo piano di studi"
-            >
-              <UserPlus size={16} />
-              <span>Accedi per Condividere</span>
+              <span>Condividi</span>
             </button>
           )}
 
-          <button className="secondary-btn add-friend-btn" onClick={() => setIsAddModalOpen(true)}>
-            <LinkIcon size={16} />
-            <span>Aggiungi da Link</span>
+          <button className="primary-btn add-friend-btn" onClick={() => setIsAddModalOpen(true)}>
+            <UserPlus size={18} />
+            <span>Aggiungi Amico</span>
           </button>
         </div>
       </div>
@@ -625,16 +670,16 @@ const Friends = () => {
 
               <form onSubmit={handleAddFriend} className="add-friend-form">
                 <p className="add-friend-desc">
-                  Incolla il <strong>link di invito</strong> condiviso dal tuo compagno di corso per collegare i vostri profili:
+                  Inserisci il <strong>Codice Amico</strong> (es. <code>UP-MARCO</code>) oppure incolla il link inviato dal tuo compagno di corso:
                 </p>
 
                 <div className="form-group">
-                  <label>Link di Invito dell'Amico</label>
+                  <label>Codice Amico o Link</label>
                   <input 
                     type="text" 
-                    placeholder="Incolla il link ricevuto (es. https://.../?p=...)"
-                    value={newFriendLink}
-                    onChange={(e) => setNewFriendLink(e.target.value)}
+                    placeholder="Es. UP-8K3X9 oppure link https://.../?u=..."
+                    value={newFriendInput}
+                    onChange={(e) => setNewFriendInput(e.target.value)}
                     required
                   />
                 </div>
@@ -654,12 +699,12 @@ const Friends = () => {
                 )}
 
                 <div className="modal-actions-custom">
-                  <button type="button" className="ghost-btn" onClick={() => setIsAddModalOpen(false)}>
+                  <button type="button" className="ghost-btn" onClick={() => setIsAddModalOpen(false)} disabled={isSearching}>
                     Annulla
                   </button>
-                  <button type="submit" className="primary-btn">
+                  <button type="submit" className="primary-btn" disabled={isSearching}>
                     <UserPlus size={16} />
-                    <span>Collega Amico</span>
+                    <span>{isSearching ? 'Ricerca in corso...' : 'Cerca e Aggiungi'}</span>
                   </button>
                 </div>
               </form>
@@ -690,14 +735,26 @@ const Friends = () => {
 
               <div className="share-modal-body">
                 <p className="add-friend-desc">
-                  Invia il tuo link di invito ai tuoi compagni di corso: aprendolo potranno visualizzare e sincronizzare subito il tuo orario delle lezioni ed esami con 1 clic.
+                  I tuoi compagni possono aggiungerti inserendo il tuo **Codice Amico** oppure aprendo il tuo link diretto:
                 </p>
+
+                {/* Friend Code Display */}
+                <div className="share-code-box">
+                  <span className="share-code-label">Il tuo Codice Amico:</span>
+                  <div className="share-code-row">
+                    <span className="share-code-text">{currentUser.friendCode}</span>
+                    <button className="sm-btn primary-btn" onClick={handleCopyMyCode}>
+                      {copiedCode ? <Check size={14} /> : <Copy size={14} />}
+                      <span>{copiedCode ? 'Copiato!' : 'Copia'}</span>
+                    </button>
+                  </div>
+                </div>
 
                 {/* Magic Share Link Box */}
                 <div className="share-actions-group">
                   <button className="primary-btn share-action-wide" onClick={handleCopyShareLink}>
                     <LinkIcon size={16} />
-                    <span>{copiedLink ? 'Link Copiato negli Appunti! ✓' : 'Copia il mio Link di Invito'}</span>
+                    <span>{copiedLink ? 'Link Copiato negli Appunti! ✓' : 'Copia Link Diretto di Invito'}</span>
                   </button>
 
                   <button className="ghost-btn whatsapp-share-btn" onClick={handleSendWhatsApp}>

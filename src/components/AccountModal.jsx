@@ -56,9 +56,9 @@ const AccountModal = ({ onOpenLegal }) => {
     shareGrades: true
   });
 
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [loading, setLoading] = useState(false);
 
   if (!isAuthModalOpen) return null;
@@ -68,6 +68,15 @@ const AccountModal = ({ onOpenLegal }) => {
     navigator.clipboard.writeText(currentUser.friendCode);
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  const handleCopyShareLink = () => {
+    if (!currentUser) return;
+    const link = generateShareLink(currentUser);
+    if (!link) return;
+    navigator.clipboard.writeText(link);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
   };
 
   const handleLoginSubmit = async (e) => {
@@ -227,16 +236,27 @@ const AccountModal = ({ onOpenLegal }) => {
 
                 <div className="friend-code-box">
                   <div className="friend-code-left">
-                    <span className="code-label">Link di Condivisione Profilo:</span>
-                    <strong className="code-value" style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Invita amici con 1 clic</strong>
+                    <span className="code-label">Il tuo Codice Amico:</span>
+                    <strong className="code-value">{currentUser.friendCode}</strong>
                   </div>
-                  <button 
-                    className={`copy-code-btn ${copiedLink ? 'copied' : ''}`}
-                    onClick={handleCopyShareLink}
-                  >
-                    {copiedLink ? <Check size={16} /> : <Copy size={16} />}
-                    <span>{copiedLink ? 'Link Copiato!' : 'Copia Link'}</span>
-                  </button>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button 
+                      className={`copy-code-btn ${copiedCode ? 'copied' : ''}`}
+                      onClick={handleCopyCode}
+                      title="Copia codice amico"
+                    >
+                      {copiedCode ? <Check size={16} /> : <Copy size={16} />}
+                      <span>{copiedCode ? 'Copiato!' : 'Codice'}</span>
+                    </button>
+                    <button 
+                      className={`copy-code-btn ${copiedLink ? 'copied' : ''}`}
+                      onClick={handleCopyShareLink}
+                      title="Copia link breve"
+                    >
+                      {copiedLink ? <Check size={16} /> : <Sparkles size={16} />}
+                      <span>{copiedLink ? 'Link Copiato!' : 'Link'}</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="profile-details-grid">

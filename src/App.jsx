@@ -30,14 +30,14 @@ import Friends from './pages/Friends';
 import AccountModal from './components/AccountModal';
 import LegalModal from './components/LegalModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { decodeStudentData } from './utils/cloudSync';
+import { fetchUserProfile, publishUserProfile } from './utils/cloudSync';
 import { safeJsonParse } from './utils/security';
 import './App.css';
 
 function MainApp() {
   const [activeTab, setActiveTab] = useState(() => {
-    // If URL has importFriend query, open amici tab directly
-    if (typeof window !== 'undefined' && window.location.search.includes('importFriend=')) {
+    // If URL has u= or import query, open amici tab directly
+    if (typeof window !== 'undefined' && (window.location.search.includes('u=') || window.location.search.includes('importFriend='))) {
       return 'amici';
     }
     const welcomeSeen = localStorage.getItem('uniplanner_welcome_seen');
@@ -53,36 +53,61 @@ function MainApp() {
   const [updateInfo, setUpdateInfo] = useState(null);
   const [importedFriendToast, setImportedFriendToast] = useState(null);
 
-  // Handle Magic Link Friend Import from URL Query (?p=... or ?importFriend=...)
+  const { currentUser, setIsAuthModalOpen, setAuthModalTab } = useAuth();
+  const isElectron = typeof window !== 'undefined' && window.electronAPI?.isElectron;
+
+  // Handle Friend Import from URL Query (?u=UP-XXXX)
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.search) {
+    const importFromUrl = async () => {
+      if (typeof window === 'undefined' || !window.location.search) return;
       const urlParams = new URLSearchParams(window.location.search);
-      const encodedData = urlParams.get('p') || urlParams.get('importFriend');
-      if (encodedData) {
-        const friendProfile = decodeStudentData(encodedData);
-        if (friendProfile && (friendProfile.fullName || friendProfile.username)) {
-          const currentFriends = safeJsonParse(localStorage.getItem('uniplanner_friends_db_v2'), []);
-          const exists = currentFriends.some(f => (f.username && f.username === friendProfile.username) || f.fullName === friendProfile.fullName);
-          if (!exists) {
-            const updated = [friendProfile, ...currentFriends];
-            localStorage.setItem('uniplanner_friends_db_v2', JSON.stringify(updated));
+      const queryParam = urlParams.get('u') || urlParams.get('p') || urlParams.get('importFriend');
+      
+      if (queryParam) {
+        try {
+          const friendProfile = await fetchUserProfile(queryParam);
+          if (friendProfile && (friendProfile.fullName || friendProfile.username)) {
+            const currentFriends = safeJsonParse(localStorage.getItem('uniplanner_friends_db_v2'), []);
+            const exists = currentFriends.some(f => 
+              (f.friendCode && f.friendCode.toUpperCase() === friendProfile.friendCode?.toUpperCase()) ||
+              (f.username && f.username.toLowerCase() === friendProfile.username?.toLowerCase())
+            );
+            if (!exists) {
+              const updated = [friendProfile, ...currentFriends];
+              localStorage.setItem('uniplanner_friends_db_v2', JSON.stringify(updated));
+            }
+            setImportedFriendToast(friendProfile);
+            setActiveTab('amici');
+            // Clean URL without reload
+            window.history.replaceState({}, document.title, window.location.pathname);
           }
-          setImportedFriendToast(friendProfile);
-          setActiveTab('amici');
-          // Clean URL without reload
-          window.history.replaceState({}, document.title, window.location.pathname);
+        } catch (err) {
+          console.warn('Errore import amico da URL:', err);
         }
       }
-    }
+    };
+
+    importFromUrl();
   }, []);
+
+  // Auto-sync real student profile and schedule to Raspberry Pi cloud backend
+  useEffect(() => {
+    if (currentUser && currentUser.friendCode) {
+      try {
+        const savedExams = safeJsonParse(localStorage.getItem('uniplanner_exams'), []);
+        const savedSchedule = safeJsonParse(localStorage.getItem('uniplanner_schedule_v1'), []);
+        const savedDeadlines = safeJsonParse(localStorage.getItem('uniplanner_deadlines'), []);
+        publishUserProfile(currentUser, savedExams, savedSchedule, savedDeadlines);
+      } catch (e) {
+        console.warn('Sync cloud profile err:', e);
+      }
+    }
+  }, [currentUser, activeTab]);
 
   const handleOpenLegal = (tab = 'privacy') => {
     setLegalInitialTab(tab);
     setIsLegalModalOpen(true);
   };
-
-  const { currentUser, setIsAuthModalOpen, setAuthModalTab } = useAuth();
-  const isElectron = typeof window !== 'undefined' && window.electronAPI?.isElectron;
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
