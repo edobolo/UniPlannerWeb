@@ -8,6 +8,7 @@ import {
   generateFriendCode, 
   safeJsonParse 
 } from '../utils/security';
+import { loginUserOnline } from '../utils/cloudSync';
 
 const AuthContext = createContext();
 
@@ -111,7 +112,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
-   * Secure User Login
+   * Secure User Login (Backend First with Local Fallback)
    */
   const login = async (identifier, password) => {
     const cleanId = sanitizeText(identifier, 100).trim();
@@ -119,10 +120,63 @@ export const AuthProvider = ({ children }) => {
       throw new Error('Inserisci username/email e password.');
     }
 
+    let onlineUser = null;
+    try {
+      onlineUser = await loginUserOnline(cleanId, password);
+    } catch (onlineErr) {
+      // Se l'errore è credenziali errate dal server, lancia subito l'errore
+      if (onlineErr.message && onlineErr.message.includes('non valide')) {
+        throw onlineErr;
+      }
+      console.warn('Login online fallito, provo fallback locale:', onlineErr);
+    }
+
+    if (onlineUser) {
+      // Salva i dati dell'utente online in locale
+      if (onlineUser.exams) {
+        localStorage.setItem('uniplanner_exams', JSON.stringify(onlineUser.exams));
+      }
+      if (onlineUser.schedule) {
+        localStorage.setItem('uniplanner_schedule_v1', JSON.stringify(onlineUser.schedule));
+      }
+      if (onlineUser.deadlines) {
+        localStorage.setItem('uniplanner_deadlines', JSON.stringify(onlineUser.deadlines));
+      }
+
+      const formattedUser = {
+        id: `usr_${onlineUser.friendCode}`,
+        username: onlineUser.username,
+        fullName: onlineUser.fullName || onlineUser.username,
+        email: onlineUser.email || '',
+        university: onlineUser.university || '',
+        degreeCourse: onlineUser.degreeCourse || '',
+        avatarColor: onlineUser.avatarColor || '#8b5cf6',
+        friendCode: onlineUser.friendCode,
+        bio: onlineUser.bio || '',
+        status: onlineUser.status || 'In sessione 🎯',
+        shareGrades: onlineUser.shareGrades !== false
+      };
+
+      setUsers(prev => {
+        const filtered = prev.filter(u => u.friendCode !== formattedUser.friendCode);
+        return [...filtered, formattedUser];
+      });
+
+      setCurrentUser(formattedUser);
+      localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(formattedUser));
+      
+      // Ricarica per applicare tutti i dati del profilo
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
+      return formattedUser;
+    }
+
+    // Fallback Locale
     const passwordHash = await hashPassword(password);
     const user = users.find(u => 
       (u.username.toLowerCase() === cleanId.toLowerCase() || u.email.toLowerCase() === cleanId.toLowerCase()) &&
-      (!u.passwordHash || u.passwordHash === passwordHash) // Allow default demo user login
+      (!u.passwordHash || u.passwordHash === passwordHash)
     );
 
     if (!user) {
@@ -134,10 +188,19 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
-   * Logout
+   * Logout Completo & Pulizia Dati
    */
   const logout = () => {
     setCurrentUser(null);
+    localStorage.removeItem(STORAGE_SESSION_KEY);
+    localStorage.removeItem('uniplanner_exams');
+    localStorage.removeItem('uniplanner_schedule_v1');
+    localStorage.removeItem('uniplanner_deadlines');
+    localStorage.removeItem('uniplanner_friends_db_v2');
+    localStorage.removeItem('uniplanner_notifications');
+    
+    // Ricarica la pagina per resettare completamente l'interfaccia a 0
+    window.location.reload();
   };
 
   /**

@@ -200,4 +200,22 @@ export const resetUserPassword = async (friendCode, email, newPassword) => {
   }
 };
 
+/**
+ * Autentica l'utente tramite il server backend Raspberry Pi
+ */
+export const loginUserOnline = async (identifier, password) => {
+  try {
+    const res = await fetch(`${BACKEND_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Credenziali non valide.');
+    return data.user;
+  } catch (err) {
+    throw err;
+  }
+};
+
 
