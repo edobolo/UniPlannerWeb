@@ -428,7 +428,7 @@ const AccountModal = ({ onOpenLegal }) => {
                   type="text" 
                   value={loginForm.identifier}
                   onChange={(e) => setLoginForm({ ...loginForm, identifier: e.target.value })}
-                  placeholder="edoardo_dev o email@esempio.it"
+                  placeholder="Username o email universitaria"
                   required
                 />
               </div>

@@ -15,7 +15,8 @@ import {
   Users, 
   CalendarDays,
   UserCheck,
-  Sparkles
+  Sparkles,
+  User
 } from 'lucide-react';
 import TitleBar from './components/TitleBar';
 import Welcome from './pages/Welcome';
@@ -143,10 +144,10 @@ function MainApp() {
           <div 
             className="mobile-user-avatar" 
             onClick={handleOpenAccount}
-            style={{ background: currentUser?.avatarColor || '#8b5cf6' }}
+            style={{ background: currentUser?.avatarColor || 'rgba(255, 255, 255, 0.1)' }}
             title={currentUser ? currentUser.fullName : "Accedi o registrati"}
           >
-            {currentUser?.fullName ? currentUser.fullName.charAt(0).toUpperCase() : (currentUser?.username?.charAt(0).toUpperCase() || 'U')}
+            {currentUser?.fullName ? currentUser.fullName.charAt(0).toUpperCase() : (currentUser?.username?.charAt(0).toUpperCase() || <User size={17} />)}
           </div>
         </div>
       </header>
@@ -194,17 +195,17 @@ function MainApp() {
           {/* Sidebar Footer with Account, Guide, Download & Theme Toggle */}
           <div className="sidebar-footer">
             {/* User Account Badge */}
-            <div className="user-profile-badge" onClick={handleOpenAccount} title="Gestisci account e impostazioni">
+            <div className="user-profile-badge" onClick={handleOpenAccount} title={currentUser ? "Gestisci account e impostazioni" : "Accedi o crea un account"}>
               <div 
                 className="user-badge-avatar" 
-                style={{ background: currentUser?.avatarColor || '#8b5cf6' }}
+                style={{ background: currentUser?.avatarColor || 'rgba(255, 255, 255, 0.1)' }}
               >
-                {currentUser?.fullName ? currentUser.fullName.charAt(0).toUpperCase() : (currentUser?.username?.charAt(0).toUpperCase() || 'U')}
-                <span className="online-indicator" />
+                {currentUser?.fullName ? currentUser.fullName.charAt(0).toUpperCase() : (currentUser?.username?.charAt(0).toUpperCase() || <User size={16} />)}
+                {currentUser && <span className="online-indicator" />}
               </div>
               <div className="user-badge-info">
-                <span className="badge-name">{currentUser?.fullName || 'Il mio Account'}</span>
-                <span className="badge-code">{currentUser?.friendCode || 'Accedi'}</span>
+                <span className="badge-name">{currentUser?.fullName || (currentUser?.username ? `@${currentUser.username}` : 'Accedi')}</span>
+                <span className="badge-code">{currentUser?.friendCode || 'Crea Account'}</span>
               </div>
             </div>
 

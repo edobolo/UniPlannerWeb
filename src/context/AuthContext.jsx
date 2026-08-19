@@ -11,24 +11,40 @@ import {
 
 const AuthContext = createContext();
 
-const STORAGE_USERS_KEY = 'uniplanner_users_db_v1';
-const STORAGE_SESSION_KEY = 'uniplanner_active_session_v1';
+const STORAGE_USERS_KEY = 'uniplanner_users_db_v2';
+const STORAGE_SESSION_KEY = 'uniplanner_active_session_v2';
 
 export const AuthProvider = ({ children }) => {
   const [users, setUsers] = useState(() => {
-    return safeJsonParse(localStorage.getItem(STORAGE_USERS_KEY), []);
+    // Purge legacy v1 demo users if present
+    const legacyV1 = safeJsonParse(localStorage.getItem('uniplanner_users_db_v1'), []);
+    const cleanV1 = legacyV1.filter(u => u.id !== 'usr_main_demo' && u.username !== 'edoardo_dev');
+    if (cleanV1.length > 0) {
+      localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(cleanV1));
+    }
+    localStorage.removeItem('uniplanner_users_db_v1');
+
+    const currentV2 = safeJsonParse(localStorage.getItem(STORAGE_USERS_KEY), []);
+    return currentV2.filter(u => u.id !== 'usr_main_demo' && u.username !== 'edoardo_dev');
   });
 
   const [currentUser, setCurrentUser] = useState(() => {
+    // Purge legacy v1 demo session
+    const legacySession = safeJsonParse(localStorage.getItem('uniplanner_active_session_v1'), null);
+    if (legacySession && (legacySession.id === 'usr_main_demo' || legacySession.username === 'edoardo_dev')) {
+      localStorage.removeItem('uniplanner_active_session_v1');
+    }
+    localStorage.removeItem('uniplanner_active_session_v1');
+
     const session = safeJsonParse(localStorage.getItem(STORAGE_SESSION_KEY), null);
-    if (session && session.id) {
+    if (session && session.id && session.id !== 'usr_main_demo' && session.username !== 'edoardo_dev') {
       return session;
     }
     return null;
   });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalTab, setAuthModalTab] = useState('profile'); // 'profile' | 'login' | 'register'
+  const [authModalTab, setAuthModalTab] = useState('register'); // 'profile' | 'login' | 'register'
 
   useEffect(() => {
     localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(users));

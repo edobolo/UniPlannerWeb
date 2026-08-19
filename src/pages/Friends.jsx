@@ -192,14 +192,24 @@ const Friends = () => {
           <div className="my-friend-code-card">
             <span className="code-label">Il tuo Codice Amico:</span>
             <div className="code-pill">
-              <strong>{currentUser?.friendCode || 'UP-STUDENT'}</strong>
-              <button 
-                className="code-copy-btn" 
-                onClick={handleCopyMyCode}
-                title="Copia codice"
-              >
-                {copiedCode ? <Check size={14} className="copied-icon" /> : <Copy size={14} />}
-              </button>
+              <strong>{currentUser?.friendCode || 'Accedi o Registrati'}</strong>
+              {currentUser ? (
+                <button 
+                  className="code-copy-btn" 
+                  onClick={handleCopyMyCode}
+                  title="Copia codice"
+                >
+                  {copiedCode ? <Check size={14} className="copied-icon" /> : <Copy size={14} />}
+                </button>
+              ) : (
+                <button 
+                  className="code-copy-btn" 
+                  onClick={() => setIsAuthModalOpen(true)}
+                  title="Accedi o crea un account"
+                >
+                  <UserPlus size={14} />
+                </button>
+              )}
             </div>
           </div>
 
