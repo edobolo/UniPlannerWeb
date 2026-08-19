@@ -716,7 +716,42 @@
   background: rgba(0, 0, 0, 0.22);
   border: 1px solid var(--glass-border);
   border-radius: 14px;
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+}
+
+.mini-gcal-header-row,
+.mini-gcal-grid {
+  min-width: 520px;
+}
+
+.refresh-friend-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.refresh-friend-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent-primary);
+}
+
+.spin-animation {
+  animation: spinFriend 0.8s linear infinite;
+}
+
+@keyframes spinFriend {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .mini-gcal-header-row {

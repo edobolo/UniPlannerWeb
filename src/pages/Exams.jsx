@@ -19,6 +19,9 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useAuth } from '../context/AuthContext';
+import { publishUserProfile } from '../utils/cloudSync';
+import { safeJsonParse } from '../utils/security';
 import './Exams.css';
 
 const YEAR_OPTIONS = ["1° Anno", "2° Anno", "3° Anno", "4° Anno", "5° Anno", "Opzionale", "N/D"];
@@ -186,9 +189,16 @@ const Exams = () => {
     })
   );
 
+  const { currentUser } = useAuth();
+
   useEffect(() => {
     localStorage.setItem('uniplanner_exams', JSON.stringify(exams));
-  }, [exams]);
+    if (currentUser?.friendCode) {
+      const savedSchedule = safeJsonParse(localStorage.getItem('uniplanner_schedule_v1'), []);
+      const savedDeadlines = safeJsonParse(localStorage.getItem('uniplanner_deadlines'), []);
+      publishUserProfile(currentUser, exams, savedSchedule, savedDeadlines);
+    }
+  }, [exams, currentUser]);
 
   const handleAdd = (e) => {
     e.preventDefault();

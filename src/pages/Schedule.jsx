@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { sanitizeText, safeJsonParse } from '../utils/security';
 import { parseScheduleExcel, parseScheduleICS, exportScheduleToICS, calculateWeekOffset } from '../utils/scheduleImport';
+import { useAuth } from '../context/AuthContext';
+import { publishUserProfile } from '../utils/cloudSync';
 import './Schedule.css';
 
 const STORAGE_SCHEDULE_KEY = 'uniplanner_schedule_v1';
@@ -36,6 +38,7 @@ const PRESET_COLORS = [
 ];
 
 const Schedule = () => {
+  const { currentUser } = useAuth();
   const [lessons, setLessons] = useState(() => {
     const saved = safeJsonParse(localStorage.getItem(STORAGE_SCHEDULE_KEY), []);
     if (!saved || saved.length === 0) return [];
@@ -53,6 +56,15 @@ const Schedule = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState(null);
+
+  // Mobile View Mode ('week' | 'day')
+  const [mobileViewMode, setMobileViewMode] = useState(() => {
+    return typeof window !== 'undefined' && window.innerWidth <= 768 ? 'day' : 'week';
+  });
+  const [selectedMobileDay, setSelectedMobileDay] = useState(() => {
+    const d = new Date().getDay();
+    return d === 0 ? 6 : d - 1; // 0 = Lun, 6 = Dom
+  });
 
   // Import Modal & Preview State
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -414,122 +426,252 @@ const Schedule = () => {
 
       {/* Main Calendar Viewport */}
       <div className="gcal-viewport">
-        {/* Days of Week Header Bar */}
-        <div className="gcal-days-header-row">
-          <div className="gcal-time-gutter-header" />
-          
-          <div className="gcal-days-grid-header">
-            {weekDates.map((day) => (
-              <div 
-                key={day.dayIndex} 
-                className={`gcal-day-col-header ${day.isToday ? 'is-today' : ''}`}
-                onClick={() => openAddModal(day.dayIndex, 9, day.dateStr)}
-              >
-                <span className="gcal-day-name">{day.dayName}</span>
-                <div className={`gcal-day-number-bubble ${day.isToday ? 'active-today' : ''}`}>
-                  {day.dayNumber}
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* Mobile View Switcher (Settimana vs Giorno) */}
+        <div className="gcal-mobile-view-switcher">
+          <button 
+            className={`gcal-view-tab ${mobileViewMode === 'day' ? 'active' : ''}`}
+            onClick={() => setMobileViewMode('day')}
+          >
+            <Clock size={15} />
+            <span>Vista Giorno per Giorno</span>
+          </button>
+          <button 
+            className={`gcal-view-tab ${mobileViewMode === 'week' ? 'active' : ''}`}
+            onClick={() => setMobileViewMode('week')}
+          >
+            <CalendarDays size={15} />
+            <span>Griglia Settimanale</span>
+          </button>
         </div>
 
-        {/* Scrollable Time Grid */}
-        <div className="gcal-grid-scroll-area" ref={gridScrollRef}>
-          <div className="gcal-grid-inner" style={{ height: hours.length * HOUR_HEIGHT }}>
-            
-            {/* Left Time Column Gutter */}
-            <div className="gcal-time-gutter">
-              {hours.map((h) => (
-                <div key={h} className="gcal-time-cell" style={{ height: HOUR_HEIGHT }}>
-                  <span className="gcal-time-label">{String(h).padStart(2, '0')}:00</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Week Columns Grid */}
-            <div className="gcal-columns-container">
-              {/* Horizontal Background Hour Lines */}
-              <div className="gcal-horizontal-lines">
-                {hours.map((h, i) => (
-                  <div 
-                    key={h} 
-                    className="gcal-hour-line" 
-                    style={{ top: i * HOUR_HEIGHT }}
-                  />
-                ))}
-              </div>
-
-              {/* 7 Days Vertical Columns */}
+        {/* Mobile Single Day View */}
+        {mobileViewMode === 'day' ? (
+          <div className="gcal-mobile-day-container">
+            {/* Horizontal Day Selector Pills */}
+            <div className="gcal-mobile-days-strip">
               {weekDates.map((day) => {
-                // Filter lessons for this exact calendar date or repeating weekday
-                const dayLessons = lessons.filter(l => {
-                  if (l.date) {
-                    return l.date === day.dateStr;
-                  }
-                  return l.dayIndex === day.dayIndex;
-                });
-
-                const isTodayCol = day.isToday && isCurrentWeek;
-
+                const dayLessonsCount = lessons.filter(l => l.date ? l.date === day.dateStr : l.dayIndex === day.dayIndex).length;
+                const isSelected = selectedMobileDay === day.dayIndex;
                 return (
-                  <div 
-                    key={day.dayIndex} 
-                    className={`gcal-day-column ${isTodayCol ? 'is-today-col' : ''}`}
-                    onClick={(e) => {
-                      // Calculate clicked hour
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const clickY = e.clientY - rect.top;
-                      const clickedHour = Math.floor(clickY / HOUR_HEIGHT) + START_HOUR;
-                      openAddModal(day.dayIndex, Math.min(Math.max(clickedHour, START_HOUR), END_HOUR - 1), day.dateStr);
-                    }}
+                  <button 
+                    key={day.dayIndex}
+                    className={`mobile-day-pill ${isSelected ? 'selected' : ''} ${day.isToday ? 'is-today' : ''}`}
+                    onClick={() => setSelectedMobileDay(day.dayIndex)}
                   >
-                    {/* Live Current Time Red Line (Google Calendar style) */}
-                    {isTodayCol && currentLineTop !== null && (
-                      <div 
-                        className="gcal-current-time-line" 
-                        style={{ top: currentLineTop }}
-                      >
-                        <div className="gcal-current-time-dot" />
-                      </div>
-                    )}
-
-                    {/* Render Lesson Event Cards */}
-                    {dayLessons.map((lesson) => {
-                      const top = timeToTop(lesson.startTime);
-                      const height = timeToHeight(lesson.startTime, lesson.endTime);
-
-                      return (
-                        <motion.div
-                          key={lesson.id}
-                          className="gcal-event-card"
-                          style={{
-                            top: `${top}px`,
-                            height: `${height}px`,
-                            background: lesson.color || '#38bdf8',
-                          }}
-                          whileHover={{ scale: 1.015, zIndex: 10 }}
-                          onClick={(e) => openEditModal(lesson, e)}
-                        >
-                          <div className="gcal-event-title">{lesson.subject}</div>
-                          <div className="gcal-event-time">
-                            {lesson.startTime} - {lesson.endTime}
-                          </div>
-                          {lesson.room && (
-                            <div className="gcal-event-meta">
-                              <MapPin size={11} />
-                              <span>{lesson.room}</span>
-                            </div>
-                          )}
-                        </motion.div>
-                      );
-                    })}
-                  </div>
+                    <span className="mob-day-name">{day.dayName}</span>
+                    <span className="mob-day-num">{day.dayNumber}</span>
+                    {dayLessonsCount > 0 && <span className="mob-lesson-badge">{dayLessonsCount}</span>}
+                  </button>
                 );
               })}
             </div>
+
+            {/* Selected Day Header & Add Button */}
+            <div className="mobile-day-content-header">
+              <div>
+                <h3>{weekDates[selectedMobileDay]?.dayNameFull || 'Giorno'} {weekDates[selectedMobileDay]?.dayNumber} {getHeaderMonthYear()}</h3>
+                <span className="mobile-day-sub">
+                  {lessons.filter(l => l.date ? l.date === weekDates[selectedMobileDay]?.dateStr : l.dayIndex === selectedMobileDay).length} lezioni in programma
+                </span>
+              </div>
+              <button 
+                className="primary-btn sm-btn"
+                onClick={() => openAddModal(selectedMobileDay, 9, weekDates[selectedMobileDay]?.dateStr)}
+              >
+                <Plus size={16} />
+                <span>Aggiungi</span>
+              </button>
+            </div>
+
+            {/* Lessons List for Selected Day */}
+            <div className="mobile-day-lessons-list">
+              {(() => {
+                const dayObj = weekDates[selectedMobileDay];
+                const dayLessons = lessons
+                  .filter(l => l.date ? l.date === dayObj?.dateStr : l.dayIndex === selectedMobileDay)
+                  .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+                if (dayLessons.length === 0) {
+                  return (
+                    <div className="mobile-empty-day">
+                      <Clock size={36} className="empty-day-icon" />
+                      <h4>Nessuna lezione programmata</h4>
+                      <p>Non ci sono lezioni per {dayObj?.dayNameFull}. Tocca "Aggiungi" per inserire un corso.</p>
+                      <button 
+                        className="secondary-btn"
+                        onClick={() => openAddModal(selectedMobileDay, 9, dayObj?.dateStr)}
+                      >
+                        <Plus size={15} />
+                        <span>Aggiungi lezione a {dayObj?.dayName}</span>
+                      </button>
+                    </div>
+                  );
+                }
+
+                return dayLessons.map(lesson => (
+                  <motion.div 
+                    key={lesson.id} 
+                    className="mobile-lesson-card"
+                    style={{ borderLeftColor: lesson.color || '#38bdf8' }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <div className="mob-lesson-time-row">
+                      <span className="mob-time-tag" style={{ background: `${lesson.color || '#38bdf8'}22`, color: lesson.color || '#38bdf8' }}>
+                        <Clock size={13} /> {lesson.startTime} - {lesson.endTime}
+                      </span>
+                      <div className="mob-lesson-actions">
+                        <button className="icon-btn" onClick={(e) => openEditModal(lesson, e)} title="Modifica">
+                          <Edit3 size={15} />
+                        </button>
+                        <button className="icon-btn danger" onClick={() => handleDeleteLesson(lesson.id)} title="Elimina">
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <h4 className="mob-lesson-title">{lesson.subject}</h4>
+                    
+                    <div className="mob-lesson-meta">
+                      {lesson.room && (
+                        <span className="mob-meta-item">
+                          <MapPin size={14} /> Aula: <strong>{lesson.room}</strong>
+                        </span>
+                      )}
+                      {lesson.professor && (
+                        <span className="mob-meta-item">
+                          <User size={14} /> Prof: <strong>{lesson.professor}</strong>
+                        </span>
+                      )}
+                    </div>
+                  </motion.div>
+                ));
+              })()}
+            </div>
           </div>
-        </div>
+        ) : (
+          /* Full Grid View with Synced Header and Touch Scroll Track */
+          <div className="gcal-horizontal-scroll-track">
+            <div className="gcal-track-inner">
+              {/* Days of Week Header Bar */}
+              <div className="gcal-days-header-row">
+                <div className="gcal-time-gutter-header" />
+                
+                <div className="gcal-days-grid-header">
+                  {weekDates.map((day) => (
+                    <div 
+                      key={day.dayIndex} 
+                      className={`gcal-day-col-header ${day.isToday ? 'is-today' : ''}`}
+                      onClick={() => openAddModal(day.dayIndex, 9, day.dateStr)}
+                    >
+                      <span className="gcal-day-name">{day.dayName}</span>
+                      <div className={`gcal-day-number-bubble ${day.isToday ? 'active-today' : ''}`}>
+                        {day.dayNumber}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Scrollable Time Grid */}
+              <div className="gcal-grid-scroll-area" ref={gridScrollRef}>
+                <div className="gcal-grid-inner" style={{ height: hours.length * HOUR_HEIGHT }}>
+                  
+                  {/* Left Time Column Gutter */}
+                  <div className="gcal-time-gutter">
+                    {hours.map((h) => (
+                      <div key={h} className="gcal-time-cell" style={{ height: HOUR_HEIGHT }}>
+                        <span className="gcal-time-label">{String(h).padStart(2, '0')}:00</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Week Columns Grid */}
+                  <div className="gcal-columns-container">
+                    {/* Horizontal Background Hour Lines */}
+                    <div className="gcal-horizontal-lines">
+                      {hours.map((h, i) => (
+                        <div 
+                          key={h} 
+                          className="gcal-hour-line" 
+                          style={{ top: i * HOUR_HEIGHT }}
+                        />
+                      ))}
+                    </div>
+
+                    {/* 7 Days Vertical Columns */}
+                    {weekDates.map((day) => {
+                      // Filter lessons for this exact calendar date or repeating weekday
+                      const dayLessons = lessons.filter(l => {
+                        if (l.date) {
+                          return l.date === day.dateStr;
+                        }
+                        return l.dayIndex === day.dayIndex;
+                      });
+
+                      const isTodayCol = day.isToday && isCurrentWeek;
+
+                      return (
+                        <div 
+                          key={day.dayIndex} 
+                          className={`gcal-day-column ${isTodayCol ? 'is-today-col' : ''}`}
+                          onClick={(e) => {
+                            // Calculate clicked hour
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const clickY = e.clientY - rect.top;
+                            const clickedHour = Math.floor(clickY / HOUR_HEIGHT) + START_HOUR;
+                            openAddModal(day.dayIndex, Math.min(Math.max(clickedHour, START_HOUR), END_HOUR - 1), day.dateStr);
+                          }}
+                        >
+                          {/* Live Current Time Red Line */}
+                          {isTodayCol && currentLineTop !== null && (
+                            <div 
+                              className="gcal-current-time-line" 
+                              style={{ top: currentLineTop }}
+                            >
+                              <div className="gcal-current-time-dot" />
+                            </div>
+                          )}
+
+                          {/* Render Lesson Event Cards */}
+                          {dayLessons.map((lesson) => {
+                            const top = timeToTop(lesson.startTime);
+                            const height = timeToHeight(lesson.startTime, lesson.endTime);
+
+                            return (
+                              <div
+                                key={lesson.id}
+                                className="gcal-event-card"
+                                style={{
+                                  top: `${top}px`,
+                                  height: `${height}px`,
+                                  background: lesson.color || '#38bdf8',
+                                  borderColor: lesson.color || '#38bdf8'
+                                }}
+                                onClick={(e) => openEditModal(lesson, e)}
+                                title={`${lesson.subject} (${lesson.startTime} - ${lesson.endTime})`}
+                              >
+                                <div className="gcal-event-time">
+                                  {lesson.startTime} - {lesson.endTime}
+                                </div>
+                                <div className="gcal-event-title">{lesson.subject}</div>
+                                {height > 44 && lesson.room && (
+                                  <div className="gcal-event-location">
+                                    <MapPin size={11} /> {lesson.room}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add / Edit Lesson Modal */}

@@ -24,7 +24,8 @@ import {
   Share2,
   ExternalLink,
   MessageCircle,
-  Link as LinkIcon
+  Link as LinkIcon,
+  RotateCw
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { safeJsonParse } from '../utils/security';
@@ -70,6 +71,7 @@ const Friends = () => {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [isRefreshingFriend, setIsRefreshingFriend] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_FRIENDS_KEY, JSON.stringify(friends));
@@ -88,6 +90,35 @@ const Friends = () => {
       }
     }
   }, [currentUser]);
+
+  // Live Refresh specific friend data from Raspberry Pi
+  const handleRefreshFriendData = async (friendCode) => {
+    if (!friendCode) return;
+    setIsRefreshingFriend(true);
+    try {
+      const fresh = await fetchUserProfile(friendCode);
+      if (fresh) {
+        setSelectedFriend(fresh);
+        setFriends(prev => {
+          const map = new Map();
+          prev.forEach(f => map.set((f.friendCode || f.username || f.id).toUpperCase(), f));
+          map.set((fresh.friendCode || fresh.username || fresh.id).toUpperCase(), fresh);
+          return Array.from(map.values());
+        });
+      }
+    } catch (e) {
+      console.warn('Refresh friend err:', e);
+    } finally {
+      setIsRefreshingFriend(false);
+    }
+  };
+
+  // Auto-refresh selected friend when opening tab or selecting friend
+  useEffect(() => {
+    if (selectedFriend?.friendCode) {
+      handleRefreshFriendData(selectedFriend.friendCode);
+    }
+  }, [activeFriendTab, selectedFriend?.friendCode]);
 
   // Download mutual friends list automatically from Raspberry Pi
   useEffect(() => {
@@ -385,14 +416,26 @@ const Friends = () => {
                   </div>
                 </div>
 
-                <button 
-                  className="ghost-btn remove-friend-btn"
-                  onClick={() => handleRemoveFriend(selectedFriend.id)}
-                  title="Rimuovi amico"
-                >
-                  <X size={16} />
-                  <span>Rimuovi</span>
-                </button>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button 
+                    className="ghost-btn refresh-friend-btn"
+                    onClick={() => handleRefreshFriendData(selectedFriend.friendCode)}
+                    disabled={isRefreshingFriend}
+                    title="Aggiorna orario ed esami dell'amico in tempo reale dal Raspberry Pi"
+                  >
+                    <RotateCw size={15} className={isRefreshingFriend ? 'spin-animation' : ''} />
+                    <span>{isRefreshingFriend ? 'Aggiornamento...' : 'Aggiorna'}</span>
+                  </button>
+
+                  <button 
+                    className="ghost-btn remove-friend-btn"
+                    onClick={() => handleRemoveFriend(selectedFriend.id)}
+                    title="Rimuovi amico"
+                  >
+                    <X size={16} />
+                    <span>Rimuovi</span>
+                  </button>
+                </div>
               </div>
 
               {/* Friend Stats Bar */}
