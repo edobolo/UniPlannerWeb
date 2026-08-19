@@ -191,12 +191,24 @@ const Exams = () => {
 
   const { currentUser } = useAuth();
 
+  // Reset or load exams on user change / logout
   useEffect(() => {
-    localStorage.setItem('uniplanner_exams', JSON.stringify(exams));
-    if (currentUser?.friendCode) {
-      const savedSchedule = safeJsonParse(localStorage.getItem('uniplanner_schedule_v1'), []);
-      const savedDeadlines = safeJsonParse(localStorage.getItem('uniplanner_deadlines'), []);
-      publishUserProfile(currentUser, exams, savedSchedule, savedDeadlines);
+    if (!currentUser) {
+      setExams([]);
+    } else {
+      const saved = safeJsonParse(localStorage.getItem('uniplanner_exams'), []);
+      setExams(saved);
+    }
+  }, [currentUser?.friendCode]);
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('uniplanner_exams', JSON.stringify(exams));
+      if (currentUser.friendCode) {
+        const savedSchedule = safeJsonParse(localStorage.getItem('uniplanner_schedule_v1'), []);
+        const savedDeadlines = safeJsonParse(localStorage.getItem('uniplanner_deadlines'), []);
+        publishUserProfile(currentUser, exams, savedSchedule, savedDeadlines);
+      }
     }
   }, [exams, currentUser]);
 

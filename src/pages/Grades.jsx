@@ -14,6 +14,8 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { exportLibrettoToPDF } from '../utils/pdfExport';
+import { useAuth } from '../context/AuthContext';
+import { safeJsonParse } from '../utils/security';
 import './Grades.css';
 
 ChartJS.register(
@@ -28,6 +30,7 @@ ChartJS.register(
 );
 
 const Grades = () => {
+  const { currentUser } = useAuth();
   const [exams, setExams] = useState(() => {
     const saved = localStorage.getItem('uniplanner_exams');
     return saved ? JSON.parse(saved) : [];
@@ -38,9 +41,21 @@ const Grades = () => {
     return saved ? JSON.parse(saved) : { targetGrade: 28, targetCfu: 180, lodeBonus: 0.5 };
   });
 
+  // Reset data if logged out
   useEffect(() => {
-    localStorage.setItem('uniplanner_settings', JSON.stringify(settings));
-  }, [settings]);
+    if (!currentUser) {
+      setExams([]);
+    } else {
+      const saved = safeJsonParse(localStorage.getItem('uniplanner_exams'), []);
+      setExams(saved);
+    }
+  }, [currentUser?.friendCode]);
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('uniplanner_settings', JSON.stringify(settings));
+    }
+  }, [settings, currentUser]);
 
   // Calculations
   const completedExams = exams.filter(e => e.grade !== null);

@@ -8,7 +8,7 @@ import {
   generateFriendCode, 
   safeJsonParse 
 } from '../utils/security';
-import { loginUserOnline } from '../utils/cloudSync';
+import { loginUserOnline, publishUserProfile } from '../utils/cloudSync';
 
 const AuthContext = createContext();
 
@@ -108,6 +108,13 @@ export const AuthProvider = ({ children }) => {
 
     setUsers(prev => [...prev, newUser]);
     setCurrentUser(newUser);
+
+    try {
+      publishUserProfile(newUser, [], [], []);
+    } catch (e) {
+      console.warn('Initial cloud register sync err:', e);
+    }
+
     return newUser;
   };
 
