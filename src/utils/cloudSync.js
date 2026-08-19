@@ -158,4 +158,28 @@ export const generateShareLink = (user) => {
   return `${baseUrl}?u=${user.friendCode}`;
 };
 
+/**
+ * Invia una segnalazione bug o feedback al server Raspberry Pi
+ */
+export const sendBugReport = async ({ friendCode, username, message, errorLog }) => {
+  try {
+    const res = await fetch(`${BACKEND_URL}/report-bug`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        friendCode: friendCode || 'ANON',
+        username: username || 'Anonimo',
+        message: message || '',
+        errorLog: errorLog || '',
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+        timestamp: new Date().toISOString()
+      })
+    });
+    return res.ok;
+  } catch (err) {
+    console.error('Errore invio report bug:', err);
+    return false;
+  }
+};
+
 

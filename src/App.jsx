@@ -16,7 +16,8 @@ import {
   CalendarDays,
   UserCheck,
   Sparkles,
-  User
+  User,
+  Bug
 } from 'lucide-react';
 import TitleBar from './components/TitleBar';
 import Welcome from './pages/Welcome';
@@ -29,6 +30,7 @@ import Schedule from './pages/Schedule';
 import Friends from './pages/Friends';
 import AccountModal from './components/AccountModal';
 import LegalModal from './components/LegalModal';
+import BugReportModal from './components/BugReportModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { fetchUserProfile, publishUserProfile, connectMutualFriend } from './utils/cloudSync';
 import { safeJsonParse } from './utils/security';
@@ -48,6 +50,7 @@ function MainApp() {
   });
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+  const [isBugModalOpen, setIsBugModalOpen] = useState(false);
   const [legalInitialTab, setLegalInitialTab] = useState('privacy');
   const [updateDownloaded, setUpdateDownloaded] = useState(false);
   const [updateInfo, setUpdateInfo] = useState(null);
@@ -290,6 +293,15 @@ function MainApp() {
 
               <button 
                 className="footer-mini-btn"
+                onClick={() => setIsBugModalOpen(true)}
+                title="Segnala un bug o invia un suggerimento per UniPlanner"
+              >
+                <Bug size={15} style={{ color: '#ef4444' }} />
+                <span>Segnala Bug</span>
+              </button>
+
+              <button 
+                className="footer-mini-btn"
                 onClick={toggleTheme}
                 title={theme === 'dark' ? 'Passa alla Modalità Chiara' : 'Passa alla Modalità Scura'}
               >
@@ -493,6 +505,12 @@ function MainApp() {
       isOpen={isLegalModalOpen} 
       onClose={() => setIsLegalModalOpen(false)} 
       initialTab={legalInitialTab} 
+    />
+
+    {/* Bug Report Modal */}
+    <BugReportModal 
+      isOpen={isBugModalOpen} 
+      onClose={() => setIsBugModalOpen(false)} 
     />
 
     {/* Download Desktop App Modal */}

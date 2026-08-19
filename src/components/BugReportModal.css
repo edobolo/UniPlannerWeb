@@ -1,0 +1,128 @@
+.bug-modal {
+  max-width: 480px;
+  width: 90%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.bug-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--glass-border);
+  padding-bottom: 14px;
+}
+
+.bug-header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bug-icon-bubble {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.bug-header-title h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.bug-header-title p {
+  margin: 2px 0 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.bug-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bug-form textarea {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  font-size: 13.5px;
+  resize: vertical;
+}
+
+.bug-form textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.form-checkbox-row {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.bug-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.bug-success-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 10px;
+  text-align: center;
+  gap: 10px;
+}
+
+.success-icon {
+  color: #10b981;
+}
+
+.bug-success-state h4 {
+  font-size: 16px;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.bug-success-state p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.bug-error-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+}
