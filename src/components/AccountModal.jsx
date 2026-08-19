@@ -21,7 +21,7 @@ import {
   BellOff
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { generateShareLink } from '../utils/cloudSync';
+import { generateShareLink, resetUserPassword } from '../utils/cloudSync';
 import { safeJsonParse } from '../utils/security';
 import './AccountModal.css';
 
@@ -48,6 +48,8 @@ const AccountModal = ({ onOpenLegal }) => {
     university: '',
     degreeCourse: ''
   });
+  const [resetForm, setResetForm] = useState({ friendCode: '', email: '', newPassword: '' });
+  const [resetSuccess, setResetSuccess] = useState('');
   const [profileEdit, setProfileEdit] = useState({
     fullName: '',
     university: '',
@@ -125,6 +127,22 @@ const AccountModal = ({ onOpenLegal }) => {
       setIsAuthModalOpen(false);
     } catch (err) {
       setErrorMsg(err.message || 'Errore durante la registrazione.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setResetSuccess('');
+    setLoading(true);
+    try {
+      const res = await resetUserPassword(resetForm.friendCode, resetForm.email, resetForm.newPassword);
+      setResetSuccess(res.message || 'Password aggiornata con successo! Ora puoi accedere.');
+      setResetForm({ friendCode: '', email: '', newPassword: '' });
+    } catch (err) {
+      setErrorMsg(err.message || 'Impossibile resettare la password. Verifica i dati inseriti.');
     } finally {
       setLoading(false);
     }
@@ -226,6 +244,13 @@ const AccountModal = ({ onOpenLegal }) => {
           <div className="account-alert error">
             <AlertCircle size={16} />
             <span>{errorMsg}</span>
+          </div>
+        )}
+
+        {resetSuccess && (
+          <div className="account-alert success" style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <Check size={16} />
+            <span>{resetSuccess}</span>
           </div>
         )}
 
@@ -508,12 +533,86 @@ const AccountModal = ({ onOpenLegal }) => {
                   required
                 />
               </div>
+              <div style={{ textAlign: 'right', marginTop: '6px' }}>
+                <button 
+                  type="button" 
+                  style={{ background: 'none', border: 'none', color: '#38bdf8', fontSize: '12.5px', cursor: 'pointer', textDecoration: 'underline' }}
+                  onClick={() => { setAuthModalTab('reset'); setErrorMsg(''); setResetSuccess(''); }}
+                >
+                  Password dimenticata?
+                </button>
+              </div>
             </div>
 
             <button type="submit" className="primary-btn submit-btn" disabled={loading}>
               <LogIn size={18} />
               <span>{loading ? 'Accesso in corso...' : 'Accedi a UniPlanner'}</span>
             </button>
+          </form>
+        )}
+
+        {/* FORGOT PASSWORD RESET TAB */}
+        {authModalTab === 'reset' && (
+          <form onSubmit={handleResetSubmit} className="account-tab-content auth-form">
+            <div style={{ marginBottom: '14px', background: 'rgba(255,255,255,0.04)', padding: '12px', borderRadius: '10px', fontSize: '12.5px', color: 'var(--text-secondary)' }}>
+              🔑 Inserisci il tuo <strong>Codice Amico</strong> e l'<strong>Email</strong> usata per la registrazione per impostare una nuova password.
+            </div>
+
+            <div className="form-group">
+              <label>Il tuo Codice Amico (es. UP-XXXX)</label>
+              <div className="input-with-icon">
+                <User size={18} className="input-icon" />
+                <input 
+                  type="text" 
+                  value={resetForm.friendCode}
+                  onChange={(e) => setResetForm({ ...resetForm, friendCode: e.target.value })}
+                  placeholder="UP-XXXX"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Indirizzo Email Registrato</label>
+              <div className="input-with-icon">
+                <Mail size={18} className="input-icon" />
+                <input 
+                  type="email" 
+                  value={resetForm.email}
+                  onChange={(e) => setResetForm({ ...resetForm, email: e.target.value })}
+                  placeholder="mario.rossi@studenti.it"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Nuova Password</label>
+              <div className="input-with-icon">
+                <Lock size={18} className="input-icon" />
+                <input 
+                  type="password" 
+                  value={resetForm.newPassword}
+                  onChange={(e) => setResetForm({ ...resetForm, newPassword: e.target.value })}
+                  placeholder="Almeno 6 caratteri"
+                  minLength={6}
+                  required
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
+              <button 
+                type="button" 
+                className="ghost-btn" 
+                onClick={() => { setAuthModalTab('login'); setErrorMsg(''); setResetSuccess(''); }}
+              >
+                Annulla
+              </button>
+              <button type="submit" className="primary-btn" disabled={loading} style={{ flex: 1 }}>
+                <span>{loading ? 'Aggiornamento...' : 'Reimposta Password'}</span>
+              </button>
+            </div>
           </form>
         )}
 

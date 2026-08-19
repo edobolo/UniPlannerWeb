@@ -182,4 +182,22 @@ export const sendBugReport = async ({ friendCode, username, message, errorLog })
   }
 };
 
+/**
+ * Resetta la password dell'utente verificando Codice Amico ed Email
+ */
+export const resetUserPassword = async (friendCode, email, newPassword) => {
+  try {
+    const res = await fetch(`${BACKEND_URL}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ friendCode, email, newPassword })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Impossibile resettare la password.');
+    return data;
+  } catch (err) {
+    throw err;
+  }
+};
+
 
