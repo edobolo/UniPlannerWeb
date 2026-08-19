@@ -30,7 +30,7 @@ import Friends from './pages/Friends';
 import AccountModal from './components/AccountModal';
 import LegalModal from './components/LegalModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { fetchUserProfile, publishUserProfile } from './utils/cloudSync';
+import { fetchUserProfile, publishUserProfile, connectMutualFriend } from './utils/cloudSync';
 import { safeJsonParse } from './utils/security';
 import './App.css';
 
@@ -76,6 +76,9 @@ function MainApp() {
               const updated = [friendProfile, ...currentFriends];
               localStorage.setItem('uniplanner_friends_db_v2', JSON.stringify(updated));
             }
+            if (currentUser?.friendCode) {
+              await connectMutualFriend(currentUser.friendCode, friendProfile.friendCode);
+            }
             setImportedFriendToast(friendProfile);
             setActiveTab('amici');
             // Clean URL without reload
@@ -88,7 +91,7 @@ function MainApp() {
     };
 
     importFromUrl();
-  }, []);
+  }, [currentUser]);
 
   // Auto-sync real student profile and schedule to Raspberry Pi cloud backend
   useEffect(() => {

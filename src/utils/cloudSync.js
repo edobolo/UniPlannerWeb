@@ -3,7 +3,7 @@
  * Comunica in tempo reale con il server Node.js + SQLite sul tuo Raspberry Pi.
  */
 
-export const BACKEND_URL = 'https://room-thumbnail-hawaiian-known.trycloudflare.com/api';
+export const BACKEND_URL = 'https://kentucky-dates-concord-ssl.trycloudflare.com/api';
 
 /**
  * Normalizza il codice amico in formato maiuscolo e senza spazi
@@ -68,6 +68,51 @@ export const publishUserProfile = async (user, exams = [], schedule = [], deadli
   } catch (err) {
     console.warn('Errore sincronizzazione con Raspberry Pi:', err);
     return false;
+  }
+};
+
+/**
+ * Collega due amici in modo RECIPROCO sul database del Raspberry Pi
+ */
+export const connectMutualFriend = async (myCode, targetCode) => {
+  if (!myCode || !targetCode) return null;
+  try {
+    const res = await fetch(`${BACKEND_URL}/friends/connect`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        myCode: normalizeFriendCode(myCode),
+        targetCode: normalizeFriendCode(targetCode)
+      })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.friend || null;
+    }
+    return null;
+  } catch (err) {
+    console.error('Errore collegamento reciproco amici:', err);
+    return null;
+  }
+};
+
+/**
+ * Scarica la lista di tutti gli amici collegati reciprocamente dal Raspberry Pi
+ */
+export const fetchMyFriendsList = async (myCode) => {
+  if (!myCode) return [];
+  try {
+    const res = await fetch(`${BACKEND_URL}/friends/my-list/${encodeURIComponent(normalizeFriendCode(myCode))}`);
+    if (res.ok) {
+      const data = await res.json();
+      return data.friends || [];
+    }
+    return [];
+  } catch (err) {
+    console.warn('Errore recupero lista amici reciproci:', err);
+    return [];
   }
 };
 

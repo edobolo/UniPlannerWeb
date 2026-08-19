@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { safeJsonParse } from '../utils/security';
-import { generateShareLink, fetchUserProfile, publishUserProfile } from '../utils/cloudSync';
+import { generateShareLink, fetchUserProfile, publishUserProfile, connectMutualFriend, fetchMyFriendsList } from '../utils/cloudSync';
 import './Friends.css';
 
 const STORAGE_FRIENDS_KEY = 'uniplanner_friends_db_v2';
@@ -89,6 +89,39 @@ const Friends = () => {
     }
   }, [currentUser]);
 
+  // Download mutual friends list automatically from Raspberry Pi
+  useEffect(() => {
+    if (currentUser?.friendCode) {
+      const syncMutualFriends = async () => {
+        try {
+          const cloudFriends = await fetchMyFriendsList(currentUser.friendCode);
+          if (cloudFriends && cloudFriends.length > 0) {
+            setFriends(prev => {
+              const map = new Map();
+              cloudFriends.forEach(cf => {
+                const key = (cf.friendCode || cf.username || cf.id).toUpperCase();
+                map.set(key, cf);
+              });
+              prev.forEach(pf => {
+                const key = (pf.friendCode || pf.username || pf.id).toUpperCase();
+                if (!map.has(key)) map.set(key, pf);
+              });
+              const merged = Array.from(map.values());
+              if (!selectedFriend && merged.length > 0) {
+                setSelectedFriend(merged[0]);
+              }
+              return merged;
+            });
+          }
+        } catch (err) {
+          console.warn('Sync mutual friends err:', err);
+        }
+      };
+
+      syncMutualFriends();
+    }
+  }, [currentUser]);
+
   const handleCopyMyCode = () => {
     if (!currentUser?.friendCode) return;
     navigator.clipboard.writeText(currentUser.friendCode);
@@ -131,7 +164,7 @@ const Friends = () => {
 
     setIsSearching(true);
     try {
-      // Interroga il server sul Raspberry Pi!
+      // 1. Interroga il server sul Raspberry Pi!
       const realFriendProfile = await fetchUserProfile(cleanInput);
 
       if (!realFriendProfile || (!realFriendProfile.fullName && !realFriendProfile.username)) {
@@ -148,6 +181,11 @@ const Friends = () => {
         setAddError('Questo studente è già presente nella tua lista amici.');
         setIsSearching(false);
         return;
+      }
+
+      // 2. Crea l'amicizia RECIPROCA sul Raspberry Pi (anche lui ti vedrà in automatico!)
+      if (currentUser?.friendCode) {
+        await connectMutualFriend(currentUser.friendCode, realFriendProfile.friendCode || cleanInput);
       }
 
       setFriends(prev => [realFriendProfile, ...prev]);
