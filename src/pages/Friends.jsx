@@ -28,49 +28,6 @@ import './Friends.css';
 
 const STORAGE_FRIENDS_KEY = 'uniplanner_friends_db_v1';
 
-// Single realistic test friend for development & testing
-const DEFAULT_FRIENDS = [
-  {
-    id: 'fr_marco',
-    username: 'marco_rossi',
-    fullName: 'Marco Rossi',
-    friendCode: 'UP-MARCO',
-    university: 'Politecnico di Milano',
-    degreeCourse: 'Ingegneria Informatica',
-    avatarColor: '#3b82f6',
-    status: 'In sessione Focus 🎯',
-    bio: 'Appassionato di sistemi distribuiti e sicurezza.',
-    shareGrades: true,
-    stats: {
-      cfu: 96,
-      totalCfu: 180,
-      avgGrade: 28.4,
-      passedExams: 16,
-      totalExams: 24
-    },
-    exams: [
-      { name: 'Algoritmi e Strutture Dati', grade: 30, cfu: 9, status: 'passed' },
-      { name: 'Basi di Dati', grade: 28, cfu: 9, status: 'passed' },
-      { name: 'Sistemi Operativi', grade: 27, cfu: 9, status: 'passed' },
-      { name: 'Reti di Calcolatori', grade: null, cfu: 9, status: 'planned', date: '2026-09-12' },
-      { name: 'Intelligenza Artificiale', grade: null, cfu: 6, status: 'planned', date: '2026-09-25' }
-    ],
-    deadlines: [
-      { id: 'd1', title: 'Consegna Progetto Reti', date: '2026-08-28', tag: 'Progetto', color: '#ef4444' },
-      { id: 'd2', title: 'Iscrizione Appello Settembre', date: '2026-09-02', tag: 'Burocrazia', color: '#f59e0b' },
-      { id: 'd3', title: 'Simulazione Esame AI', date: '2026-09-15', tag: 'Studio', color: '#8b5cf6' }
-    ],
-    schedule: [
-      { dayIndex: 0, dayName: 'Lun', startTime: '09:00', endTime: '11:00', subject: 'Reti di Calcolatori', room: 'Aula 3.0.1', professor: 'Prof. De Luca', color: '#38bdf8' },
-      { dayIndex: 0, dayName: 'Lun', startTime: '14:00', endTime: '16:00', subject: 'Intelligenza Artificiale', room: 'Aula Delta', professor: 'Prof. Rossi', color: '#818cf8' },
-      { dayIndex: 1, dayName: 'Mar', startTime: '11:00', endTime: '13:00', subject: 'Sistemi Operativi', room: 'Aula Magna', professor: 'Prof.ssa Bianchi', color: '#34d399' },
-      { dayIndex: 2, dayName: 'Mer', startTime: '10:00', endTime: '13:00', subject: 'Laboratorio Reti', room: 'Lab Turing', professor: 'Prof. De Luca', color: '#fbbf24' },
-      { dayIndex: 3, dayName: 'Gio', startTime: '14:00', endTime: '17:00', subject: 'Studio di Gruppo AI', room: 'Biblioteca', professor: '', color: '#f472b6' },
-      { dayIndex: 4, dayName: 'Ven', startTime: '09:30', endTime: '12:30', subject: 'Algoritmi Avanzati', room: 'Aula 102', professor: 'Prof. Conti', color: '#a78bfa' }
-    ]
-  }
-];
-
 const MINI_START_HOUR = 8;
 const MINI_END_HOUR = 19;
 const MINI_HOUR_HEIGHT = 40; // px per hour in mini calendar
@@ -79,15 +36,14 @@ const Friends = () => {
   const { currentUser, setIsAuthModalOpen } = useAuth();
 
   const [friends, setFriends] = useState(() => {
-    const saved = safeJsonParse(localStorage.getItem(STORAGE_FRIENDS_KEY), null);
-    if (!saved || saved.length === 0) {
-      return DEFAULT_FRIENDS;
-    }
-    return saved;
+    return safeJsonParse(localStorage.getItem(STORAGE_FRIENDS_KEY), []);
   });
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFriend, setSelectedFriend] = useState(DEFAULT_FRIENDS[0]);
+  const [selectedFriend, setSelectedFriend] = useState(() => {
+    const saved = safeJsonParse(localStorage.getItem(STORAGE_FRIENDS_KEY), []);
+    return saved.length > 0 ? saved[0] : null;
+  });
   const [activeFriendTab, setActiveFriendTab] = useState('exams'); // 'exams' | 'deadlines' | 'schedule' | 'common'
   
   // Add Friend Modal State
@@ -619,10 +575,22 @@ const Friends = () => {
               </div>
             </div>
           ) : (
-            <div className="no-selection-placeholder">
-              <Users size={50} className="placeholder-icon" />
-              <h3>Seleziona un amico dalla lista</h3>
-              <p>Clicca su un profilo a sinistra per visualizzare il suo piano di studi, le sue scadenze e il suo orario lezioni.</p>
+            <div className="no-selection-placeholder empty-friends-welcome">
+              <div className="empty-icon-circle">
+                <Users size={46} />
+              </div>
+              <h3>{friends.length === 0 ? 'Nessun compagno di corso aggiunto' : 'Seleziona un amico dalla lista'}</h3>
+              <p>
+                {friends.length === 0 
+                  ? 'Connettiti con i tuoi colleghi di ateneo tramite il Codice Amico per confrontare i piani di studio, sincronizzare gli orari e vedere quando siete entrambi liberi per studiare.'
+                  : 'Clicca su un profilo a sinistra per visualizzare il suo piano di studi, le sue scadenze e l\'orario delle lezioni.'}
+              </p>
+              {friends.length === 0 && (
+                <button className="primary-btn add-first-friend-btn" onClick={() => setIsAddModalOpen(true)}>
+                  <UserPlus size={18} />
+                  <span>Aggiungi il tuo primo Amico</span>
+                </button>
+              )}
             </div>
           )}
         </div>

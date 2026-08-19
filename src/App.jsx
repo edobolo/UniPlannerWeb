@@ -103,6 +103,54 @@ function MainApp() {
   return (
     <div className="app-root">
       <TitleBar />
+
+      {/* Mobile Top Header */}
+      <header className="mobile-header glass-panel">
+        <div 
+          className="mobile-logo" 
+          onClick={() => setActiveTab('benvenuto')}
+          title="Guida UniPlanner"
+        >
+          <div className="logo-icon">UP</div>
+          <h2>UniPlanner</h2>
+        </div>
+
+        <div className="mobile-header-actions">
+          <button 
+            className={`mobile-icon-btn ${activeTab === 'benvenuto' ? 'active' : ''}`}
+            onClick={() => setActiveTab('benvenuto')}
+            title="Guida"
+          >
+            <Sparkles size={18} className="guide-sparkle-icon" />
+          </button>
+
+          <button 
+            className={`mobile-icon-btn ${activeTab === 'notifiche' ? 'active' : ''}`}
+            onClick={() => setActiveTab('notifiche')}
+            title="Notifiche"
+          >
+            <Bell size={18} />
+          </button>
+
+          <button 
+            className="mobile-icon-btn" 
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Modalità Chiara' : 'Modalità Scura'}
+          >
+            {theme === 'dark' ? <Sun size={18} className="sun-icon" /> : <Moon size={18} className="moon-icon" />}
+          </button>
+
+          <div 
+            className="mobile-user-avatar" 
+            onClick={handleOpenAccount}
+            style={{ background: currentUser?.avatarColor || '#8b5cf6' }}
+            title={currentUser ? currentUser.fullName : "Accedi o registrati"}
+          >
+            {currentUser?.fullName ? currentUser.fullName.charAt(0).toUpperCase() : (currentUser?.username?.charAt(0).toUpperCase() || 'U')}
+          </div>
+        </div>
+      </header>
+
       <div className="app-container">
         <nav className="sidebar glass-panel">
           <div className="sidebar-top">
@@ -327,7 +375,35 @@ function MainApp() {
           )}
         </AnimatePresence>
       </main>
-    </div>
+      </div>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="mobile-bottom-nav glass-panel">
+        {navItems.filter(item => item.id !== 'notifiche').map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              className={`mobile-nav-item ${isActive ? 'active' : ''}`}
+              onClick={() => setActiveTab(item.id)}
+            >
+              <div className="mobile-nav-icon-wrap">
+                <Icon size={20} />
+                {isActive && (
+                  <motion.div 
+                    layoutId="mobile-nav-glow"
+                    className="mobile-nav-glow"
+                    initial={false}
+                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                  />
+                )}
+              </div>
+              <span className="mobile-nav-label">{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
 
     {/* Account Management Modal */}
     <AccountModal onOpenLegal={handleOpenLegal} />

@@ -14,29 +14,9 @@ const AuthContext = createContext();
 const STORAGE_USERS_KEY = 'uniplanner_users_db_v1';
 const STORAGE_SESSION_KEY = 'uniplanner_active_session_v1';
 
-// Default initial student user if none exists
-const DEFAULT_USER = {
-  id: 'usr_main_demo',
-  username: 'edoardo_dev',
-  fullName: 'Edoardo B.',
-  email: 'edoardo@uniplanner.it',
-  university: 'Università degli Studi di Milano',
-  degreeCourse: 'Informatica e Tecnologie Digitali',
-  avatarColor: '#8b5cf6',
-  friendCode: 'UP-7X9K2',
-  bio: 'Studente al 2° anno. Focus su esami di sviluppo e algoritmi.',
-  status: 'In sessione Focus 🎯',
-  shareGrades: true, // Privacy option: toggle sharing grades and average with friends
-  createdAt: new Date().toISOString()
-};
-
 export const AuthProvider = ({ children }) => {
   const [users, setUsers] = useState(() => {
-    const saved = safeJsonParse(localStorage.getItem(STORAGE_USERS_KEY), []);
-    if (!saved || saved.length === 0) {
-      return [DEFAULT_USER];
-    }
-    return saved;
+    return safeJsonParse(localStorage.getItem(STORAGE_USERS_KEY), []);
   });
 
   const [currentUser, setCurrentUser] = useState(() => {
@@ -44,7 +24,7 @@ export const AuthProvider = ({ children }) => {
     if (session && session.id) {
       return session;
     }
-    return DEFAULT_USER;
+    return null;
   });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);

@@ -477,3 +477,39 @@
   background: var(--modal-bg);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
 }
+
+/* Mobile & Smartphone Responsive Rules */
+@media (max-width: 768px) {
+  .exams-modern-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .modern-add-bar {
+    flex-direction: column;
+    border-radius: 18px;
+    padding: 14px;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .quick-params {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .add-action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .exams-modern-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

@@ -171,3 +171,32 @@
   color: var(--text-secondary);
   font-style: italic;
 }
+
+/* Mobile & Smartphone Responsive Rules */
+@media (max-width: 768px) {
+  .grades-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  .goals-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  .stat-card {
+    padding: 16px;
+    gap: 14px;
+  }
+
+  .chart-container {
+    padding: 16px 12px;
+    min-height: 250px;
+  }
+}

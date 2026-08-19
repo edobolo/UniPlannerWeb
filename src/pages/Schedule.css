@@ -718,4 +718,48 @@
   background: linear-gradient(135deg, #38bdf8, #818cf8);
 }
 
+/* Mobile & Smartphone Responsive Rules */
+@media (max-width: 768px) {
+  .gcal-schedule-container {
+    height: auto;
+    min-height: calc(100vh - 160px);
+    border-radius: 14px;
+  }
+
+  .gcal-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 12px 14px;
+  }
+
+  .gcal-header-left, .gcal-header-right {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .gcal-title {
+    font-size: 15px;
+  }
+
+  .gcal-viewport {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .gcal-days-header-row, .gcal-body-scroll {
+    min-width: 620px;
+  }
+
+  .lesson-event-card {
+    padding: 3px 5px;
+  }
+
+  .event-title {
+    font-size: 11px;
+  }
+}
+
 

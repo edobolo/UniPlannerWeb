@@ -952,3 +952,86 @@
   border: 1px solid rgba(16, 185, 129, 0.25);
   color: #10b981;
 }
+
+/* Empty friends welcome styling */
+.empty-friends-welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 24px;
+  gap: 12px;
+}
+
+.empty-icon-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(59, 130, 246, 0.15));
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a78bfa;
+  margin-bottom: 8px;
+}
+
+.add-first-friend-btn {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Mobile & Smartphone Responsive Rules */
+@media (max-width: 768px) {
+  .friends-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .header-actions-group,
+  .friends-header-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .my-friend-code-card {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .add-friend-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .friends-layout-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px;
+  }
+
+  .friends-sidebar-panel {
+    max-height: 240px;
+  }
+
+  .friend-stats-strip {
+    grid-template-columns: 1fr !important;
+    gap: 8px;
+  }
+
+  .friend-nav-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+  }
+
+  .f-tab {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}
