@@ -188,16 +188,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
-   * Logout Completo & Pulizia Dati
+   * Logout Completo & Pulizia Dati Totale
    */
   const logout = () => {
     setCurrentUser(null);
-    localStorage.removeItem(STORAGE_SESSION_KEY);
-    localStorage.removeItem('uniplanner_exams');
-    localStorage.removeItem('uniplanner_schedule_v1');
-    localStorage.removeItem('uniplanner_deadlines');
-    localStorage.removeItem('uniplanner_friends_db_v2');
-    localStorage.removeItem('uniplanner_notifications');
+    try {
+      localStorage.clear();
+    } catch (e) {}
     
     // Ricarica la pagina per resettare completamente l'interfaccia a 0
     window.location.reload();

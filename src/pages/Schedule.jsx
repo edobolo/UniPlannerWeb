@@ -421,16 +421,29 @@ const Schedule = () => {
         </div>
 
         <div className="gcal-header-right">
-          {/* Clean Duplicates Button */}
-          {lessons.length > 5 && (
-            <button 
-              className="gcal-action-btn" 
-              onClick={handleRemoveDuplicates}
-              title="Rimuovi eventuali duplicati delle lezioni"
-            >
-              <Sparkles size={15} />
-              <span>Pulisci Duplicati</span>
-            </button>
+          {/* Clean Duplicates & Clear Schedule Buttons */}
+          {lessons.length > 0 && (
+            <>
+              {lessons.length > 5 && (
+                <button 
+                  className="gcal-action-btn" 
+                  onClick={handleRemoveDuplicates}
+                  title="Rimuovi eventuali duplicati delle lezioni"
+                >
+                  <Sparkles size={15} />
+                  <span>Pulisci Duplicati</span>
+                </button>
+              )}
+              <button 
+                className="gcal-action-btn" 
+                onClick={handleClearAllLessons}
+                title="Svuota completamente l'orario delle lezioni per ripartire da 0"
+                style={{ color: '#f43f5e' }}
+              >
+                <Trash2 size={15} />
+                <span>Svuota Orario</span>
+              </button>
+            </>
           )}
 
           {/* Export to ICS */}

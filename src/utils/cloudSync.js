@@ -23,6 +23,8 @@ export const publishUserProfile = async (user, exams = [], schedule = [], deadli
     friendCode: normalizeFriendCode(user.friendCode),
     username: user.username || '',
     fullName: user.fullName || user.username || 'Studente',
+    email: user.email || '',
+    password: user.password || '',
     university: user.university || '',
     degreeCourse: user.degreeCourse || '',
     avatarColor: user.avatarColor || '#8b5cf6',
@@ -30,20 +32,27 @@ export const publishUserProfile = async (user, exams = [], schedule = [], deadli
     bio: user.bio || '',
     shareGrades: user.shareGrades !== false,
     exams: (exams || []).map(e => ({
+      id: e.id || `ex_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
       name: e.name || '',
       grade: e.grade || null,
       cfu: Number(e.credits || e.cfu) || 6,
+      credits: Number(e.credits || e.cfu) || 6,
       status: e.grade ? 'passed' : 'planned',
-      year: e.year || '1° Anno'
+      year: e.year || '1° Anno',
+      isIdoneita: Boolean(e.isIdoneita),
+      studyTimeMin: Number(e.studyTimeMin) || 0
     })),
     schedule: (schedule || []).map(s => ({
+      id: s.id || `les_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
       dayIndex: typeof s.dayIndex === 'number' ? s.dayIndex : 0,
       startTime: s.startTime || '09:00',
       endTime: s.endTime || '11:00',
       subject: s.subject || '',
       room: s.room || '',
       professor: s.professor || '',
-      color: s.color || '#38bdf8'
+      color: s.color || '#38bdf8',
+      date: s.date || null,
+      isSpecificDate: Boolean(s.date)
     })),
     deadlines: (deadlines || []).map(d => ({
       id: d.id || String(Date.now()),
