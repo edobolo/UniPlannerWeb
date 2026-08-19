@@ -129,7 +129,7 @@ const Pomodoro = () => {
       time: settings.workTime * 60, 
       color: '#ef4444', 
       colorGlow: 'rgba(239, 68, 68, 0.35)',
-      badge: '🍅 Concentrazione'
+      badge: '🎯 Concentrazione'
     },
     shortBreak: { 
       label: 'Pausa Corta', 
@@ -174,10 +174,10 @@ const Pomodoro = () => {
   // Document Title update
   useEffect(() => {
     if (isActive) {
-      const modeEmoji = mode === 'pomodoro' ? '🍅' : '☕';
+      const modeEmoji = mode === 'pomodoro' ? '🎯' : '☕';
       document.title = `(${formatTime(timeLeft)}) ${modeEmoji} ${MODES[mode].label} - UniPlanner`;
     } else {
-      document.title = 'Pomodoro Timer - UniPlanner';
+      document.title = 'Timer Studio - UniPlanner';
     }
     return () => {
       document.title = 'UniPlanner';
@@ -221,7 +221,7 @@ const Pomodoro = () => {
 
     // 2. Desktop notification
     if (settings.desktopNotifications && 'Notification' in window && Notification.permission === 'granted') {
-      const title = mode === 'pomodoro' ? '🍅 Pomodoro Completato!' : '☕ Pausa Terminata!';
+      const title = mode === 'pomodoro' ? '🎯 Sessione Focus Completata!' : '☕ Pausa Terminata!';
       const body = mode === 'pomodoro' 
         ? 'Grande lavoro! Prenditi una meritata pausa.' 
         : 'Pausa finita! Pronto per un nuovo blocco di concentrazione?';
@@ -417,7 +417,7 @@ const Pomodoro = () => {
       {/* Header with Stats & Actions */}
       <header className="pomodoro-header">
         <div className="header-left">
-          <h1 className="page-title">Pomodoro Timer</h1>
+          <h1 className="page-title">Timer Studio</h1>
           <p className="page-subtitle">Massimizza la concentrazione, sincronizza lo studio</p>
         </div>
 
@@ -633,7 +633,7 @@ const Pomodoro = () => {
             <div className="daily-stats-row">
               <div className="stat-box">
                 <span className="stat-number">{stats.todaySessions}</span>
-                <span className="stat-desc">🍅 Pomodori</span>
+                <span className="stat-desc">🎯 Sessioni Focus</span>
               </div>
               <div className="stat-divider" />
               <div className="stat-box">
@@ -758,7 +758,7 @@ const Pomodoro = () => {
                 <div className="zen-timer-display">
                   <span className="zen-time-text">{formatTime(timeLeft)}</span>
                   <span className="zen-cycle-text">
-                    Pomodoro {(pomodoroCount % settings.longBreakInterval) + 1} di {settings.longBreakInterval}
+                    Sessione {(pomodoroCount % settings.longBreakInterval) + 1} di {settings.longBreakInterval}
                   </span>
                 </div>
               </div>
@@ -785,7 +785,7 @@ const Pomodoro = () => {
                 <div className="zen-ambient-options">
                   {AMBIENT_OPTIONS.map(opt => (
                     <button 
-                      key={opt.id}
+                      key={opt.id} 
                       className={`zen-ambient-chip ${ambientSound === opt.id ? 'active' : ''}`}
                       onClick={() => handleAmbientSoundChange(opt.id)}
                     >
@@ -810,7 +810,7 @@ const Pomodoro = () => {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
             >
               <div className="modal-header-custom">
-                <h2>Impostazioni Pomodoro</h2>
+                <h2>Impostazioni Timer</h2>
                 <button className="icon-btn" onClick={() => setIsSettingsOpen(false)}>
                   <X size={20} />
                 </button>
@@ -818,7 +818,6 @@ const Pomodoro = () => {
 
               <form onSubmit={handleSaveSettings}>
                 <div className="settings-section">
-                  <h3>⏱️ Durata Fasi (Minuti)</h3>
                   <div className="settings-inputs-grid">
                     <div className="form-group">
                       <label>Focus (Lavoro)</label>

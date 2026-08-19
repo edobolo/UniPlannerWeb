@@ -1,0 +1,96 @@
+.electron-titlebar {
+  height: 38px;
+  background: var(--bg-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+  border-bottom: 1px solid var(--glass-border);
+  position: relative;
+  z-index: 99999;
+}
+
+.titlebar-drag-region {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding-left: 16px;
+  -webkit-app-region: drag;
+}
+
+.titlebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.titlebar-logo {
+  background: linear-gradient(135deg, var(--accent-primary), #8b5cf6);
+  color: white;
+  font-weight: 700;
+  font-size: 11px;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.titlebar-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.2px;
+}
+
+.titlebar-controls {
+  display: flex;
+  height: 100%;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-btn {
+  width: 48px;
+  height: 100%;
+  background: transparent;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+}
+
+.titlebar-btn svg {
+  color: var(--text-primary);
+  opacity: 0.85;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.titlebar-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.titlebar-btn:hover svg {
+  opacity: 1;
+}
+
+.titlebar-btn.close-btn {
+  color: var(--text-primary);
+}
+
+.titlebar-btn.close-btn:hover {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+.titlebar-btn.close-btn:hover svg {
+  color: #ffffff !important;
+  opacity: 1;
+  transform: scale(1.1);
+}
