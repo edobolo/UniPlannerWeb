@@ -56,6 +56,7 @@ const AccountModal = ({ onOpenLegal }) => {
     shareGrades: true
   });
 
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
