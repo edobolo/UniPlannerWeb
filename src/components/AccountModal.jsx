@@ -16,7 +16,9 @@ import {
   X, 
   Edit3,
   AlertCircle,
-  Scale
+  Scale,
+  Bell,
+  BellOff
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { generateShareLink } from '../utils/cloudSync';
@@ -61,6 +63,17 @@ const AccountModal = ({ onOpenLegal }) => {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+    const saved = localStorage.getItem('uniplanner_notif_enabled');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  const toggleNotifSetting = () => {
+    const nextVal = !notificationsEnabled;
+    setNotificationsEnabled(nextVal);
+    localStorage.setItem('uniplanner_notif_enabled', JSON.stringify(nextVal));
+  };
 
   if (!isAuthModalOpen) return null;
 
@@ -306,6 +319,32 @@ const AccountModal = ({ onOpenLegal }) => {
                     onClick={toggleGradePrivacyQuick}
                   >
                     {currentUser.shareGrades !== false ? 'Nascondi i miei voti agli amici' : 'Condividi voti con gli amici'}
+                  </button>
+                </div>
+
+                {/* Notification Settings Card */}
+                <div className="profile-privacy-box" style={{ marginTop: '12px' }}>
+                  <div className="privacy-box-header">
+                    <div className="privacy-title-group">
+                      {notificationsEnabled ? <Bell size={15} className="privacy-icon" style={{ color: '#38bdf8' }} /> : <BellOff size={15} className="privacy-icon" style={{ color: '#ef4444' }} />}
+                      <span className="privacy-title">Notifiche & Avvisi App</span>
+                    </div>
+                    <span className={`privacy-badge ${notificationsEnabled ? 'shared' : 'hidden'}`}>
+                      {notificationsEnabled ? '🔔 Attive (ON)' : '🔕 Disattivate (OFF)'}
+                    </span>
+                  </div>
+                  <p className="privacy-desc">
+                    {notificationsEnabled 
+                      ? 'Ricevi avvisi per lezioni imminenti, scadenze dei compiti ed esami.'
+                      : 'Notifiche e suoni disattivati. Nessun avviso pop-up verrà mostrato.'}
+                  </p>
+                  <button 
+                    type="button" 
+                    className="privacy-toggle-btn"
+                    onClick={toggleNotifSetting}
+                    style={{ borderColor: notificationsEnabled ? 'rgba(239, 68, 68, 0.4)' : 'rgba(56, 189, 248, 0.4)', color: notificationsEnabled ? '#ef4444' : '#38bdf8' }}
+                  >
+                    {notificationsEnabled ? 'Disattiva Notifiche' : 'Attiva Notifiche'}
                   </button>
                 </div>
 

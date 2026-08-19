@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, CheckCircle2, Info, AlertCircle, X, Trash2 } from 'lucide-react';
+import { Bell, BellOff, CheckCircle2, Info, AlertCircle, X, Trash2, Volume2, VolumeX } from 'lucide-react';
 import './Notifications.css';
 
 const MOCK_NOTIFICATIONS = [
@@ -14,6 +14,17 @@ const Notifications = () => {
     const saved = localStorage.getItem('uniplanner_notifications');
     return saved ? JSON.parse(saved) : MOCK_NOTIFICATIONS;
   });
+
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+    const saved = localStorage.getItem('uniplanner_notif_enabled');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  const toggleNotifications = () => {
+    const nextVal = !notificationsEnabled;
+    setNotificationsEnabled(nextVal);
+    localStorage.setItem('uniplanner_notif_enabled', JSON.stringify(nextVal));
+  };
 
   const clearAll = () => {
     setNotifications([]);
@@ -46,13 +57,55 @@ const Notifications = () => {
           <h1 className="page-title">Centro Notifiche</h1>
           <p className="page-subtitle">Rimani aggiornato su scadenze ed eventi</p>
         </div>
-        {notifications.length > 0 && (
-          <button className="ghost-btn danger-text" onClick={clearAll}>
-            <Trash2 size={18} />
-            <span>Pulisci Tutto</span>
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          {notifications.length > 0 && (
+            <button className="ghost-btn danger-text" onClick={clearAll}>
+              <Trash2 size={18} />
+              <span>Pulisci Tutto</span>
+            </button>
+          )}
+        </div>
       </header>
+
+      {/* Notification Toggle Control Banner */}
+      <div className="notif-settings-banner glass-panel">
+        <div className="notif-settings-left">
+          {notificationsEnabled ? (
+            <div className="notif-status-badge active">
+              <Bell size={20} />
+            </div>
+          ) : (
+            <div className="notif-status-badge disabled">
+              <BellOff size={20} />
+            </div>
+          )}
+          <div>
+            <h3>Notifiche di Sistema & Avvisi</h3>
+            <p>
+              {notificationsEnabled 
+                ? 'Le notifiche per lezioni, pomodoro e scadenze imminenti sono attive.' 
+                : 'Notifiche disattivate. Non riceverai pop-up o avvisi sonori.'}
+            </p>
+          </div>
+        </div>
+        
+        <button 
+          className={`toggle-notif-btn ${notificationsEnabled ? 'active' : 'off'}`}
+          onClick={toggleNotifications}
+        >
+          {notificationsEnabled ? (
+            <>
+              <Volume2 size={16} />
+              <span>Attive (ON)</span>
+            </>
+          ) : (
+            <>
+              <VolumeX size={16} />
+              <span>Disattivate (OFF)</span>
+            </>
+          )}
+        </button>
+      </div>
 
       <div className="notifications-list">
         <AnimatePresence>
