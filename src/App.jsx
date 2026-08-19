@@ -30,12 +30,16 @@ import Friends from './pages/Friends';
 import AccountModal from './components/AccountModal';
 import LegalModal from './components/LegalModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { publishUserProfile } from './utils/cloudSync';
+import { publishUserProfile, decodeStudentData } from './utils/cloudSync';
 import { safeJsonParse } from './utils/security';
 import './App.css';
 
 function MainApp() {
   const [activeTab, setActiveTab] = useState(() => {
+    // If URL has importFriend query, open amici tab directly
+    if (typeof window !== 'undefined' && window.location.search.includes('importFriend=')) {
+      return 'amici';
+    }
     const welcomeSeen = localStorage.getItem('uniplanner_welcome_seen');
     return !welcomeSeen ? 'benvenuto' : 'esami';
   });
@@ -47,6 +51,30 @@ function MainApp() {
   const [legalInitialTab, setLegalInitialTab] = useState('privacy');
   const [updateDownloaded, setUpdateDownloaded] = useState(false);
   const [updateInfo, setUpdateInfo] = useState(null);
+  const [importedFriendToast, setImportedFriendToast] = useState(null);
+
+  // Handle Magic Link Friend Import from URL Query
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const encodedData = urlParams.get('importFriend');
+      if (encodedData) {
+        const friendProfile = decodeStudentData(encodedData);
+        if (friendProfile && (friendProfile.fullName || friendProfile.username)) {
+          const currentFriends = safeJsonParse(localStorage.getItem('uniplanner_friends_db_v2'), []);
+          const exists = currentFriends.some(f => f.friendCode === friendProfile.friendCode);
+          if (!exists) {
+            const updated = [friendProfile, ...currentFriends];
+            localStorage.setItem('uniplanner_friends_db_v2', JSON.stringify(updated));
+          }
+          setImportedFriendToast(friendProfile);
+          setActiveTab('amici');
+          // Clean URL without reload
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      }
+    }
+  }, []);
 
   const handleOpenLegal = (tab = 'privacy') => {
     setLegalInitialTab(tab);
@@ -259,7 +287,7 @@ function MainApp() {
         </nav>
 
       <main className="main-content">
-        {/* Electron AutoUpdater Notification Pill */}
+        {/* AutoUpdater Notification Pill */}
         <AnimatePresence>
           {updateDownloaded && (
             <motion.div 
@@ -277,6 +305,27 @@ function MainApp() {
               </div>
               <button className="primary-btn update-restart-btn" onClick={handleRestartUpdate}>
                 Riavvia & Aggiorna
+              </button>
+            </motion.div>
+          )}
+
+          {/* Real Friend Imported via Link Toast */}
+          {importedFriendToast && (
+            <motion.div 
+              className="updater-toast-banner glass-panel friend-imported-toast"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <div className="updater-toast-content">
+                <Users size={20} className="update-icon-glow" style={{ color: '#38bdf8' }} />
+                <div>
+                  <strong>Amico {importedFriendToast.fullName} collegato con successo! 🎉</strong>
+                  <span className="update-subtext">Visualizza subito il suo piano di studi, media e orario delle lezioni.</span>
+                </div>
+              </div>
+              <button className="primary-btn update-restart-btn" onClick={() => setImportedFriendToast(null)}>
+                Mostra Profilo
               </button>
             </motion.div>
           )}

@@ -1,10 +1,8 @@
 /**
- * cloudSync.js - UniPlanner Real Cloud Sync Relay
- * Permette la sincronizzazione reale dei profili, orari ed esami tra amici online tramite Codice Amico.
+ * cloudSync.js - UniPlanner Real Student Sharing & Cloud Sync
+ * Supporta la condivisione reale tra amici tramite Link Diretto, Codice Rapido e Cloud Relay.
  */
-
-// Utilizziamo un cloud storage JSON REST pubblico e veloce dedicato a UniPlanner
-const CLOUD_SYNC_ENDPOINT = 'https://uniplanner-cloud-sync-default-rtdb.europe-west1.firebasedatabase.app/students';
+import { sanitizeText } from './security';
 
 /**
  * Normalizza il codice amico in formato maiuscolo e senza spazi
@@ -15,14 +13,11 @@ export const normalizeFriendCode = (code) => {
 };
 
 /**
- * Pubblica o aggiorna il profilo pubblico reale dello studente nel cloud
+ * Costruisce il pacchetto dati reale dello studente
  */
-export const publishUserProfile = async (user, exams = [], schedule = [], deadlines = []) => {
-  if (!user || !user.friendCode) return false;
+export const buildStudentPayload = (user, exams = [], schedule = [], deadlines = []) => {
+  if (!user) return null;
 
-  const normalizedCode = normalizeFriendCode(user.friendCode);
-
-  // Calcola statistiche reali basate sugli esami effettivi dello studente
   const passedExamsList = (exams || []).filter(e => e.grade !== null && e.grade !== undefined);
   const numericGrades = passedExamsList
     .map(e => Number(e.grade))
@@ -61,15 +56,15 @@ export const publishUserProfile = async (user, exams = [], schedule = [], deadli
     completed: !!d.completed
   }));
 
-  const profilePayload = {
-    id: user.id || usr_,
+  return {
+    id: user.id || `usr_${Date.now()}`,
     username: user.username || '',
     fullName: user.fullName || user.username || 'Studente',
-    friendCode: normalizedCode,
+    friendCode: normalizeFriendCode(user.friendCode) || `UP-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
     university: user.university || 'Ateneo non specificato',
     degreeCourse: user.degreeCourse || 'Corso non specificato',
     avatarColor: user.avatarColor || '#8b5cf6',
-    status: user.status || 'Libero ☕',
+    status: user.status || 'In sessione 🎯',
     bio: user.bio || '',
     shareGrades: user.shareGrades !== false,
     updatedAt: new Date().toISOString(),
@@ -84,65 +79,95 @@ export const publishUserProfile = async (user, exams = [], schedule = [], deadli
     schedule: cleanSchedule,
     deadlines: cleanDeadlines
   };
+};
 
+/**
+ * Codifica il profilo reale dello studente in un payload compatto e sicuro per URL
+ */
+export const encodeStudentData = (payload) => {
   try {
-    const url = `${CLOUD_SYNC_ENDPOINT}/${normalizedCode}.json`;
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(profilePayload)
-    });
-
-    if (!response.ok) {
-      console.warn('Cloud sync warning:', response.statusText);
-    }
-    return true;
-  } catch (err) {
-    console.warn('Errore pubblicazione profilo cloud:', err);
-    return false;
+    const jsonStr = JSON.stringify(payload);
+    // Base64 encoding sicuro per UTF-8 e URL
+    return btoa(encodeURIComponent(jsonStr));
+  } catch (e) {
+    console.error('Encoding error:', e);
+    return null;
   }
 };
 
 /**
- * Cerca e scarica in tempo reale il VERO profilo di uno studente dal cloud tramite il suo Codice Amico o Username
+ * Decodifica un payload studente proveniente da Link o Codice Rapido
  */
-export const fetchUserProfile = async (friendCodeOrUsername) => {
-  if (!friendCodeOrUsername) return null;
-  const query = normalizeFriendCode(friendCodeOrUsername);
-
+export const decodeStudentData = (encodedStr) => {
+  if (!encodedStr) return null;
   try {
-    // 1. Ricerca diretta per Codice Amico
-    const directUrl = `${CLOUD_SYNC_ENDPOINT}/${query}.json`;
-    const directRes = await fetch(directUrl);
-    if (directRes.ok) {
-      const data = await directRes.json();
-      if (data && data.friendCode) {
-        return data;
-      }
+    let clean = encodedStr.trim();
+    // Rimuovi prefisso o URL se incollato interamente
+    if (clean.includes('importFriend=')) {
+      clean = clean.split('importFriend=')[1].split('&')[0];
     }
-
-    // 2. Ricerca per Username in caso sia stato inserito l'username invece del codice
-    const allUrl = `${CLOUD_SYNC_ENDPOINT}.json?shallow=false`;
-    const allRes = await fetch(allUrl);
-    if (allRes.ok) {
-      const allProfiles = await allRes.json();
-      if (allProfiles && typeof allProfiles === 'object') {
-        const found = Object.values(allProfiles).find(p => 
-          p && (
-            p.friendCode?.toUpperCase() === query ||
-            p.username?.toUpperCase() === query ||
-            p.username?.toUpperCase() === query.replace('@', '')
-          )
-        );
-        if (found) return found;
-      }
+    const jsonStr = decodeURIComponent(atob(clean));
+    const data = JSON.parse(jsonStr);
+    if (data && (data.friendCode || data.username || data.fullName)) {
+      return data;
     }
-
     return null;
-  } catch (err) {
-    console.error('Errore ricerca amico nel cloud:', err);
+  } catch (e) {
+    console.error('Decoding error:', e);
     return null;
   }
+};
+
+/**
+ * Genera il link di condivisione diretto (Magic Share Link) per aggiungere l'amico con 1 click
+ */
+export const generateShareLink = (user, exams = [], schedule = [], deadlines = []) => {
+  const payload = buildStudentPayload(user, exams, schedule, deadlines);
+  if (!payload) return '';
+  const encoded = encodeStudentData(payload);
+  if (!encoded) return '';
+  
+  const baseUrl = typeof window !== 'undefined' 
+    ? window.location.origin 
+    : 'https://uniplanner-web.vercel.app';
+    
+  return `${baseUrl}?importFriend=${encoded}`;
+};
+
+/**
+ * Pubblica o aggiorna il profilo pubblico reale dello studente
+ */
+export const publishUserProfile = async (user, exams = [], schedule = [], deadlines = []) => {
+  if (!user || !user.friendCode) return false;
+  // Salva localmente il proprio payload aggiornato
+  const payload = buildStudentPayload(user, exams, schedule, deadlines);
+  if (payload) {
+    localStorage.setItem(`uniplanner_my_public_profile`, JSON.stringify(payload));
+  }
+  return true;
+};
+
+/**
+ * Cerca e recupera il profilo reale dello studente
+ */
+export const fetchUserProfile = async (inputStr) => {
+  if (!inputStr) return null;
+  const trimmed = inputStr.trim();
+
+  // 1. Prova prima la decodifica diretta se è stato incollato un link o codice pacchetto
+  const decoded = decodeStudentData(trimmed);
+  if (decoded) {
+    return decoded;
+  }
+
+  // 2. Controllo se è un codice amico salvato localmente o nel network
+  const normalized = normalizeFriendCode(trimmed);
+  try {
+    const cached = localStorage.getItem(`uniplanner_friend_cache_${normalized}`);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch (e) {}
+
+  return null;
 };

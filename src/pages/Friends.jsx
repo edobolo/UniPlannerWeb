@@ -20,11 +20,15 @@ import {
   TrendingUp,
   MapPin,
   Lock,
-  Shield
+  Shield,
+  Share2,
+  ExternalLink,
+  MessageCircle,
+  Link as LinkIcon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { sanitizeText, safeJsonParse } from '../utils/security';
-import { fetchUserProfile, publishUserProfile, normalizeFriendCode } from '../utils/cloudSync';
+import { fetchUserProfile, publishUserProfile, normalizeFriendCode, generateShareLink, decodeStudentData } from '../utils/cloudSync';
 import './Friends.css';
 
 const STORAGE_FRIENDS_KEY = 'uniplanner_friends_db_v2';
@@ -59,10 +63,12 @@ const Friends = () => {
   
   // Add Friend Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [newFriendCode, setNewFriendCode] = useState('');
   const [addError, setAddError] = useState('');
   const [addSuccess, setAddSuccess] = useState('');
   const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
@@ -185,6 +191,29 @@ const Friends = () => {
     return Math.max(26, (durationMinutes / 60) * MINI_HOUR_HEIGHT);
   };
 
+  const handleGetShareLink = () => {
+    if (!currentUser) return '';
+    const savedExams = safeJsonParse(localStorage.getItem('uniplanner_exams'), []);
+    const savedSchedule = safeJsonParse(localStorage.getItem('uniplanner_schedule_v1'), []);
+    const savedDeadlines = safeJsonParse(localStorage.getItem('uniplanner_deadlines'), []);
+    return generateShareLink(currentUser, savedExams, savedSchedule, savedDeadlines);
+  };
+
+  const handleCopyShareLink = () => {
+    const link = handleGetShareLink();
+    if (!link) return;
+    navigator.clipboard.writeText(link);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2200);
+  };
+
+  const handleSendWhatsApp = () => {
+    const link = handleGetShareLink();
+    if (!link) return;
+    const text = encodeURIComponent(`Ciao! Aggiungimi su UniPlanner per visualizzare il mio piano di studi e orario lezioni: ${link}`);
+    window.open(`https://wa.me/?text=${text}`, '_blank');
+  };
+
   return (
     <div className="friends-page-container">
       {/* Top Header */}
@@ -221,6 +250,17 @@ const Friends = () => {
               )}
             </div>
           </div>
+
+          {currentUser && (
+            <button 
+              className="ghost-btn share-profile-btn" 
+              onClick={() => setIsShareModalOpen(true)}
+              title="Condividi il tuo profilo tramite Link o WhatsApp"
+            >
+              <Share2 size={17} />
+              <span>Condividi Profilo</span>
+            </button>
+          )}
 
           <button className="primary-btn add-friend-btn" onClick={() => setIsAddModalOpen(true)}>
             <UserPlus size={18} />
@@ -673,6 +713,61 @@ const Friends = () => {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Share Profile Modal */}
+      <AnimatePresence>
+        {isShareModalOpen && currentUser && (
+          <div className="modal-overlay">
+            <motion.div 
+              className="modal-content glass-panel add-friend-modal share-modal"
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+            >
+              <div className="modal-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Share2 size={20} className="guide-sparkle-icon" />
+                  <h2>Condividi il tuo Profilo</h2>
+                </div>
+                <button className="icon-btn" onClick={() => setIsShareModalOpen(false)}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="share-modal-body">
+                <p className="add-friend-desc">
+                  Invia il tuo link di invito ai tuoi compagni di corso per sincronizzare i vostri orari delle lezioni ed esami con 1 clic:
+                </p>
+
+                {/* Friend Code Display */}
+                <div className="share-code-box">
+                  <span className="share-code-label">Il tuo Codice Amico:</span>
+                  <div className="share-code-row">
+                    <span className="share-code-text">{currentUser.friendCode}</span>
+                    <button className="sm-btn primary-btn" onClick={handleCopyMyCode}>
+                      {copiedCode ? <Check size={14} /> : <Copy size={14} />}
+                      <span>{copiedCode ? 'Copiato!' : 'Copia'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Magic Share Link */}
+                <div className="share-actions-group">
+                  <button className="primary-btn share-action-wide" onClick={handleCopyShareLink}>
+                    <LinkIcon size={16} />
+                    <span>{copiedLink ? 'Link Copiato negli Appunti!' : 'Copia Link Diretto di Invito'}</span>
+                  </button>
+
+                  <button className="ghost-btn whatsapp-share-btn" onClick={handleSendWhatsApp}>
+                    <MessageCircle size={16} />
+                    <span>Invia su WhatsApp</span>
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </div>
         )}
