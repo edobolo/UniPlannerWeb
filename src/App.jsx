@@ -96,19 +96,50 @@ function MainApp() {
     importFromUrl();
   }, [currentUser]);
 
-  // Auto-sync real student profile and schedule to Raspberry Pi cloud backend
+  // Auto-sync real student profile and schedule to Raspberry Pi cloud backend (Smart Bidirectional Sync)
   useEffect(() => {
     if (currentUser && currentUser.friendCode) {
-      try {
-        const savedExams = safeJsonParse(localStorage.getItem('uniplanner_exams'), []);
-        const savedSchedule = safeJsonParse(localStorage.getItem('uniplanner_schedule_v1'), []);
-        const savedDeadlines = safeJsonParse(localStorage.getItem('uniplanner_deadlines'), []);
-        publishUserProfile(currentUser, savedExams, savedSchedule, savedDeadlines);
-      } catch (e) {
-        console.warn('Sync cloud profile err:', e);
-      }
+      const syncWithCloud = async () => {
+        try {
+          // 1. Scarica i dati aggiornati dal Raspberry Pi
+          const cloudData = await fetchUserProfile(currentUser.friendCode);
+          
+          if (cloudData) {
+            const localExams = safeJsonParse(localStorage.getItem('uniplanner_exams'), []);
+            const localSchedule = safeJsonParse(localStorage.getItem('uniplanner_schedule_v1'), []);
+            const localDeadlines = safeJsonParse(localStorage.getItem('uniplanner_deadlines'), []);
+
+            // Se il cloud ha esami e il locale è vuoto, carica dal cloud
+            if ((!localExams || localExams.length === 0) && cloudData.exams && cloudData.exams.length > 0) {
+              localStorage.setItem('uniplanner_exams', JSON.stringify(cloudData.exams));
+            } else if (localExams && localExams.length > 0) {
+              // Se abbiamo esami locali, sincronizza verso il cloud
+              publishUserProfile(currentUser, localExams, localSchedule, localDeadlines);
+            }
+
+            // Se il cloud ha l'orario e il locale è vuoto, carica dal cloud
+            if ((!localSchedule || localSchedule.length === 0) && cloudData.schedule && cloudData.schedule.length > 0) {
+              const uniqueLessonsMap = new Map();
+              cloudData.schedule.forEach(l => {
+                const key = l.id || `${l.subject}_${l.dayIndex}_${l.startTime}_${l.date || 'weekly'}`;
+                if (!uniqueLessonsMap.has(key)) uniqueLessonsMap.set(key, l);
+              });
+              localStorage.setItem('uniplanner_schedule_v1', JSON.stringify(Array.from(uniqueLessonsMap.values())));
+            }
+
+            // Se il cloud ha scadenze e il locale è vuoto, carica dal cloud
+            if ((!localDeadlines || localDeadlines.length === 0) && cloudData.deadlines && cloudData.deadlines.length > 0) {
+              localStorage.setItem('uniplanner_deadlines', JSON.stringify(cloudData.deadlines));
+            }
+          }
+        } catch (e) {
+          console.warn('Sync cloud initial err:', e);
+        }
+      };
+
+      syncWithCloud();
     }
-  }, [currentUser, activeTab]);
+  }, [currentUser?.friendCode]);
 
   const handleOpenLegal = (tab = 'privacy') => {
     setLegalInitialTab(tab);

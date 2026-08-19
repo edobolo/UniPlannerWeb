@@ -280,6 +280,37 @@ const Schedule = () => {
     }
   };
 
+  const handleRemoveDuplicates = () => {
+    const seen = new Set();
+    const cleanList = [];
+    lessons.forEach(l => {
+      const key = `${(l.subject || '').trim().toLowerCase()}_${l.dayIndex}_${l.startTime}_${l.room || ''}_${l.date || 'weekly'}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        cleanList.push(l);
+      }
+    });
+    setLessons(cleanList);
+    localStorage.setItem(STORAGE_SCHEDULE_KEY, JSON.stringify(cleanList));
+    if (currentUser?.friendCode) {
+      const savedExams = safeJsonParse(localStorage.getItem('uniplanner_exams'), []);
+      const savedDeadlines = safeJsonParse(localStorage.getItem('uniplanner_deadlines'), []);
+      publishUserProfile(currentUser, savedExams, cleanList, savedDeadlines);
+    }
+  };
+
+  const handleClearAllLessons = () => {
+    if (window.confirm('Sei sicuro di voler cancellare tutte le lezioni dall\'orario?')) {
+      setLessons([]);
+      localStorage.setItem(STORAGE_SCHEDULE_KEY, JSON.stringify([]));
+      if (currentUser?.friendCode) {
+        const savedExams = safeJsonParse(localStorage.getItem('uniplanner_exams'), []);
+        const savedDeadlines = safeJsonParse(localStorage.getItem('uniplanner_deadlines'), []);
+        publishUserProfile(currentUser, savedExams, [], savedDeadlines);
+      }
+    }
+  };
+
   // --- Import Handlers ---
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
@@ -390,6 +421,18 @@ const Schedule = () => {
         </div>
 
         <div className="gcal-header-right">
+          {/* Clean Duplicates Button */}
+          {lessons.length > 5 && (
+            <button 
+              className="gcal-action-btn" 
+              onClick={handleRemoveDuplicates}
+              title="Rimuovi eventuali duplicati delle lezioni"
+            >
+              <Sparkles size={15} />
+              <span>Pulisci Duplicati</span>
+            </button>
+          )}
+
           {/* Export to ICS */}
           <button 
             className="gcal-action-btn" 
