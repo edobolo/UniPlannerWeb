@@ -30,6 +30,8 @@ import Friends from './pages/Friends';
 import AccountModal from './components/AccountModal';
 import LegalModal from './components/LegalModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { publishUserProfile } from './utils/cloudSync';
+import { safeJsonParse } from './utils/security';
 import './App.css';
 
 function MainApp() {
@@ -75,6 +77,20 @@ function MainApp() {
       };
     }
   }, [isElectron]);
+
+  // Auto-sync real student profile, study plan and schedule to cloud
+  useEffect(() => {
+    if (currentUser && currentUser.friendCode) {
+      try {
+        const savedExams = safeJsonParse(localStorage.getItem('uniplanner_exams'), []);
+        const savedSchedule = safeJsonParse(localStorage.getItem('uniplanner_schedule_v1'), []);
+        const savedDeadlines = safeJsonParse(localStorage.getItem('uniplanner_deadlines'), []);
+        publishUserProfile(currentUser, savedExams, savedSchedule, savedDeadlines);
+      } catch (e) {
+        console.warn('Sync cloud profile err:', e);
+      }
+    }
+  }, [currentUser, activeTab]);
 
   const toggleTheme = () => {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));

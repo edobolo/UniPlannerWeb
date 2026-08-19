@@ -24,9 +24,10 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { sanitizeText, safeJsonParse } from '../utils/security';
+import { fetchUserProfile, publishUserProfile, normalizeFriendCode } from '../utils/cloudSync';
 import './Friends.css';
 
-const STORAGE_FRIENDS_KEY = 'uniplanner_friends_db_v1';
+const STORAGE_FRIENDS_KEY = 'uniplanner_friends_db_v2';
 
 const MINI_START_HOUR = 8;
 const MINI_END_HOUR = 19;
@@ -36,13 +37,23 @@ const Friends = () => {
   const { currentUser, setIsAuthModalOpen } = useAuth();
 
   const [friends, setFriends] = useState(() => {
-    return safeJsonParse(localStorage.getItem(STORAGE_FRIENDS_KEY), []);
+    // Purge any legacy mock friends
+    const legacy = safeJsonParse(localStorage.getItem('uniplanner_friends_db_v1'), []);
+    const cleanLegacy = legacy.filter(f => f.id !== 'fr_marco' && !f.id?.startsWith('fr_'));
+    if (cleanLegacy.length > 0) {
+      localStorage.setItem(STORAGE_FRIENDS_KEY, JSON.stringify(cleanLegacy));
+    }
+    localStorage.removeItem('uniplanner_friends_db_v1');
+
+    const saved = safeJsonParse(localStorage.getItem(STORAGE_FRIENDS_KEY), []);
+    return saved.filter(f => f.id !== 'fr_marco' && !f.fullName?.includes('(UP-'));
   });
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFriend, setSelectedFriend] = useState(() => {
     const saved = safeJsonParse(localStorage.getItem(STORAGE_FRIENDS_KEY), []);
-    return saved.length > 0 ? saved[0] : null;
+    const clean = saved.filter(f => f.id !== 'fr_marco' && !f.fullName?.includes('(UP-'));
+    return clean.length > 0 ? clean[0] : null;
   });
   const [activeFriendTab, setActiveFriendTab] = useState('exams'); // 'exams' | 'deadlines' | 'schedule' | 'common'
   
@@ -52,10 +63,25 @@ const Friends = () => {
   const [addError, setAddError] = useState('');
   const [addSuccess, setAddSuccess] = useState('');
   const [copiedCode, setCopiedCode] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_FRIENDS_KEY, JSON.stringify(friends));
   }, [friends]);
+
+  // Sync current user's profile to cloud when loaded
+  useEffect(() => {
+    if (currentUser && currentUser.friendCode) {
+      try {
+        const savedExams = safeJsonParse(localStorage.getItem('uniplanner_exams'), []);
+        const savedSchedule = safeJsonParse(localStorage.getItem('uniplanner_schedule_v1'), []);
+        const savedDeadlines = safeJsonParse(localStorage.getItem('uniplanner_deadlines'), []);
+        publishUserProfile(currentUser, savedExams, savedSchedule, savedDeadlines);
+      } catch (e) {
+        console.warn('Sync profile error:', e);
+      }
+    }
+  }, [currentUser]);
 
   const handleCopyMyCode = () => {
     if (!currentUser?.friendCode) return;
@@ -64,71 +90,54 @@ const Friends = () => {
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  const handleAddFriend = (e) => {
+  const handleAddFriend = async (e) => {
     e.preventDefault();
     setAddError('');
     setAddSuccess('');
 
-    const cleanInput = sanitizeText(newFriendCode, 30).trim().toUpperCase();
+    const cleanInput = normalizeFriendCode(newFriendCode);
     if (!cleanInput) {
-      setAddError('Inserisci un codice amico o username valido.');
+      setAddError('Inserisci un codice amico valido (es. UP-AB12C).');
       return;
     }
 
-    if (currentUser && (cleanInput === currentUser.friendCode?.toUpperCase() || cleanInput === currentUser.username?.toUpperCase())) {
+    if (currentUser && (cleanInput === normalizeFriendCode(currentUser.friendCode) || cleanInput === currentUser.username?.toUpperCase())) {
       setAddError('Non puoi aggiungere te stesso come amico.');
       return;
     }
 
     const alreadyFriend = friends.some(
-      f => f.friendCode.toUpperCase() === cleanInput || f.username.toUpperCase() === cleanInput
+      f => normalizeFriendCode(f.friendCode) === cleanInput || f.username?.toUpperCase() === cleanInput
     );
     if (alreadyFriend) {
       setAddError('Questo studente è già presente nella tua lista amici.');
       return;
     }
 
-    // Dynamic test mock generated if custom code entered
-    const newFriend = {
-      id: `fr_${Date.now()}`,
-      username: cleanInput.toLowerCase().replace(/[^a-z0-9_]/g, ''),
-      fullName: `Studente (${cleanInput})`,
-      friendCode: cleanInput.startsWith('UP-') ? cleanInput : `UP-${cleanInput.slice(0, 5)}`,
-      university: 'Università degli Studi',
-      degreeCourse: 'Corso Universitario',
-      avatarColor: '#8b5cf6',
-      status: 'Libero ☕',
-      bio: 'Studente collegato tramite codice amico.',
-      shareGrades: true,
-      stats: {
-        cfu: 60,
-        totalCfu: 180,
-        avgGrade: 27.8,
-        passedExams: 10,
-        totalExams: 22
-      },
-      exams: [
-        { name: 'Esame di Indirizzo I', grade: 28, cfu: 6, status: 'passed' },
-        { name: 'Esame di Indirizzo II', grade: 29, cfu: 9, status: 'passed' },
-        { name: 'Prossimo Appello', grade: null, cfu: 9, status: 'planned', date: '2026-09-18' }
-      ],
-      deadlines: [
-        { id: `d_${Date.now()}`, title: 'Sessione di Studio Condivisa', date: '2026-09-01', tag: 'Studio', color: '#38bdf8' }
-      ],
-      schedule: [
-        { dayIndex: 0, dayName: 'Lun', startTime: '10:00', endTime: '12:00', subject: 'Lezione Corso I', room: 'Aula 1', professor: 'Docente', color: '#38bdf8' },
-        { dayIndex: 2, dayName: 'Mer', startTime: '14:00', endTime: '16:00', subject: 'Laboratorio', room: 'Lab 2', professor: 'Docente', color: '#10b981' }
-      ]
-    };
+    setIsSearching(true);
+    try {
+      // Cerca il VERO profilo dell'amico nel cloud
+      const realFriendProfile = await fetchUserProfile(cleanInput);
 
-    setFriends(prev => [newFriend, ...prev]);
-    setSelectedFriend(newFriend);
-    setAddSuccess(`Amico ${newFriend.fullName} aggiunto con successo!`);
-    setNewFriendCode('');
-    setTimeout(() => {
-      setIsAddModalOpen(false);
-      setAddSuccess('');
-    }, 1200);
+      if (!realFriendProfile) {
+        setAddError(`Nessun account trovato per il codice "${cleanInput}". Chiedi al tuo amico di registrarsi su UniPlanner e di condividerti il suo Codice Amico esatto.`);
+        setIsSearching(false);
+        return;
+      }
+
+      setFriends(prev => [realFriendProfile, ...prev]);
+      setSelectedFriend(realFriendProfile);
+      setAddSuccess(`Amico ${realFriendProfile.fullName || realFriendProfile.username} aggiunto con successo!`);
+      setNewFriendCode('');
+      setTimeout(() => {
+        setIsAddModalOpen(false);
+        setAddSuccess('');
+      }, 1200);
+    } catch (err) {
+      setAddError('Impossibile raggiungere il server di sincronizzazione. Verifica la connessione e riprova.');
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const handleRemoveFriend = (friendId) => {
@@ -655,12 +664,12 @@ const Friends = () => {
                 )}
 
                 <div className="modal-actions-custom">
-                  <button type="button" className="ghost-btn" onClick={() => setIsAddModalOpen(false)}>
+                  <button type="button" className="ghost-btn" onClick={() => setIsAddModalOpen(false)} disabled={isSearching}>
                     Annulla
                   </button>
-                  <button type="submit" className="primary-btn">
+                  <button type="submit" className="primary-btn" disabled={isSearching}>
                     <UserPlus size={16} />
-                    <span>Conferma e Aggiungi</span>
+                    <span>{isSearching ? 'Ricerca in corso...' : 'Cerca e Aggiungi'}</span>
                   </button>
                 </div>
               </form>
