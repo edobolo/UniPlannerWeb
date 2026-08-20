@@ -29,6 +29,7 @@ import {
 import { Line } from 'react-chartjs-2';
 import { useAuth } from '../context/AuthContext';
 import { exportLibrettoToPDF } from '../utils/pdfExport';
+import { safeJsonParse } from '../utils/security';
 import { 
   UNIVERSITY_DEGREE_PRESETS, 
   calculateDegreeProjection, 
@@ -47,12 +48,32 @@ ChartJS.register(
   Filler
 );
 
-const Grades = ({ exams = [] }) => {
+const Grades = ({ exams: propExams }) => {
   const { currentUser, isPro, unlockPro } = useAuth();
+
+  const [exams, setExams] = useState(() => {
+    if (propExams && propExams.length > 0) return propExams;
+    const saved = localStorage.getItem('uniplanner_exams');
+    return saved ? safeJsonParse(saved, []) : [];
+  });
+
+  useEffect(() => {
+    if (propExams && propExams.length > 0) {
+      setExams(propExams);
+    } else {
+      const loadExams = () => {
+        const saved = localStorage.getItem('uniplanner_exams');
+        setExams(saved ? safeJsonParse(saved, []) : []);
+      };
+      loadExams();
+      window.addEventListener('storage', loadExams);
+      return () => window.removeEventListener('storage', loadExams);
+    }
+  }, [propExams]);
 
   const [settings, setSettings] = useState(() => {
     const saved = localStorage.getItem('uniplanner_settings');
-    return saved ? JSON.parse(saved) : { targetGrade: 28, targetCfu: 180, lodeBonus: 0.5 };
+    return saved ? safeJsonParse(saved, { targetGrade: 28, targetCfu: 180, lodeBonus: 0.5 }) : { targetGrade: 28, targetCfu: 180, lodeBonus: 0.5 };
   });
 
   // Degree Simulator Pro State
@@ -71,10 +92,7 @@ const Grades = ({ exams = [] }) => {
 
   useEffect(() => {
     localStorage.setItem('uniplanner_settings', JSON.stringify(settings));
-    if (currentUser?.university) {
-      // Sync settings if present
-    }
-  }, [settings, currentUser]);
+  }, [settings]);
 
   const [currentTheme, setCurrentTheme] = useState(() => document.documentElement.getAttribute('data-theme') || 'dark');
   const [currentAccent, setCurrentAccent] = useState(() => {
@@ -107,21 +125,23 @@ const Grades = ({ exams = [] }) => {
   };
 
   // Calculations
-  const completedExams = exams.filter(e => e.grade !== null);
+  const completedExams = exams.filter(e => e.grade !== null && e.grade !== undefined && e.grade !== '');
   const gradedExams = completedExams.filter(e => e.grade !== 'IDONEO');
 
-  const totalCfu = completedExams.reduce((acc, curr) => acc + (curr.credits || 0), 0);
-  const gradedCfu = gradedExams.reduce((acc, curr) => acc + (curr.credits || 0), 0);
+  const totalCfu = completedExams.reduce((acc, curr) => acc + (Number(curr.credits || curr.cfu) || 0), 0);
+  const gradedCfu = gradedExams.reduce((acc, curr) => acc + (Number(curr.credits || curr.cfu) || 0), 0);
   
-  const lodeCount = gradedExams.filter(e => e.grade === '30L').length;
+  const lodeCount = gradedExams.filter(e => e.grade === '30L' || e.grade === '30 e lode' || e.grade === '30 e Lode').length;
   
   const sumPonderata = gradedExams.reduce((acc, curr) => {
-    const val = curr.grade === '30L' ? 31 : Number(curr.grade);
-    return acc + (val * (curr.credits || 0));
+    const isLode = (curr.grade === '30L' || curr.grade === '30 e lode' || curr.grade === '30 e Lode');
+    const val = isLode ? 31 : Number(curr.grade);
+    return acc + (val * (Number(curr.credits || curr.cfu) || 0));
   }, 0);
 
   const sumAritmetica = gradedExams.reduce((acc, curr) => {
-    const val = curr.grade === '30L' ? 30 : Number(curr.grade);
+    const isLode = (curr.grade === '30L' || curr.grade === '30 e lode' || curr.grade === '30 e Lode');
+    const val = isLode ? 30 : Number(curr.grade);
     return acc + val;
   }, 0);
 
