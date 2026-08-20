@@ -25,6 +25,19 @@ import { generateShareLink, resetUserPassword } from '../utils/cloudSync';
 import { safeJsonParse } from '../utils/security';
 import './AccountModal.css';
 
+export const FACULTY_PALETTES = [
+  { id: 'default', name: 'UniPlanner Classic', color: '#3b82f6', icon: '🌌', desc: 'Blu Spaziale Moderno' },
+  { id: 'engineering', name: 'Ingegneria / Architettura / Tech', color: '#0284c7', icon: '⚙️', desc: 'Ciano & Cobalto' },
+  { id: 'medicine', name: 'Medicina / Sanità / Farmacia', color: '#e11d48', icon: '🩺', desc: 'Rosso Rubino' },
+  { id: 'economics', name: 'Economia / Finanza / Management', color: '#d97706', icon: '📈', desc: 'Oro & Ambra' },
+  { id: 'law', name: 'Giurisprudenza / Diritto / Legge', color: '#6366f1', icon: '⚖️', desc: 'Indaco Istituzionale' },
+  { id: 'humanities', name: 'Lettere / Filosofia / Lingue', color: '#8b5cf6', icon: '🏛️', desc: 'Viola Ametista' },
+  { id: 'science', name: 'Scienze MFN / Biologia / Agraria', color: '#059669', icon: '🔬', desc: 'Verde Smeraldo' },
+  { id: 'politics', name: 'Scienze Politiche / Sociologia', color: '#ea580c', icon: '🌍', desc: 'Arancione Corallo' },
+  { id: 'psychology', name: 'Psicologia / Scienze Formazione', color: '#db2777', icon: '🧠', desc: 'Rosa Fucsia' },
+  { id: 'amoled', name: 'AMOLED Pure Black (OLED Eco)', color: '#38bdf8', icon: '🖤', desc: 'Nero Assoluto Batteria' },
+];
+
 const AccountModal = ({ onOpenLegal }) => {
   const { 
     currentUser, 
@@ -65,6 +78,16 @@ const AccountModal = ({ onOpenLegal }) => {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const [activePalette, setActivePalette] = useState(() => {
+    return localStorage.getItem('uniplanner_palette') || 'default';
+  });
+
+  const handleSelectPalette = (palId) => {
+    setActivePalette(palId);
+    document.documentElement.setAttribute('data-palette', palId);
+    localStorage.setItem('uniplanner_palette', palId);
+  };
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
     const saved = localStorage.getItem('uniplanner_notif_enabled');
@@ -371,6 +394,42 @@ const AccountModal = ({ onOpenLegal }) => {
                   >
                     {notificationsEnabled ? 'Disattiva Notifiche' : 'Attiva Notifiche'}
                   </button>
+                </div>
+
+                {/* 🎨 Faculty Color Palette Picker */}
+                <div className="palette-section">
+                  <div className="palette-section-header">
+                    <span className="palette-title">
+                      <Sparkles size={14} style={{ color: 'var(--accent-primary)' }} />
+                      Tema & Colore Facoltà
+                    </span>
+                    <span className="palette-subtitle">Personalizza i colori dell'app</span>
+                  </div>
+                  <div className="palette-grid">
+                    {FACULTY_PALETTES.map((pal) => {
+                      const isSelected = activePalette === pal.id;
+                      return (
+                        <button
+                          key={pal.id}
+                          type="button"
+                          className={`palette-card ${isSelected ? 'active' : ''}`}
+                          onClick={() => handleSelectPalette(pal.id)}
+                          title={`${pal.name} - ${pal.desc}`}
+                        >
+                          <div 
+                            className="palette-color-swatch" 
+                            style={{ backgroundColor: pal.color }}
+                          >
+                            <span>{pal.icon}</span>
+                          </div>
+                          <div className="palette-info">
+                            <span className="palette-name">{pal.name}</span>
+                            <span className="palette-sub">{pal.desc}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {currentUser.bio && (

@@ -147,11 +147,20 @@ function MainApp() {
     setIsLegalModalOpen(true);
   };
 
+  const [palette, setPalette] = useState(() => {
+    return localStorage.getItem('uniplanner_palette') || 'default';
+  });
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.style.colorScheme = theme;
     localStorage.setItem('uniplanner_theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-palette', palette);
+    localStorage.setItem('uniplanner_palette', palette);
+  }, [palette]);
 
   // Electron Auto-Updater listener
   useEffect(() => {
