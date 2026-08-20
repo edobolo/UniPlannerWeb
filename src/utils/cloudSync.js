@@ -3,7 +3,7 @@
  * Comunica in tempo reale con il server Node.js + SQLite sul tuo Raspberry Pi.
  */
 
-export const BACKEND_URL = 'https://kentucky-dates-concord-ssl.trycloudflare.com/api';
+export const BACKEND_URL = 'https://shabby-myself-gleeful.ngrok-free.dev/api';
 
 /**
  * Normalizza il codice amico in formato maiuscolo e senza spazi
