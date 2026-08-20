@@ -319,28 +319,28 @@ const Grades = ({ exams: propExams }) => {
       </div>
 
       {/* 🎓 ADVANCED DEGREE SIMULATOR (LIBERO E COMPLETO PER TUTTI) */}
-      <div className="degree-simulator-card glass-panel">
-        <div className="sim-header">
-          <div className="sim-title-group">
-            <div className="sim-badge-pro">
+      <div className="advanced-calc-container glass-panel">
+        <div className="calc-header">
+          <div className="calc-title-group">
+            <div className="calc-badge-official">
               <Sparkles size={14} />
               <span>Simulatore Ufficiale Atenei</span>
             </div>
             <h2>Simulatore di Laurea & Calcolo Tesi</h2>
-            <p className="sim-subtitle">
+            <p className="calc-subtitle">
               Calcolo esatto secondo i Regolamenti Didattici d'Ateneo (D.M. 270/04), scarto crediti e punteggio commissione
             </p>
           </div>
         </div>
 
-        <div className="sim-content">
+        <div className="calc-body">
           {/* Presets Row */}
-          <div className="sim-presets-section">
-            <label className="sim-label">
+          <div className="calc-presets-section">
+            <label className="calc-label">
               <Compass size={16} />
               <span>Regolamento Didattico Ateneo:</span>
             </label>
-            <div className="sim-presets-grid">
+            <div className="calc-presets-grid">
               {UNIVERSITY_DEGREE_PRESETS.map((p) => (
                 <button
                   key={p.id}
@@ -356,9 +356,9 @@ const Grades = ({ exams: propExams }) => {
           </div>
 
           {/* Config & Sliders Grid */}
-          <div className="sim-controls-grid">
+          <div className="calc-controls-grid">
             {/* Tesi Slider */}
-            <div className="sim-control-box">
+            <div className="calc-control-box">
               <div className="control-header">
                 <label>Punti Tesi / Prova Finale</label>
                 <span className="control-value">+{thesisPoints} pt</span>
@@ -370,7 +370,7 @@ const Grades = ({ exams: propExams }) => {
                 step="1"
                 value={thesisPoints} 
                 onChange={(e) => setThesisPoints(Number(e.target.value))}
-                className="sim-slider"
+                className="calc-slider"
               />
               <div className="slider-limits">
                 <span>0 pt (Min)</span>
@@ -379,10 +379,10 @@ const Grades = ({ exams: propExams }) => {
             </div>
 
             {/* Bonus Carriera Checkboxes */}
-            <div className="sim-control-box">
+            <div className="calc-control-box">
               <label className="control-title-box">Bonus Carriera & Ateneo</label>
-              <div className="sim-checkboxes">
-                <label className="sim-checkbox-label">
+              <div className="calc-checkboxes">
+                <label className="calc-checkbox-label">
                   <input 
                     type="checkbox" 
                     checked={hasInCorso} 
@@ -391,7 +391,7 @@ const Grades = ({ exams: propExams }) => {
                   <span>Laurea in Corso (+{degreeConfig.inCorsoBonus} pt)</span>
                 </label>
 
-                <label className="sim-checkbox-label">
+                <label className="calc-checkbox-label">
                   <input 
                     type="checkbox" 
                     checked={hasErasmus} 
@@ -400,7 +400,7 @@ const Grades = ({ exams: propExams }) => {
                   <span>Erasmus / Estero (+{degreeConfig.erasmusBonus} pt)</span>
                 </label>
 
-                <label className="sim-checkbox-label">
+                <label className="calc-checkbox-label">
                   <input 
                     type="checkbox" 
                     checked={hasSperimentale} 
@@ -413,7 +413,7 @@ const Grades = ({ exams: propExams }) => {
           </div>
 
           {/* Degree Results Projection Board */}
-          <div className="sim-results-board">
+          <div className="calc-results-board">
             <div className="result-metric">
               <span className="metric-label">Voto Base di Partenza</span>
               <span className="metric-number">{degreeResult.baseGrade}</span>
@@ -439,7 +439,7 @@ const Grades = ({ exams: propExams }) => {
           </div>
 
           {/* Target Calculator: "Cosa mi serve per..." */}
-          <div className="sim-target-solver">
+          <div className="calc-target-solver">
             <div className="solver-header">
               <GraduationCap size={20} style={{ color: 'var(--accent-primary)' }} />
               <h3>Simulatore a Ritroso: Cosa ti serve per il tuo voto target?</h3>

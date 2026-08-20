@@ -138,8 +138,8 @@
   transition: width 0.5s ease-out;
 }
 
-/* 🎓 ADVANCED DEGREE SIMULATOR PRO STYLES */
-.degree-simulator-card {
+/* 🎓 ADVANCED DEGREE CALCULATOR STYLES */
+.advanced-calc-container {
   padding: 24px;
   border-radius: 20px;
   background: var(--card-bg-gradient);
@@ -152,26 +152,26 @@
   overflow: hidden;
 }
 
-.sim-header {
+.calc-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
 }
 
-.sim-title-group h2 {
+.calc-title-group h2 {
   font-size: 20px;
   font-weight: 700;
   color: var(--text-primary);
   margin-top: 6px;
 }
 
-.sim-subtitle {
+.calc-subtitle {
   font-size: 13px;
   color: var(--text-secondary);
   margin-top: 2px;
 }
 
-.sim-badge-pro {
+.calc-badge-official {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -185,19 +185,19 @@
   box-shadow: 0 2px 10px rgba(245, 158, 11, 0.35);
 }
 
-.sim-content {
+.calc-body {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.sim-presets-section {
+.calc-presets-section {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.sim-label {
+.calc-label {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -206,7 +206,7 @@
   color: var(--text-secondary);
 }
 
-.sim-presets-grid {
+.calc-presets-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
@@ -247,13 +247,13 @@
   box-shadow: 0 0 0 1px var(--accent-primary);
 }
 
-.sim-controls-grid {
+.calc-controls-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 16px;
 }
 
-.sim-control-box {
+.calc-control-box {
   padding: 16px;
   border-radius: 14px;
   background: var(--input-bg);
@@ -282,7 +282,7 @@
   color: var(--accent-primary);
 }
 
-.sim-slider {
+.calc-slider {
   width: 100%;
   accent-color: var(--accent-primary);
   cursor: pointer;
@@ -295,13 +295,13 @@
   color: var(--text-muted);
 }
 
-.sim-checkboxes {
+.calc-checkboxes {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.sim-checkbox-label {
+.calc-checkbox-label {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -310,13 +310,13 @@
   cursor: pointer;
 }
 
-.sim-checkbox-label input[type="checkbox"] {
+.calc-checkbox-label input[type="checkbox"] {
   accent-color: var(--accent-primary);
   cursor: pointer;
 }
 
 /* Results Board */
-.sim-results-board {
+.calc-results-board {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 14px;
@@ -369,7 +369,7 @@
 }
 
 /* Target Solver */
-.sim-target-solver {
+.calc-target-solver {
   padding: 18px;
   border-radius: 14px;
   background: var(--input-bg);
