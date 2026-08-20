@@ -28,4 +28,8 @@ release
 release/*
 public/downloads/*.exe
 public/downloads/*.zip
+
+# Raspberry Backend Local Sync
+raspberry-server.js
+raspberry-stripeController.js
 public/downloads/*.blockmap
