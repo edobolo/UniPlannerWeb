@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Crown, Rocket, CheckCircle2, X, Loader2 } from 'lucide-react';
-import { BACKEND_URL } from '../utils/cloudSync';
+import { apiFetch } from '../utils/cloudSync';
 import './ProUpgradeModal.css';
 
 export default function ProUpgradeModal({ isOpen, onClose, friendCode }) {
@@ -48,12 +48,8 @@ export default function ProUpgradeModal({ isOpen, onClose, friendCode }) {
     try {
       const codeToSend = friendCode || localStorage.getItem('uniplanner_friend_code') || 'OSPITE_' + Math.random().toString(36).substring(2, 7).toUpperCase();
 
-      const res = await fetch(`${BACKEND_URL}/stripe/create-checkout-session`, {
+      const res = await apiFetch('/stripe/create-checkout-session', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
-        },
         body: JSON.stringify({ friendCode: codeToSend, priceId })
       });
 
