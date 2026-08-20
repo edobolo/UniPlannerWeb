@@ -17,11 +17,13 @@ import {
   UserCheck, 
   Sparkles, 
   User, 
-  Bug 
+  Bug,
+  Palette
 } from 'lucide-react';
 import TitleBar from './components/TitleBar';
 import Exams from './pages/Exams'; // Pagina iniziale caricata istantaneamente
 import AccountModal from './components/AccountModal';
+import ThemeModal from './components/ThemeModal';
 
 // 🚀 Dynamic Lazy Loading per framerate a 60 FPS e bundle compatto
 const Welcome = lazy(() => import('./pages/Welcome'));
@@ -52,6 +54,7 @@ function MainApp() {
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [isBugModalOpen, setIsBugModalOpen] = useState(false);
+  const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [legalInitialTab, setLegalInitialTab] = useState('privacy');
   const [updateDownloaded, setUpdateDownloaded] = useState(false);
   const [updateInfo, setUpdateInfo] = useState(null);
@@ -325,6 +328,15 @@ function MainApp() {
             <div className="sidebar-bottom-row">
               <button 
                 className="footer-mini-btn"
+                onClick={() => setIsThemeModalOpen(true)}
+                title="Scegli il colore della tua Facoltà o tema AMOLED"
+              >
+                <Palette size={15} style={{ color: 'var(--accent-primary)' }} />
+                <span>Temi</span>
+              </button>
+
+              <button 
+                className="footer-mini-btn"
                 onClick={() => setActiveTab('benvenuto')}
                 title="Scopri la guida e tutte le funzioni di UniPlanner"
               >
@@ -338,7 +350,7 @@ function MainApp() {
                 title="Segnala un bug o invia un suggerimento per UniPlanner"
               >
                 <Bug size={15} style={{ color: '#ef4444' }} />
-                <span>Segnala Bug</span>
+                <span>Bug</span>
               </button>
 
               <button 
@@ -542,6 +554,20 @@ function MainApp() {
 
     {/* Account Management Modal */}
     <AccountModal onOpenLegal={handleOpenLegal} />
+
+    {/* Dedicated Faculty Color Themes Modal */}
+    <ThemeModal 
+      isOpen={isThemeModalOpen}
+      onClose={() => setIsThemeModalOpen(false)}
+      currentPalette={palette}
+      onSelectPalette={(palId) => {
+        setPalette(palId);
+        document.documentElement.setAttribute('data-palette', palId);
+        localStorage.setItem('uniplanner_palette', palId);
+      }}
+      theme={theme}
+      onToggleTheme={toggleTheme}
+    />
 
     {/* Lazy Modals with Suspense */}
     <Suspense fallback={null}>

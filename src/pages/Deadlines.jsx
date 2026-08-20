@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, CalendarClock, CheckCircle2, Clock, List, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, CalendarClock, CheckCircle2, Clock, List, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isSameMonth, isSameDay, addDays, parseISO } from 'date-fns';
 import { it } from 'date-fns/locale';
 import './Deadlines.css';
@@ -28,7 +28,7 @@ const Deadlines = () => {
 
   const handleAdd = (e) => {
     e.preventDefault();
-    if (newDeadline.title && newDeadline.date) {
+    if (newDeadline.title.trim() && newDeadline.date) {
       setDeadlines([...deadlines, { ...newDeadline, id: Date.now() }]);
       setIsModalOpen(false);
       setNewDeadline({ title: '', subject: '', date: new Date().toISOString().split('T')[0], completed: false });
@@ -108,43 +108,53 @@ const Deadlines = () => {
     <div className="deadlines-container">
       <header className="deadlines-header">
         <div>
-          <h1 className="page-title">Scadenze ed Esami</h1>
-          <p className="page-subtitle">Pianifica e tieni sotto controllo le tue task</p>
+          <h1 className="page-title">Scadenze & Task</h1>
+          <p className="page-subtitle">Pianifica consegne, progetti ed appelli d'esame</p>
         </div>
         <div className="header-actions">
-          <div className="view-toggle glass-panel">
-            <button className={viewMode === 'list' ? 'active' : ''} onClick={() => setViewMode('list')}>
-              <List size={18} />
+          <div className="view-toggle">
+            <button 
+              type="button" 
+              className={viewMode === 'list' ? 'active' : ''} 
+              onClick={() => setViewMode('list')}
+              title="Vista Elenco"
+            >
+              <List size={17} />
             </button>
-            <button className={viewMode === 'calendar' ? 'active' : ''} onClick={() => setViewMode('calendar')}>
-              <CalendarIcon size={18} />
+            <button 
+              type="button" 
+              className={viewMode === 'calendar' ? 'active' : ''} 
+              onClick={() => setViewMode('calendar')}
+              title="Vista Calendario Mensile"
+            >
+              <CalendarIcon size={17} />
             </button>
           </div>
           <button className="primary-btn" onClick={() => setIsModalOpen(true)}>
-            <Plus size={20} />
-            <span>Nuova</span>
+            <Plus size={18} />
+            <span>Nuova Scadenza</span>
           </button>
         </div>
       </header>
 
       {viewMode === 'list' && (
-        <div className="stats-grid">
-          <div className="stat-card glass-panel">
-            <div className="stat-icon" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}>
-              <CalendarClock size={24} />
+        <div className="deadlines-stats-grid">
+          <div className="stat-card-deadline">
+            <div className="stat-icon-deadline" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }}>
+              <CalendarClock size={22} />
             </div>
-            <div className="stat-info">
+            <div className="stat-info-deadline">
               <h3>Da Completare</h3>
-              <div className="stat-value">{pendingCount}</div>
+              <div className="stat-value-deadline">{pendingCount}</div>
             </div>
           </div>
-          <div className="stat-card glass-panel">
-            <div className="stat-icon" style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#22c55e' }}>
-              <CheckCircle2 size={24} />
+          <div className="stat-card-deadline">
+            <div className="stat-icon-deadline" style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' }}>
+              <CheckCircle2 size={22} />
             </div>
-            <div className="stat-info">
+            <div className="stat-info-deadline">
               <h3>Completati</h3>
-              <div className="stat-value">{completedCount}</div>
+              <div className="stat-value-deadline">{completedCount}</div>
             </div>
           </div>
         </div>
@@ -152,14 +162,15 @@ const Deadlines = () => {
 
       {viewMode === 'list' ? (
         <div className="deadlines-list">
-          <AnimatePresence>
+          <AnimatePresence mode="popLayout">
             {sortedDeadlines.length === 0 ? (
               <motion.div 
                 initial={{ opacity: 0 }} 
                 animate={{ opacity: 1 }} 
-                className="empty-state glass-panel"
+                className="empty-state-deadline"
               >
-                Nessuna scadenza imminente. Ottimo lavoro!
+                <Sparkles size={32} style={{ color: 'var(--accent-primary)', opacity: 0.6 }} />
+                <span>Nessuna scadenza in programma. Ottimo lavoro! 🎉</span>
               </motion.div>
             ) : (
               sortedDeadlines.map((item) => {
@@ -167,33 +178,42 @@ const Deadlines = () => {
                 return (
                   <motion.div 
                     key={item.id}
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     layout
-                    className={`deadline-card glass-panel ${item.completed ? 'completed' : ''} ${isPast ? 'overdue' : ''}`}
+                    className={`deadline-card ${item.completed ? 'completed' : ''} ${isPast ? 'overdue' : ''}`}
                   >
-                    <button 
-                      className={`checkbox-btn ${item.completed ? 'checked' : ''}`}
-                      onClick={() => toggleComplete(item.id)}
-                    >
-                      <CheckCircle2 size={24} />
-                    </button>
-                    
-                    <div className="deadline-content">
-                      <h3 className="deadline-title">{item.title}</h3>
-                      <div className="deadline-meta">
-                        {item.subject && <span className="meta-subject">{item.subject}</span>}
-                        <span className="meta-date">
-                          <Clock size={14} />
-                          {formatDateStr(item.date)}
-                        </span>
-                        {isPast && <span className="meta-overdue">Scaduto!</span>}
+                    <div className="deadline-left-group">
+                      <button 
+                        type="button"
+                        className={`checkbox-btn ${item.completed ? 'checked' : ''}`}
+                        onClick={() => toggleComplete(item.id)}
+                        title={item.completed ? 'Segna come non completato' : 'Segna come completato'}
+                      >
+                        <CheckCircle2 size={22} />
+                      </button>
+                      
+                      <div className="deadline-content">
+                        <h3 className="deadline-title">{item.title}</h3>
+                        <div className="deadline-meta">
+                          {item.subject && <span className="meta-subject">{item.subject}</span>}
+                          <span className="meta-date">
+                            <Clock size={13} />
+                            {formatDateStr(item.date)}
+                          </span>
+                          {isPast && <span className="meta-overdue">Scaduto!</span>}
+                        </div>
                       </div>
                     </div>
 
-                    <button className="icon-btn delete-btn" onClick={() => handleDelete(item.id)}>
-                      <Trash2 size={18} />
+                    <button 
+                      type="button" 
+                      className="delete-btn" 
+                      onClick={() => handleDelete(item.id)}
+                      title="Elimina scadenza"
+                    >
+                      <Trash2 size={16} />
                     </button>
                   </motion.div>
                 );
@@ -203,14 +223,14 @@ const Deadlines = () => {
         </div>
       ) : (
         <motion.div 
-          className="calendar-container glass-panel"
-          initial={{ opacity: 0, scale: 0.95 }}
+          className="calendar-container"
+          initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
         >
           <div className="calendar-header-nav">
-            <button className="icon-btn" onClick={prevMonth}><ChevronLeft /></button>
+            <button type="button" className="ghost-btn" onClick={prevMonth}><ChevronLeft size={18} /></button>
             <h2>{format(currentMonth, 'MMMM yyyy', { locale: it }).replace(/^\w/, c => c.toUpperCase())}</h2>
-            <button className="icon-btn" onClick={nextMonth}><ChevronRight /></button>
+            <button type="button" className="ghost-btn" onClick={nextMonth}><ChevronRight size={18} /></button>
           </div>
           <div className="calendar-days-header">
             {['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'].map(d => (
@@ -225,30 +245,48 @@ const Deadlines = () => {
 
       <AnimatePresence>
         {isModalOpen && (
-          <div className="modal-overlay">
+          <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
             <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="modal-content glass-panel"
+              initial={{ opacity: 0, scale: 0.92, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 15 }}
+              className="modal-content"
+              onClick={e => e.stopPropagation()}
             >
               <h2>Nuova Scadenza</h2>
               <form onSubmit={handleAdd}>
                 <div className="form-group">
-                  <label>Titolo</label>
-                  <input type="text" required value={newDeadline.title} onChange={e => setNewDeadline({...newDeadline, title: e.target.value})} />
+                  <label>Titolo Scadenza / Esame</label>
+                  <input 
+                    type="text" 
+                    required 
+                    placeholder="es. Consegna Progetto Web, Appello Orale..."
+                    value={newDeadline.title} 
+                    onChange={e => setNewDeadline({...newDeadline, title: e.target.value})} 
+                    autoFocus
+                  />
                 </div>
                 <div className="form-group">
-                  <label>Materia (Opzionale)</label>
-                  <input type="text" value={newDeadline.subject} onChange={e => setNewDeadline({...newDeadline, subject: e.target.value})} />
+                  <label>Materia o Corso (Opzionale)</label>
+                  <input 
+                    type="text" 
+                    placeholder="es. Ingegneria del Software"
+                    value={newDeadline.subject} 
+                    onChange={e => setNewDeadline({...newDeadline, subject: e.target.value})} 
+                  />
                 </div>
                 <div className="form-group">
-                  <label>Data</label>
-                  <input type="date" required value={newDeadline.date} onChange={e => setNewDeadline({...newDeadline, date: e.target.value})} />
+                  <label>Data di Scadenza</label>
+                  <input 
+                    type="date" 
+                    required 
+                    value={newDeadline.date} 
+                    onChange={e => setNewDeadline({...newDeadline, date: e.target.value})} 
+                  />
                 </div>
                 <div className="modal-actions">
                   <button type="button" className="ghost-btn" onClick={() => setIsModalOpen(false)}>Annulla</button>
-                  <button type="submit" className="primary-btn">Salva</button>
+                  <button type="submit" className="primary-btn">Aggiungi</button>
                 </div>
               </form>
             </motion.div>
