@@ -89,7 +89,26 @@ body {
   color: var(--text-primary);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 🚀 60 FPS Hardware Acceleration & GPU Promotion */
+.gpu-accelerated,
+.modern-exam-card,
+.gcal-day-column,
+.gcal-lesson-card,
+.glass-panel,
+.sidebar,
+.tab-content-wrapper {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* Utilities */
@@ -100,7 +119,7 @@ body {
   border: 1px solid var(--glass-border);
   border-radius: 16px;
   box-shadow: var(--glass-shadow);
-  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: background-color 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 button {
@@ -108,6 +127,8 @@ button {
   cursor: pointer;
   border: none;
   outline: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 input, select, textarea {
@@ -118,7 +139,7 @@ input, select, textarea {
   padding: 10px 16px;
   border-radius: 8px;
   outline: none;
-  transition: border-color 0.2s, background-color 0.2s, color 0.2s;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
   color-scheme: inherit;
 }
 
@@ -146,7 +167,8 @@ input:focus, select:focus, textarea:focus {
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: background 0.2s, transform 0.1s;
+  transition: background 0.15s ease, transform 0.1s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
 }
 
 .primary-btn:hover {
@@ -154,7 +176,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .primary-btn:active {
-  transform: scale(0.98);
+  transform: scale(0.97) translateZ(0);
 }
 
 .secondary-btn {

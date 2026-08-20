@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BookOpen, 
@@ -13,24 +13,27 @@ import {
   CheckCircle2, 
   X, 
   Users, 
-  CalendarDays,
-  UserCheck,
-  Sparkles,
-  User,
-  Bug
+  CalendarDays, 
+  UserCheck, 
+  Sparkles, 
+  User, 
+  Bug 
 } from 'lucide-react';
 import TitleBar from './components/TitleBar';
-import Welcome from './pages/Welcome';
-import Grades from './pages/Grades';
-import Exams from './pages/Exams';
-import Deadlines from './pages/Deadlines';
-import Pomodoro from './pages/Pomodoro';
-import Notifications from './pages/Notifications';
-import Schedule from './pages/Schedule';
-import Friends from './pages/Friends';
+import Exams from './pages/Exams'; // Pagina iniziale caricata istantaneamente
 import AccountModal from './components/AccountModal';
-import LegalModal from './components/LegalModal';
-import BugReportModal from './components/BugReportModal';
+
+// 🚀 Dynamic Lazy Loading per framerate a 60 FPS e bundle compatto
+const Welcome = lazy(() => import('./pages/Welcome'));
+const Grades = lazy(() => import('./pages/Grades'));
+const Deadlines = lazy(() => import('./pages/Deadlines'));
+const Pomodoro = lazy(() => import('./pages/Pomodoro'));
+const Notifications = lazy(() => import('./pages/Notifications'));
+const Schedule = lazy(() => import('./pages/Schedule'));
+const Friends = lazy(() => import('./pages/Friends'));
+const LegalModal = lazy(() => import('./components/LegalModal'));
+const BugReportModal = lazy(() => import('./components/BugReportModal'));
+
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { fetchUserProfile, publishUserProfile, connectMutualFriend } from './utils/cloudSync';
 import { safeJsonParse } from './utils/security';
@@ -38,11 +41,9 @@ import './App.css';
 
 function MainApp() {
   const [activeTab, setActiveTab] = useState(() => {
-    // If URL has u= or import query, open amici tab directly
     if (typeof window !== 'undefined' && (window.location.search.includes('u=') || window.location.search.includes('importFriend='))) {
       return 'amici';
     }
-    // Default sempre sul Piano di Studi (esami)
     return 'esami';
   });
   const [theme, setTheme] = useState(() => {
@@ -388,120 +389,122 @@ function MainApp() {
           )}
         </AnimatePresence>
 
-        <AnimatePresence mode="wait">
-          {activeTab === 'benvenuto' && (
-            <motion.div
-              key="benvenuto"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.25 }}
-              className="page-wrapper"
-            >
-              <Welcome 
-                onNavigate={(tab) => setActiveTab(tab)} 
-                onOpenDownload={() => setIsDownloadModalOpen(true)} 
-                onOpenLegal={handleOpenLegal}
-              />
-            </motion.div>
-          )}
+        <Suspense fallback={<div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.6 }} />}>
+          <AnimatePresence mode="wait">
+            {activeTab === 'benvenuto' && (
+              <motion.div
+                key="benvenuto"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                className="page-wrapper gpu-accelerated"
+              >
+                <Welcome 
+                  onNavigate={(tab) => setActiveTab(tab)} 
+                  onOpenDownload={() => setIsDownloadModalOpen(true)} 
+                  onOpenLegal={handleOpenLegal}
+                />
+              </motion.div>
+            )}
 
-          {activeTab === 'esami' && (
-            <motion.div
-              key="esami"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.25 }}
-              className="page-wrapper"
-            >
-              <Exams />
-            </motion.div>
-          )}
+            {activeTab === 'esami' && (
+              <motion.div
+                key="esami"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                className="page-wrapper gpu-accelerated"
+              >
+                <Exams />
+              </motion.div>
+            )}
 
-          {activeTab === 'voti' && (
-            <motion.div
-              key="voti"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.25 }}
-              className="page-wrapper"
-            >
-              <Grades />
-            </motion.div>
-          )}
+            {activeTab === 'voti' && (
+              <motion.div
+                key="voti"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                className="page-wrapper gpu-accelerated"
+              >
+                <Grades />
+              </motion.div>
+            )}
 
-          {activeTab === 'orario' && (
-            <motion.div
-              key="orario"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.25 }}
-              className="page-wrapper"
-            >
-              <Schedule />
-            </motion.div>
-          )}
+            {activeTab === 'orario' && (
+              <motion.div
+                key="orario"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                className="page-wrapper gpu-accelerated"
+              >
+                <Schedule />
+              </motion.div>
+            )}
 
-          {activeTab === 'scadenze' && (
-            <motion.div
-              key="scadenze"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.25 }}
-              className="page-wrapper"
-            >
-              <Deadlines />
-            </motion.div>
-          )}
+            {activeTab === 'scadenze' && (
+              <motion.div
+                key="scadenze"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                className="page-wrapper gpu-accelerated"
+              >
+                <Deadlines />
+              </motion.div>
+            )}
 
-          {activeTab === 'pomodoro' && (
-            <motion.div
-              key="pomodoro"
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.96 }}
-              transition={{ duration: 0.25 }}
-              className="page-wrapper"
-            >
-              <Pomodoro />
-            </motion.div>
-          )}
+            {activeTab === 'pomodoro' && (
+              <motion.div
+                key="pomodoro"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                className="page-wrapper gpu-accelerated"
+              >
+                <Pomodoro />
+              </motion.div>
+            )}
 
-          {activeTab === 'amici' && (
-            <motion.div
-              key="amici"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.25 }}
-              className="page-wrapper"
-            >
-              <Friends />
-            </motion.div>
-          )}
+            {activeTab === 'amici' && (
+              <motion.div
+                key="amici"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                className="page-wrapper gpu-accelerated"
+              >
+                <Friends />
+              </motion.div>
+            )}
 
-          {activeTab === 'notifiche' && (
-            <motion.div
-              key="notifiche"
-              initial={{ opacity: 0, x: 15 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -15 }}
-              transition={{ duration: 0.25 }}
-              className="page-wrapper"
-            >
-              <Notifications />
-            </motion.div>
-          )}
-        </AnimatePresence>
+            {activeTab === 'notifiche' && (
+              <motion.div
+                key="notifiche"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                className="page-wrapper gpu-accelerated"
+              >
+                <Notifications />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </Suspense>
       </main>
       </div>
 
       {/* Mobile Bottom Navigation Bar */}
-      <nav className="mobile-bottom-nav glass-panel">
+      <nav className="mobile-bottom-nav glass-panel gpu-accelerated">
         {navItems.filter(item => item.id !== 'notifiche').map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -518,7 +521,7 @@ function MainApp() {
                     layoutId="mobile-nav-glow"
                     className="mobile-nav-glow"
                     initial={false}
-                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 35 }}
                   />
                 )}
               </div>
@@ -531,18 +534,23 @@ function MainApp() {
     {/* Account Management Modal */}
     <AccountModal onOpenLegal={handleOpenLegal} />
 
-    {/* Legal & Privacy Compliance Modal */}
-    <LegalModal 
-      isOpen={isLegalModalOpen} 
-      onClose={() => setIsLegalModalOpen(false)} 
-      initialTab={legalInitialTab} 
-    />
+    {/* Lazy Modals with Suspense */}
+    <Suspense fallback={null}>
+      {isLegalModalOpen && (
+        <LegalModal 
+          isOpen={isLegalModalOpen} 
+          onClose={() => setIsLegalModalOpen(false)} 
+          initialTab={legalInitialTab} 
+        />
+      )}
 
-    {/* Bug Report Modal */}
-    <BugReportModal 
-      isOpen={isBugModalOpen} 
-      onClose={() => setIsBugModalOpen(false)} 
-    />
+      {isBugModalOpen && (
+        <BugReportModal 
+          isOpen={isBugModalOpen} 
+          onClose={() => setIsBugModalOpen(false)} 
+        />
+      )}
+    </Suspense>
 
     {/* Download Desktop App Modal */}
     <AnimatePresence>
