@@ -505,7 +505,7 @@ function MainApp() {
                 transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
                 className="page-wrapper gpu-accelerated"
               >
-                <Grades />
+                <Grades onOpenProModal={() => setIsProModalOpen(true)} />
               </motion.div>
             )}
 
@@ -621,6 +621,11 @@ function MainApp() {
       }}
       theme={theme}
       onToggleTheme={toggleTheme}
+      isPro={currentUser?.isPremium || localStorage.getItem('uniplanner_pro_unlocked') === 'true'}
+      onOpenProModal={() => {
+        setIsThemeModalOpen(false);
+        setIsProModalOpen(true);
+      }}
     />
 
     {/* Pro Upgrade Modal */}

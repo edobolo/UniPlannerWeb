@@ -8,7 +8,9 @@ import {
   Sliders, 
   GraduationCap, 
   Compass,
-  CheckCircle2
+  CheckCircle2,
+  Crown,
+  Lock
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -43,8 +45,9 @@ ChartJS.register(
   Filler
 );
 
-const Grades = ({ exams: propExams }) => {
+const Grades = ({ exams: propExams, onOpenProModal }) => {
   const { currentUser } = useAuth();
+  const isPro = Boolean(currentUser?.isPremium || localStorage.getItem('uniplanner_pro_unlocked') === 'true');
 
   const [exams, setExams] = useState(() => {
     if (propExams && propExams.length > 0) return propExams;
@@ -318,8 +321,30 @@ const Grades = ({ exams: propExams }) => {
         </div>
       </div>
 
-      {/* 🎓 ADVANCED DEGREE SIMULATOR (LIBERO E COMPLETO PER TUTTI) */}
-      <div className="advanced-calc-container glass-panel">
+      {/* 🎓 ADVANCED DEGREE SIMULATOR */}
+      <div className={`advanced-calc-container glass-panel ${!isPro ? 'calc-is-locked' : ''}`}>
+        {!isPro && (
+          <div className="calc-locked-overlay">
+            <div className="calc-locked-content">
+              <div className="calc-locked-icon">
+                <Crown size={32} style={{ color: '#f59e0b' }} />
+              </div>
+              <h3>Simulatore Ufficiale Atenei (PRO)</h3>
+              <p>Calcola il voto di laurea con gli algoritmi esatti del tuo Ateneo, scarto CFU, punteggi commissione e simulatore target a ritroso.</p>
+              <button 
+                type="button"
+                className="primary-btn calc-unlock-pro-btn" 
+                onClick={() => {
+                  if (onOpenProModal) onOpenProModal();
+                }}
+              >
+                <Crown size={16} />
+                <span>Sblocca con UniPlanner PRO ⚡</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="calc-header">
           <div className="calc-title-group">
             <div className="calc-badge-official">

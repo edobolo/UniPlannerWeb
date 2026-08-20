@@ -213,3 +213,24 @@
   font-size: 13.5px;
   font-weight: 700;
 }
+.faculty-theme-card.locked-theme {
+  opacity: 0.85;
+}
+
+.faculty-theme-card.locked-theme:hover {
+  border-color: #f59e0b;
+}
+
+.faculty-pro-lock-badge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  padding: 3px 7px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-left: auto;
+}

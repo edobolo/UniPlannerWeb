@@ -1,10 +1,11 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, X, Check, Moon, Sun } from 'lucide-react';
+import { Sparkles, X, Check, Moon, Sun, Crown, Lock } from 'lucide-react';
 import './ThemeModal.css';
 
 export const FACULTY_PALETTES = [
-  { id: 'default', name: 'UniPlanner Classic', color: '#3b82f6', icon: '🌌', desc: 'Blu Spaziale Moderno' },
+  { id: 'default', name: 'UniPlanner Classic', color: '#3b82f6', icon: '🌌', desc: 'Blu Spaziale Moderno', isFree: true },
+  { id: 'amoled', name: 'AMOLED Pure Black (OLED Eco)', color: '#000000', icon: '🖤', desc: 'Nero Assoluto (Solo Scura)', isFree: true },
   { id: 'humanities_white', name: 'Lettere e Filosofia / Teologia', color: '#e2e8f0', icon: '📜', desc: 'Bianco Accademico & Perla' },
   { id: 'law_blue', name: 'Giurisprudenza / Diritto', color: '#1d4ed8', icon: '⚖️', desc: 'Blu Notte Istituzionale' },
   { id: 'engineering_black', name: 'Ingegneria e Architettura', color: '#27272a', icon: '⚙️', desc: 'Nero & Grafite Titanio' },
@@ -19,11 +20,10 @@ export const FACULTY_PALETTES = [
   { id: 'communication_vinaccia', name: 'Scienze della Comunicazione', color: '#9d174d', icon: '📣', desc: 'Vinaccia & Corallo' },
   { id: 'languages_bordeaux', name: 'Lingue e Letterature', color: '#831843', icon: '🌍', desc: 'Rosso Bordeaux' },
   { id: 'sociology_orange', name: 'Sociologia', color: '#ea580c', icon: '👥', desc: 'Arancione' },
-  { id: 'arts_celeste', name: 'Accademia Belle Arti', color: '#38bdf8', icon: '🎨', desc: 'Celeste Carta da Zucchero' },
-  { id: 'amoled', name: 'AMOLED Pure Black (OLED Eco)', color: '#000000', icon: '🖤', desc: 'Nero Assoluto (Solo Scura)' },
+  { id: 'arts_celeste', name: 'Accademia Belle Arti', color: '#38bdf8', icon: '🎨', desc: 'Celeste Carta da Zucchero' }
 ];
 
-const ThemeModal = ({ isOpen, onClose, currentPalette, onSelectPalette, theme, onToggleTheme }) => {
+const ThemeModal = ({ isOpen, onClose, currentPalette, onSelectPalette, theme, onToggleTheme, isPro, onOpenProModal }) => {
   if (!isOpen) return null;
 
   const isAmoled = currentPalette === 'amoled';
@@ -91,12 +91,21 @@ const ThemeModal = ({ isOpen, onClose, currentPalette, onSelectPalette, theme, o
           <div className="theme-palettes-grid">
             {FACULTY_PALETTES.map((pal) => {
               const isSelected = currentPalette === pal.id;
+              const isLocked = !pal.isFree && !isPro;
+
               return (
                 <button
                   key={pal.id}
                   type="button"
-                  className={`faculty-theme-card ${isSelected ? 'selected' : ''}`}
-                  onClick={() => onSelectPalette(pal.id)}
+                  className={`faculty-theme-card ${isSelected ? 'selected' : ''} ${isLocked ? 'locked-theme' : ''}`}
+                  onClick={() => {
+                    if (isLocked) {
+                      if (onOpenProModal) onOpenProModal();
+                      return;
+                    }
+                    onSelectPalette(pal.id);
+                  }}
+                  title={isLocked ? 'Disponibile solo con UniPlanner PRO' : `${pal.name} - ${pal.desc}`}
                 >
                   <div 
                     className="faculty-color-circle" 
@@ -111,7 +120,13 @@ const ThemeModal = ({ isOpen, onClose, currentPalette, onSelectPalette, theme, o
                     <strong className="faculty-name">{pal.name}</strong>
                     <span className="faculty-desc">{pal.desc}</span>
                   </div>
-                  {isSelected && (
+                  {isLocked && (
+                    <div className="faculty-pro-lock-badge">
+                      <Crown size={12} />
+                      <span>PRO</span>
+                    </div>
+                  )}
+                  {isSelected && !isLocked && (
                     <div className="faculty-check-badge">
                       <Check size={14} />
                     </div>
