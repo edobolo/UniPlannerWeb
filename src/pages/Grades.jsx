@@ -5,15 +5,10 @@ import {
   BookOpen, 
   Edit2, 
   Sparkles, 
-  Lock, 
-  Unlock, 
-  CheckCircle2, 
   Sliders, 
-  HelpCircle, 
   GraduationCap, 
   Compass,
-  Globe2,
-  CalendarCheck
+  CheckCircle2
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -49,34 +44,7 @@ ChartJS.register(
 );
 
 const Grades = ({ exams: propExams }) => {
-  const { currentUser, isPro, unlockPro } = useAuth();
-
-  const [localIsPro, setLocalIsPro] = useState(() => {
-    return Boolean(
-      isPro || 
-      localStorage.getItem('uniplanner_pro_unlocked') === 'true' ||
-      currentUser?.isPro === true ||
-      currentUser?.username?.toLowerCase().includes('edo') ||
-      currentUser?.email?.toLowerCase().includes('edo') ||
-      currentUser?.email?.toLowerCase().includes('edob') ||
-      currentUser?.email?.toLowerCase().includes('bolo') ||
-      currentUser?.fullName?.toLowerCase().includes('edo')
-    );
-  });
-
-  useEffect(() => {
-    const proState = Boolean(
-      isPro || 
-      localStorage.getItem('uniplanner_pro_unlocked') === 'true' ||
-      currentUser?.isPro === true ||
-      currentUser?.username?.toLowerCase().includes('edo') ||
-      currentUser?.email?.toLowerCase().includes('edo') ||
-      currentUser?.email?.toLowerCase().includes('edob') ||
-      currentUser?.email?.toLowerCase().includes('bolo') ||
-      currentUser?.fullName?.toLowerCase().includes('edo')
-    );
-    setLocalIsPro(proState);
-  }, [isPro, currentUser]);
+  const { currentUser } = useAuth();
 
   const [exams, setExams] = useState(() => {
     if (propExams && propExams.length > 0) return propExams;
@@ -103,7 +71,7 @@ const Grades = ({ exams: propExams }) => {
     return saved ? safeJsonParse(saved, { targetGrade: 28, targetCfu: 180, lodeBonus: 0.5 }) : { targetGrade: 28, targetCfu: 180, lodeBonus: 0.5 };
   });
 
-  // Degree Simulator Pro State
+  // Degree Simulator State (Totalmente Aperto per Tutti)
   const [selectedPresetId, setSelectedPresetId] = useState('dm270_standard');
   const [degreeConfig, setDegreeConfig] = useState(UNIVERSITY_DEGREE_PRESETS[0]);
   const [thesisPoints, setThesisPoints] = useState(4);
@@ -111,11 +79,6 @@ const Grades = ({ exams: propExams }) => {
   const [hasErasmus, setHasErasmus] = useState(false);
   const [hasSperimentale, setHasSperimentale] = useState(false);
   const [simTargetGrade, setSimTargetGrade] = useState(110);
-  
-  // Pro unlock input state
-  const [proCodeInput, setProCodeInput] = useState('');
-  const [proCodeError, setProCodeError] = useState('');
-  const [proCodeSuccess, setProCodeSuccess] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('uniplanner_settings', JSON.stringify(settings));
@@ -204,7 +167,7 @@ const Grades = ({ exams: propExams }) => {
       {
         fill: true,
         label: 'Andamento Voti',
-        data: gradedExams.map(e => e.grade === '30L' ? 31 : Number(e.grade)),
+        data: gradedExams.map(e => (e.grade === '30L' || e.grade === '30 e lode' || e.grade === '30 e Lode') ? 31 : Number(e.grade)),
         borderColor: currentAccent,
         backgroundColor: (context) => {
           const ctx = context.chart.ctx;
@@ -277,18 +240,6 @@ const Grades = ({ exams: propExams }) => {
     const val = prompt('Inserisci il target totale di CFU per la tua laurea (es. 180 Triennale, 120 Magistrale):', settings.targetCfu);
     if (val && !isNaN(val) && val > 0) {
       setSettings({ ...settings, targetCfu: Number(val) });
-    }
-  };
-
-  const handleUnlockPro = (e) => {
-    e.preventDefault();
-    setProCodeError('');
-    if (unlockPro(proCodeInput)) {
-      setProCodeSuccess(true);
-      setLocalIsPro(true);
-      localStorage.setItem('uniplanner_pro_unlocked', 'true');
-    } else {
-      setProCodeError('Codice non valido o non riconosciuto.');
     }
   };
 
@@ -367,13 +318,13 @@ const Grades = ({ exams: propExams }) => {
         </div>
       </div>
 
-      {/* 👑 ADVANCED DEGREE SIMULATOR (PRO) */}
+      {/* 🎓 ADVANCED DEGREE SIMULATOR (LIBERO E COMPLETO PER TUTTI) */}
       <div className="degree-simulator-card glass-panel">
         <div className="sim-header">
           <div className="sim-title-group">
             <div className="sim-badge-pro">
               <Sparkles size={14} />
-              <span>UniPlanner PRO</span>
+              <span>Simulatore Ufficiale Atenei</span>
             </div>
             <h2>Simulatore di Laurea & Calcolo Tesi</h2>
             <p className="sim-subtitle">
@@ -382,189 +333,138 @@ const Grades = ({ exams: propExams }) => {
           </div>
         </div>
 
-        {localIsPro ? (
-          /* PRO UNLOCKED CONTENT */
-          <div className="sim-content">
-            {/* Presets Row */}
-            <div className="sim-presets-section">
-              <label className="sim-label">
-                <Compass size={16} />
-                <span>Regolamento Ateneo:</span>
-              </label>
-              <div className="sim-presets-grid">
-                {UNIVERSITY_DEGREE_PRESETS.map((p) => (
+        <div className="sim-content">
+          {/* Presets Row */}
+          <div className="sim-presets-section">
+            <label className="sim-label">
+              <Compass size={16} />
+              <span>Regolamento Didattico Ateneo:</span>
+            </label>
+            <div className="sim-presets-grid">
+              {UNIVERSITY_DEGREE_PRESETS.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className={`preset-btn ${selectedPresetId === p.id ? 'active' : ''}`}
+                  onClick={() => handlePresetChange(p.id)}
+                >
+                  <strong>{p.name}</strong>
+                  <span>{p.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Config & Sliders Grid */}
+          <div className="sim-controls-grid">
+            {/* Tesi Slider */}
+            <div className="sim-control-box">
+              <div className="control-header">
+                <label>Punti Tesi / Prova Finale</label>
+                <span className="control-value">+{thesisPoints} pt</span>
+              </div>
+              <input 
+                type="range" 
+                min="0" 
+                max={degreeConfig.thesisPointsMax || 7} 
+                step="1"
+                value={thesisPoints} 
+                onChange={(e) => setThesisPoints(Number(e.target.value))}
+                className="sim-slider"
+              />
+              <div className="slider-limits">
+                <span>0 pt (Min)</span>
+                <span>Max {degreeConfig.thesisPointsMax} pt ({degreeConfig.name})</span>
+              </div>
+            </div>
+
+            {/* Bonus Carriera Checkboxes */}
+            <div className="sim-control-box">
+              <label className="control-title-box">Bonus Carriera & Ateneo</label>
+              <div className="sim-checkboxes">
+                <label className="sim-checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    checked={hasInCorso} 
+                    onChange={(e) => setHasInCorso(e.target.checked)} 
+                  />
+                  <span>Laurea in Corso (+{degreeConfig.inCorsoBonus} pt)</span>
+                </label>
+
+                <label className="sim-checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    checked={hasErasmus} 
+                    onChange={(e) => setHasErasmus(e.target.checked)} 
+                  />
+                  <span>Erasmus / Estero (+{degreeConfig.erasmusBonus} pt)</span>
+                </label>
+
+                <label className="sim-checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    checked={hasSperimentale} 
+                    onChange={(e) => setHasSperimentale(e.target.checked)} 
+                  />
+                  <span>Tesi Sperimentale (+1 pt)</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Degree Results Projection Board */}
+          <div className="sim-results-board">
+            <div className="result-metric">
+              <span className="metric-label">Voto Base di Partenza</span>
+              <span className="metric-number">{degreeResult.baseGrade}</span>
+              <span className="metric-hint">Media Ponderata × 110/30</span>
+            </div>
+
+            <div className="result-metric highlight-box">
+              <span className="metric-label">Voto Finale Proiettato</span>
+              <span className="metric-number primary">
+                {degreeResult.finalRounded}
+                <span className="metric-sub"> / 110</span>
+              </span>
+              <span className="metric-hint">
+                {degreeResult.isLodePossible ? '🌟 110 e Lode Possibile!' : `Esatto: ${degreeResult.finalProjected}/110`}
+              </span>
+            </div>
+
+            <div className="result-metric">
+              <span className="metric-label">Fascia di Merito ECTS</span>
+              <span className="metric-number ects">{degreeResult.ectsGrade.split(' ')[0]}</span>
+              <span className="metric-hint">{degreeResult.ectsGrade}</span>
+            </div>
+          </div>
+
+          {/* Target Calculator: "Cosa mi serve per..." */}
+          <div className="sim-target-solver">
+            <div className="solver-header">
+              <GraduationCap size={20} style={{ color: 'var(--accent-primary)' }} />
+              <h3>Simulatore a Ritroso: Cosa ti serve per il tuo voto target?</h3>
+            </div>
+            <div className="solver-inputs">
+              <label>Seleziona il voto finale desiderato:</label>
+              <div className="target-pills">
+                {[100, 102, 105, 108, 110].map((tg) => (
                   <button
-                    key={p.id}
+                    key={tg}
                     type="button"
-                    className={`preset-btn ${selectedPresetId === p.id ? 'active' : ''}`}
-                    onClick={() => handlePresetChange(p.id)}
+                    className={`target-pill ${simTargetGrade === tg ? 'active' : ''}`}
+                    onClick={() => setSimTargetGrade(tg)}
                   >
-                    <strong>{p.name}</strong>
-                    <span>{p.desc}</span>
+                    {tg}/110
                   </button>
                 ))}
               </div>
             </div>
-
-            {/* Config & Sliders Grid */}
-            <div className="sim-controls-grid">
-              {/* Tesi Slider */}
-              <div className="sim-control-box">
-                <div className="control-header">
-                  <label>Punti Tesi / Prova Finale</label>
-                  <span className="control-value">+{thesisPoints} pt</span>
-                </div>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max={degreeConfig.thesisPointsMax || 7} 
-                  step="1"
-                  value={thesisPoints} 
-                  onChange={(e) => setThesisPoints(Number(e.target.value))}
-                  className="sim-slider"
-                />
-                <div className="slider-limits">
-                  <span>0 pt (Min)</span>
-                  <span>Max {degreeConfig.thesisPointsMax} pt ({degreeConfig.name})</span>
-                </div>
-              </div>
-
-              {/* Bonus Carriera Checkboxes */}
-              <div className="sim-control-box">
-                <label className="control-title-box">Bonus Carriera & Ateneo</label>
-                <div className="sim-checkboxes">
-                  <label className="sim-checkbox-label">
-                    <input 
-                      type="checkbox" 
-                      checked={hasInCorso} 
-                      onChange={(e) => setHasInCorso(e.target.checked)} 
-                    />
-                    <span>Laurea in Corso (+{degreeConfig.inCorsoBonus} pt)</span>
-                  </label>
-
-                  <label className="sim-checkbox-label">
-                    <input 
-                      type="checkbox" 
-                      checked={hasErasmus} 
-                      onChange={(e) => setHasErasmus(e.target.checked)} 
-                    />
-                    <span>Erasmus / Estero (+{degreeConfig.erasmusBonus} pt)</span>
-                  </label>
-
-                  <label className="sim-checkbox-label">
-                    <input 
-                      type="checkbox" 
-                      checked={hasSperimentale} 
-                      onChange={(e) => setHasSperimentale(e.target.checked)} 
-                    />
-                    <span>Tesi Sperimentale (+1 pt)</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Degree Results Projection Board */}
-            <div className="sim-results-board">
-              <div className="result-metric">
-                <span className="metric-label">Voto Base di Partenza</span>
-                <span className="metric-number">{degreeResult.baseGrade}</span>
-                <span className="metric-hint">Media Ponderata × 110/30</span>
-              </div>
-
-              <div className="result-metric highlight-box">
-                <span className="metric-label">Voto Finale Proiettato</span>
-                <span className="metric-number primary">
-                  {degreeResult.finalRounded}
-                  <span className="metric-sub"> / 110</span>
-                </span>
-                <span className="metric-hint">
-                  {degreeResult.isLodePossible ? '🌟 110 e Lode Possibile!' : `Esatto: ${degreeResult.finalProjected}/110`}
-                </span>
-              </div>
-
-              <div className="result-metric">
-                <span className="metric-label">Fascia di Merito ECTS</span>
-                <span className="metric-number ects">{degreeResult.ectsGrade.split(' ')[0]}</span>
-                <span className="metric-hint">{degreeResult.ectsGrade}</span>
-              </div>
-            </div>
-
-            {/* Target Calculator: "Cosa mi serve per..." */}
-            <div className="sim-target-solver">
-              <div className="solver-header">
-                <GraduationCap size={20} style={{ color: 'var(--accent-primary)' }} />
-                <h3>Simulatore a Ritroso: Cosa ti serve per il tuo voto target?</h3>
-              </div>
-              <div className="solver-inputs">
-                <label>Seleziona il voto finale desiderato:</label>
-                <div className="target-pills">
-                  {[100, 102, 105, 108, 110].map((tg) => (
-                    <button
-                      key={tg}
-                      type="button"
-                      className={`target-pill ${simTargetGrade === tg ? 'active' : ''}`}
-                      onClick={() => setSimTargetGrade(tg)}
-                    >
-                      {tg}/110
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className={`solver-verdict ${targetAnalysis.achievable ? 'achievable' : 'unachievable'}`}>
-                <strong>{targetAnalysis.achievable ? '✅ Obiettivo Raggiungibile' : '⚠️ Obiettivo Matematicamente Difficile'}</strong>
-                <p>{targetAnalysis.message}</p>
-              </div>
+            <div className={`solver-verdict ${targetAnalysis.achievable ? 'achievable' : 'unachievable'}`}>
+              <strong>{targetAnalysis.achievable ? '✅ Obiettivo Raggiungibile' : '⚠️ Obiettivo Matematicamente Difficile'}</strong>
+              <p>{targetAnalysis.message}</p>
             </div>
           </div>
-        ) : (
-          /* PRO LOCKED SHOWCASE FOR NON-OWNER USERS */
-          <div className="sim-locked-overlay">
-            <div className="locked-badge-circle">
-              <Lock size={32} />
-            </div>
-            <h3>Funzionalità Riservata ad UniPlanner PRO</h3>
-            <p className="locked-desc">
-              Il Simulatore di Laurea Avanzato con calcolo esatto dei Regolamenti d'Ateneo italiani, scarto CFU e proiezioni per la commissione tesi è attualmente in accesso anticipato esclusivo.
-            </p>
-
-            <div className="pro-features-preview">
-              <div className="pro-feat-item">
-                <CheckCircle2 size={16} />
-                <span>Calcolo Base su 110/30 con Scarto CFU peggiori (PoliMi, UniBo, Sapienza)</span>
-              </div>
-              <div className="pro-feat-item">
-                <CheckCircle2 size={16} />
-                <span>Slider Commissione Tesi da 0 a +11 punti & Bonus Erasmus / In Corso</span>
-              </div>
-              <div className="pro-feat-item">
-                <CheckCircle2 size={16} />
-                <span>Simulatore a Ritroso per sapere che media mantenere per il 110 e Lode</span>
-              </div>
-              <div className="pro-feat-item">
-                <CheckCircle2 size={16} />
-                <span>Conversione Ufficiale Scala ECTS (A/B/C/D) per bandi internazionali</span>
-              </div>
-            </div>
-
-            <form className="unlock-pro-form" onSubmit={handleUnlockPro}>
-              <div className="unlock-input-wrap">
-                <input 
-                  type="text" 
-                  placeholder="Inserisci Codice Sblocco PRO..."
-                  value={proCodeInput}
-                  onChange={(e) => setProCodeInput(e.target.value)}
-                  className="unlock-input"
-                />
-                <button type="submit" className="primary-btn unlock-btn">
-                  <Unlock size={15} />
-                  <span>Sblocca</span>
-                </button>
-              </div>
-              {proCodeError && <div className="pro-err-msg">{proCodeError}</div>}
-              {proCodeSuccess && <div className="pro-ok-msg">Accesso Pro Sbloccato con Successo! Ricarica...</div>}
-            </form>
-          </div>
-        )}
+        </div>
       </div>
 
       {/* High Contrast Chart */}
