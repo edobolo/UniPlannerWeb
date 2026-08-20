@@ -59,6 +59,28 @@ export const AuthProvider = ({ children }) => {
     }
   }, [currentUser]);
 
+  // Sincronizza lo stato PRO in tempo reale dal backend al caricamento o dopo il pagamento
+  useEffect(() => {
+    const refreshProfileFromCloud = async () => {
+      if (!currentUser?.friendCode) return;
+      try {
+        const { fetchUserProfile } = await import('../utils/cloudSync');
+        const onlineProfile = await fetchUserProfile(currentUser.friendCode);
+        if (onlineProfile) {
+          setCurrentUser(prev => ({
+            ...prev,
+            isPremium: Boolean(onlineProfile.isPremium),
+            stripeCustomerId: onlineProfile.stripeCustomerId || prev?.stripeCustomerId || null
+          }));
+        }
+      } catch (err) {
+        console.warn('Silent cloud status refresh error:', err);
+      }
+    };
+
+    refreshProfileFromCloud();
+  }, [currentUser?.friendCode]);
+
   /**
    * Secure User Registration
    */
