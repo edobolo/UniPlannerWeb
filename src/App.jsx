@@ -155,14 +155,24 @@ function MainApp() {
   });
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    document.documentElement.style.colorScheme = theme;
-    localStorage.setItem('uniplanner_theme', theme);
-  }, [theme]);
+    if (palette === 'amoled' && theme === 'light') {
+      setTheme('dark');
+      document.documentElement.setAttribute('data-theme', 'dark');
+      document.documentElement.style.colorScheme = 'dark';
+      localStorage.setItem('uniplanner_theme', 'dark');
+    } else {
+      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.style.colorScheme = theme;
+      localStorage.setItem('uniplanner_theme', theme);
+    }
+  }, [theme, palette]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-palette', palette);
     localStorage.setItem('uniplanner_palette', palette);
+    if (palette === 'amoled') {
+      setTheme('dark');
+    }
   }, [palette]);
 
   // Electron Auto-Updater listener
@@ -182,6 +192,12 @@ function MainApp() {
   }, [isElectron]);
 
   const toggleTheme = () => {
+    if (palette === 'amoled') {
+      // Se è in amoled, mostra alert/toast o passa a palette default per abilitare il tema chiaro
+      setPalette('default');
+      setTheme('light');
+      return;
+    }
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
 

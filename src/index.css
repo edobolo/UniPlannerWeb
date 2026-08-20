@@ -55,152 +55,171 @@
   --card-bg-gradient: linear-gradient(180deg, #ffffff, #f8fafc);
 }
 
-/* --- DEEP LUXURY FACULTY THEMES & COLOR PALETTES --- */
+/* --- OFFICIAL ITALIAN ACADEMIC FACULTY THEMES --- */
 
-/* 1. Ingegneria / Informatica / Architettura (Cyber Tech Ciano & Cobalto) */
-[data-palette="engineering"] {
-  --accent-primary: #0ea5e9;
-  --accent-hover: #0284c7;
-  --glow-1: rgba(14, 165, 233, 0.18);
-  --glow-2: rgba(2, 132, 199, 0.12);
-  --btn-gradient: linear-gradient(135deg, #0ea5e9, #0284c7);
-  --glass-border: rgba(14, 165, 233, 0.22);
+/* 1. Lettere e Filosofia / Teologia / Magistero (Bianco Accademico & Perla) */
+[data-palette="humanities_white"] {
+  --accent-primary: #e2e8f0;
+  --accent-hover: #ffffff;
+  --glow-1: rgba(226, 232, 240, 0.16);
+  --glow-2: rgba(148, 163, 184, 0.12);
+  --btn-gradient: linear-gradient(135deg, #f8fafc, #94a3b8);
+  --glass-border: rgba(248, 250, 252, 0.25);
 }
-[data-theme="light"][data-palette="engineering"],
-[data-theme="light"] [data-palette="engineering"] {
-  --bg-primary: #f0f9ff;
+[data-theme="light"][data-palette="humanities_white"],
+[data-theme="light"] [data-palette="humanities_white"] {
+  --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
-  --accent-primary: #0284c7;
-  --accent-hover: #0369a1;
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #f0f9ff);
-  --glass-border: rgba(2, 132, 199, 0.18);
+  --accent-primary: #334155;
+  --accent-hover: #0f172a;
+  --card-bg-gradient: linear-gradient(180deg, #ffffff, #f1f5f9);
+  --glass-border: rgba(51, 65, 85, 0.18);
+  --btn-gradient: linear-gradient(135deg, #475569, #0f172a);
 }
 
-/* 2. Medicina / Chirurgia / Sanità (Rosso Rubino & Carmesino) */
-[data-palette="medicine"] {
-  --accent-primary: #f43f5e;
-  --accent-hover: #e11d48;
-  --glow-1: rgba(244, 63, 94, 0.18);
-  --glow-2: rgba(225, 29, 72, 0.12);
-  --btn-gradient: linear-gradient(135deg, #f43f5e, #be123c);
-  --glass-border: rgba(244, 63, 94, 0.22);
+/* 2. Giurisprudenza / Diritto (Blu Notte) */
+[data-palette="law_blue"], [data-palette="law"] {
+  --accent-primary: #2563eb;
+  --accent-hover: #1d4ed8;
+  --glow-1: rgba(37, 99, 235, 0.2);
+  --glow-2: rgba(30, 58, 138, 0.15);
+  --btn-gradient: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  --glass-border: rgba(37, 99, 235, 0.25);
 }
-[data-theme="light"][data-palette="medicine"],
-[data-theme="light"] [data-palette="medicine"] {
+[data-theme="light"][data-palette="law_blue"],
+[data-theme="light"][data-palette="law"] {
+  --bg-primary: #eff6ff;
+  --bg-secondary: #ffffff;
+  --accent-primary: #1d4ed8;
+  --accent-hover: #1e40af;
+  --card-bg-gradient: linear-gradient(180deg, #ffffff, #eff6ff);
+  --glass-border: rgba(29, 78, 216, 0.18);
+}
+
+/* 3. Ingegneria e Architettura (Nero & Grafite Titanio) */
+[data-palette="engineering_black"], [data-palette="engineering"] {
+  --accent-primary: #a1a1aa;
+  --accent-hover: #f4f4f5;
+  --glow-1: rgba(113, 113, 122, 0.2);
+  --glow-2: rgba(24, 24, 27, 0.3);
+  --btn-gradient: linear-gradient(135deg, #52525b, #27272a);
+  --glass-border: rgba(161, 161, 170, 0.25);
+}
+[data-theme="light"][data-palette="engineering_black"],
+[data-theme="light"][data-palette="engineering"] {
+  --bg-primary: #f4f4f5;
+  --bg-secondary: #ffffff;
+  --accent-primary: #18181b;
+  --accent-hover: #09090b;
+  --card-bg-gradient: linear-gradient(180deg, #ffffff, #f4f4f5);
+  --glass-border: rgba(24, 24, 27, 0.2);
+  --btn-gradient: linear-gradient(135deg, #27272a, #09090b);
+}
+
+/* 4. Medicina e Chirurgia (Rosso Scarlatto) */
+[data-palette="medicine_red"], [data-palette="medicine"] {
+  --accent-primary: #ef4444;
+  --accent-hover: #dc2626;
+  --glow-1: rgba(239, 68, 68, 0.2);
+  --glow-2: rgba(185, 28, 28, 0.15);
+  --btn-gradient: linear-gradient(135deg, #f87171, #dc2626);
+  --glass-border: rgba(239, 68, 68, 0.25);
+}
+[data-theme="light"][data-palette="medicine_red"],
+[data-theme="light"][data-palette="medicine"] {
+  --bg-primary: #fef2f2;
+  --bg-secondary: #ffffff;
+  --accent-primary: #dc2626;
+  --accent-hover: #b91c1c;
+  --card-bg-gradient: linear-gradient(180deg, #ffffff, #fef2f2);
+  --glass-border: rgba(220, 38, 38, 0.18);
+}
+
+/* 5. Farmacia e Veterinaria (Rosso Granata & Amaranto) */
+[data-palette="pharmacy_garnet"] {
+  --accent-primary: #b91c1c;
+  --accent-hover: #991b1b;
+  --glow-1: rgba(185, 28, 28, 0.2);
+  --glow-2: rgba(127, 29, 29, 0.15);
+  --btn-gradient: linear-gradient(135deg, #dc2626, #881337);
+  --glass-border: rgba(185, 28, 28, 0.25);
+}
+[data-theme="light"][data-palette="pharmacy_garnet"] {
   --bg-primary: #fff1f2;
   --bg-secondary: #ffffff;
-  --accent-primary: #e11d48;
-  --accent-hover: #be123c;
+  --accent-primary: #991b1b;
+  --accent-hover: #7f1d1d;
   --card-bg-gradient: linear-gradient(180deg, #ffffff, #fff1f2);
-  --glass-border: rgba(225, 29, 72, 0.18);
+  --glass-border: rgba(153, 27, 27, 0.18);
 }
 
-/* 3. Economia / Finanza / Management (Oro Imperiale & Ambra di Lusso) */
-[data-palette="economics"] {
-  --accent-primary: #f59e0b;
-  --accent-hover: #d97706;
-  --glow-1: rgba(245, 158, 11, 0.18);
-  --glow-2: rgba(217, 119, 6, 0.12);
-  --btn-gradient: linear-gradient(135deg, #fbbf24, #d97706);
-  --glass-border: rgba(245, 158, 11, 0.22);
+/* 6. Scienze MM.FF.NN. e Matematica (Verde Smeraldo) */
+[data-palette="science_green"], [data-palette="science"] {
+  --accent-primary: #16a34a;
+  --accent-hover: #15803d;
+  --glow-1: rgba(22, 163, 74, 0.2);
+  --glow-2: rgba(21, 128, 61, 0.15);
+  --btn-gradient: linear-gradient(135deg, #22c55e, #15803d);
+  --glass-border: rgba(22, 163, 74, 0.25);
 }
-[data-theme="light"][data-palette="economics"],
-[data-theme="light"] [data-palette="economics"] {
-  --bg-primary: #fffbeb;
+[data-theme="light"][data-palette="science_green"],
+[data-theme="light"][data-palette="science"] {
+  --bg-primary: #f0fdf4;
   --bg-secondary: #ffffff;
-  --accent-primary: #d97706;
-  --accent-hover: #b45309;
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #fffbeb);
-  --glass-border: rgba(217, 119, 6, 0.18);
+  --accent-primary: #15803d;
+  --accent-hover: #166534;
+  --card-bg-gradient: linear-gradient(180deg, #ffffff, #f0fdf4);
+  --glass-border: rgba(21, 128, 61, 0.18);
 }
 
-/* 4. Giurisprudenza / Diritto / Legge (Indaco Istituzionale & Zaffiro) */
-[data-palette="law"] {
-  --accent-primary: #6366f1;
-  --accent-hover: #4f46e5;
-  --glow-1: rgba(99, 102, 241, 0.18);
-  --glow-2: rgba(79, 70, 229, 0.12);
-  --btn-gradient: linear-gradient(135deg, #818cf8, #4f46e5);
-  --glass-border: rgba(99, 102, 241, 0.22);
+/* 7. Agraria (Verde Cupo Foresta) */
+[data-palette="agriculture_darkgreen"] {
+  --accent-primary: #15803d;
+  --accent-hover: #14532d;
+  --glow-1: rgba(20, 83, 45, 0.25);
+  --glow-2: rgba(5, 46, 22, 0.2);
+  --btn-gradient: linear-gradient(135deg, #166534, #14532d);
+  --glass-border: rgba(22, 101, 52, 0.3);
 }
-[data-theme="light"][data-palette="law"],
-[data-theme="light"] [data-palette="law"] {
-  --bg-primary: #eef2ff;
+[data-theme="light"][data-palette="agriculture_darkgreen"] {
+  --bg-primary: #f2fbf4;
   --bg-secondary: #ffffff;
-  --accent-primary: #4f46e5;
-  --accent-hover: #4338ca;
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #eef2ff);
-  --glass-border: rgba(79, 70, 229, 0.18);
+  --accent-primary: #14532d;
+  --accent-hover: #052e16;
+  --card-bg-gradient: linear-gradient(180deg, #ffffff, #f2fbf4);
+  --glass-border: rgba(20, 83, 45, 0.2);
 }
 
-/* 5. Lettere / Filosofia / Lingue / Storia (Viola Ametista Rinascimentale) */
-[data-palette="humanities"] {
-  --accent-primary: #a855f7;
-  --accent-hover: #9333ea;
-  --glow-1: rgba(168, 85, 247, 0.18);
-  --glow-2: rgba(147, 51, 234, 0.12);
-  --btn-gradient: linear-gradient(135deg, #c084fc, #9333ea);
-  --glass-border: rgba(168, 85, 247, 0.22);
+/* 8. Economia e Commercio (Giallo Oro) */
+[data-palette="economics_yellow"], [data-palette="economics"] {
+  --accent-primary: #eab308;
+  --accent-hover: #ca8a04;
+  --glow-1: rgba(234, 179, 8, 0.2);
+  --glow-2: rgba(161, 98, 7, 0.15);
+  --btn-gradient: linear-gradient(135deg, #facc15, #ca8a04);
+  --glass-border: rgba(234, 179, 8, 0.25);
 }
-[data-theme="light"][data-palette="humanities"],
-[data-theme="light"] [data-palette="humanities"] {
-  --bg-primary: #faf5ff;
+[data-theme="light"][data-palette="economics_yellow"],
+[data-theme="light"][data-palette="economics"] {
+  --bg-primary: #fefce8;
   --bg-secondary: #ffffff;
-  --accent-primary: #9333ea;
-  --accent-hover: #7e22ce;
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #faf5ff);
-  --glass-border: rgba(147, 51, 234, 0.18);
+  --accent-primary: #ca8a04;
+  --accent-hover: #a16207;
+  --card-bg-gradient: linear-gradient(180deg, #ffffff, #fefce8);
+  --glass-border: rgba(202, 138, 4, 0.18);
 }
 
-/* 6. Scienze MFN / Biologia / Chimica / Agraria (Bio-Verde Smeraldo) */
-[data-palette="science"] {
-  --accent-primary: #10b981;
-  --accent-hover: #059669;
-  --glow-1: rgba(16, 185, 129, 0.18);
-  --glow-2: rgba(5, 150, 105, 0.12);
-  --btn-gradient: linear-gradient(135deg, #34d399, #059669);
-  --glass-border: rgba(16, 185, 129, 0.22);
-}
-[data-theme="light"][data-palette="science"],
-[data-theme="light"] [data-palette="science"] {
-  --bg-primary: #ecfdf5;
-  --bg-secondary: #ffffff;
-  --accent-primary: #059669;
-  --accent-hover: #047857;
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #ecfdf5);
-  --glass-border: rgba(5, 150, 105, 0.18);
-}
-
-/* 7. Scienze Politiche / Sociologia / Comunicazione (Arancione Corallo Dinamico) */
-[data-palette="politics"] {
-  --accent-primary: #f97316;
-  --accent-hover: #ea580c;
-  --glow-1: rgba(249, 115, 22, 0.18);
-  --glow-2: rgba(234, 88, 12, 0.12);
-  --btn-gradient: linear-gradient(135deg, #fb923c, #ea580c);
-  --glass-border: rgba(249, 115, 22, 0.22);
-}
-[data-theme="light"][data-palette="politics"],
-[data-theme="light"] [data-palette="politics"] {
-  --bg-primary: #fff7ed;
-  --bg-secondary: #ffffff;
-  --accent-primary: #ea580c;
-  --accent-hover: #c2410c;
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #fff7ed);
-  --glass-border: rgba(234, 88, 12, 0.18);
-}
-
-/* 8. Psicologia / Scienze della Formazione / Pedagogia (Rosa Aurora & Fucsia) */
-[data-palette="psychology"] {
+/* 9. Psicologia e Pedagogia (Grigio & Rosa) */
+[data-palette="psychology_grey"], [data-palette="psychology"] {
   --accent-primary: #ec4899;
   --accent-hover: #db2777;
   --glow-1: rgba(236, 72, 153, 0.18);
-  --glow-2: rgba(219, 39, 119, 0.12);
-  --btn-gradient: linear-gradient(135deg, #f472b6, #db2777);
-  --glass-border: rgba(236, 72, 153, 0.22);
+  --glow-2: rgba(100, 116, 139, 0.15);
+  --btn-gradient: linear-gradient(135deg, #f472b6, #64748b);
+  --glass-border: rgba(236, 72, 153, 0.25);
 }
-[data-theme="light"][data-palette="psychology"],
-[data-theme="light"] [data-palette="psychology"] {
+[data-theme="light"][data-palette="psychology_grey"],
+[data-theme="light"][data-palette="psychology"] {
   --bg-primary: #fdf2f8;
   --bg-secondary: #ffffff;
   --accent-primary: #db2777;
@@ -209,24 +228,139 @@
   --glass-border: rgba(219, 39, 119, 0.18);
 }
 
-/* 9. Modalità AMOLED Pure Black (Nero Assoluto per Risparmio Batteria OLED) */
-[data-palette="amoled"] {
-  --bg-primary: #000000;
-  --bg-secondary: #08080a;
-  --bg-card: rgba(12, 12, 14, 0.95);
-  --bg-card-solid: #0a0a0c;
-  --bg-hover: rgba(255, 255, 255, 0.1);
-  --glass-bg: rgba(8, 8, 10, 0.95);
-  --glass-border: rgba(255, 255, 255, 0.15);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.9);
-  --input-bg: rgba(255, 255, 255, 0.08);
+/* 10. Scienze Politiche (Viola Tradizionale) */
+[data-palette="politics_purple"], [data-palette="politics"] {
+  --accent-primary: #9333ea;
+  --accent-hover: #7e22ce;
+  --glow-1: rgba(147, 51, 234, 0.2);
+  --glow-2: rgba(107, 33, 168, 0.15);
+  --btn-gradient: linear-gradient(135deg, #a855f7, #6b21a8);
+  --glass-border: rgba(147, 51, 234, 0.25);
+}
+[data-theme="light"][data-palette="politics_purple"],
+[data-theme="light"][data-palette="politics"] {
+  --bg-primary: #faf5ff;
+  --bg-secondary: #ffffff;
+  --accent-primary: #7e22ce;
+  --accent-hover: #6b21a8;
+  --card-bg-gradient: linear-gradient(180deg, #ffffff, #faf5ff);
+  --glass-border: rgba(126, 34, 206, 0.18);
+}
+
+/* 11. Statistica & Scienze Bancarie (Bluette & Azzurro) */
+[data-palette="statistics_bluette"] {
+  --accent-primary: #3b82f6;
+  --accent-hover: #2563eb;
+  --glow-1: rgba(59, 130, 246, 0.2);
+  --glow-2: rgba(30, 64, 175, 0.15);
+  --btn-gradient: linear-gradient(135deg, #60a5fa, #2563eb);
+  --glass-border: rgba(59, 130, 246, 0.25);
+}
+[data-theme="light"][data-palette="statistics_bluette"] {
+  --bg-primary: #f0f7ff;
+  --bg-secondary: #ffffff;
+  --accent-primary: #2563eb;
+  --accent-hover: #1d4ed8;
+  --card-bg-gradient: linear-gradient(180deg, #ffffff, #f0f7ff);
+  --glass-border: rgba(37, 99, 235, 0.18);
+}
+
+/* 12. Scienze della Comunicazione (Vinaccia) */
+[data-palette="communication_vinaccia"] {
+  --accent-primary: #be185d;
+  --accent-hover: #9d174d;
+  --glow-1: rgba(190, 24, 93, 0.2);
+  --glow-2: rgba(131, 24, 67, 0.15);
+  --btn-gradient: linear-gradient(135deg, #db2777, #831843);
+  --glass-border: rgba(190, 24, 93, 0.25);
+}
+[data-theme="light"][data-palette="communication_vinaccia"] {
+  --bg-primary: #fff1f5;
+  --bg-secondary: #ffffff;
+  --accent-primary: #9d174d;
+  --accent-hover: #831843;
+  --card-bg-gradient: linear-gradient(180deg, #ffffff, #fff1f5);
+  --glass-border: rgba(157, 23, 77, 0.18);
+}
+
+/* 13. Lingue e Letterature Straniere (Rosso Bordeaux) */
+[data-palette="languages_bordeaux"] {
+  --accent-primary: #9f1239;
+  --accent-hover: #881337;
+  --glow-1: rgba(159, 18, 57, 0.2);
+  --glow-2: rgba(76, 5, 25, 0.15);
+  --btn-gradient: linear-gradient(135deg, #be123c, #4c0519);
+  --glass-border: rgba(159, 18, 57, 0.25);
+}
+[data-theme="light"][data-palette="languages_bordeaux"] {
+  --bg-primary: #fff0f3;
+  --bg-secondary: #ffffff;
+  --accent-primary: #881337;
+  --accent-hover: #4c0519;
+  --card-bg-gradient: linear-gradient(180deg, #ffffff, #fff0f3);
+  --glass-border: rgba(136, 19, 55, 0.18);
+}
+
+/* 14. Sociologia (Arancione) */
+[data-palette="sociology_orange"] {
+  --accent-primary: #f97316;
+  --accent-hover: #ea580c;
+  --glow-1: rgba(249, 115, 22, 0.2);
+  --glow-2: rgba(194, 65, 12, 0.15);
+  --btn-gradient: linear-gradient(135deg, #fb923c, #c2410c);
+  --glass-border: rgba(249, 115, 22, 0.25);
+}
+[data-theme="light"][data-palette="sociology_orange"] {
+  --bg-primary: #fff7ed;
+  --bg-secondary: #ffffff;
+  --accent-primary: #ea580c;
+  --accent-hover: #c2410c;
+  --card-bg-gradient: linear-gradient(180deg, #ffffff, #fff7ed);
+  --glass-border: rgba(234, 88, 12, 0.18);
+}
+
+/* 15. Accademia delle Belle Arti (Celeste & Carta da Zucchero) */
+[data-palette="arts_celeste"] {
   --accent-primary: #38bdf8;
   --accent-hover: #0284c7;
-  --glow-1: rgba(56, 189, 248, 0.15);
-  --glow-2: rgba(0, 0, 0, 0);
-  --btn-gradient: linear-gradient(135deg, #38bdf8, #0284c7);
-  --modal-bg: linear-gradient(180deg, #0a0a0c, #000000);
-  --card-bg-gradient: linear-gradient(180deg, #0a0a0c, #000000);
+  --glow-1: rgba(56, 189, 248, 0.2);
+  --glow-2: rgba(3, 105, 161, 0.15);
+  --btn-gradient: linear-gradient(135deg, #7dd3fc, #0284c7);
+  --glass-border: rgba(56, 189, 248, 0.25);
+}
+[data-theme="light"][data-palette="arts_celeste"] {
+  --bg-primary: #f0f9ff;
+  --bg-secondary: #ffffff;
+  --accent-primary: #0284c7;
+  --accent-hover: #0369a1;
+  --card-bg-gradient: linear-gradient(180deg, #ffffff, #f0f9ff);
+  --glass-border: rgba(2, 132, 199, 0.18);
+}
+
+/* 16. Modalità AMOLED Pure Black (Nero Assoluto - RIGOROSAMENTE SOLO SCURA) */
+[data-palette="amoled"],
+[data-theme="light"][data-palette="amoled"],
+[data-theme="light"] [data-palette="amoled"] {
+  color-scheme: dark !important;
+  --bg-primary: #000000 !important;
+  --bg-secondary: #08080a !important;
+  --bg-card: rgba(12, 12, 14, 0.95) !important;
+  --bg-card-solid: #0a0a0c !important;
+  --bg-hover: rgba(255, 255, 255, 0.1) !important;
+  --text-primary: #f8fafc !important;
+  --text-secondary: #94a3b8 !important;
+  --text-muted: #64748b !important;
+  --glass-bg: rgba(8, 8, 10, 0.95) !important;
+  --glass-border: rgba(255, 255, 255, 0.15) !important;
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.9) !important;
+  --input-bg: rgba(255, 255, 255, 0.08) !important;
+  --accent-primary: #38bdf8 !important;
+  --accent-hover: #0284c7 !important;
+  --glow-1: rgba(56, 189, 248, 0.15) !important;
+  --glow-2: rgba(0, 0, 0, 0) !important;
+  --btn-gradient: linear-gradient(135deg, #38bdf8, #0284c7) !important;
+  --modal-bg: linear-gradient(180deg, #0a0a0c, #000000) !important;
+  --card-bg-gradient: linear-gradient(180deg, #0a0a0c, #000000) !important;
 }
 
 * {

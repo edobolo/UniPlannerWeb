@@ -5,19 +5,28 @@ import './ThemeModal.css';
 
 export const FACULTY_PALETTES = [
   { id: 'default', name: 'UniPlanner Classic', color: '#3b82f6', icon: '🌌', desc: 'Blu Spaziale Moderno' },
-  { id: 'engineering', name: 'Ingegneria / Architettura / Tech', color: '#0284c7', icon: '⚙️', desc: 'Ciano Tech & Cobalto' },
-  { id: 'medicine', name: 'Medicina / Sanità / Farmacia', color: '#e11d48', icon: '🩺', desc: 'Rosso Rubino & Carmesino' },
-  { id: 'economics', name: 'Economia / Finanza / Management', color: '#d97706', icon: '📈', desc: 'Giallo Oro & Ambra' },
-  { id: 'law', name: 'Giurisprudenza / Diritto / Legge', color: '#6366f1', icon: '⚖️', desc: 'Indaco Istituzionale & Zaffiro' },
-  { id: 'humanities', name: 'Lettere / Filosofia / Lingue', color: '#8b5cf6', icon: '🏛️', desc: 'Viola Ametista Regale' },
-  { id: 'science', name: 'Scienze MFN / Biologia / Agraria', color: '#059669', icon: '🔬', desc: 'Verde Smeraldo & Menta' },
-  { id: 'politics', name: 'Scienze Politiche / Sociologia', color: '#ea580c', icon: '🌍', desc: 'Arancione Corallo' },
-  { id: 'psychology', name: 'Psicologia / Scienze Formazione', color: '#db2777', icon: '🧠', desc: 'Rosa & Fucsia' },
-  { id: 'amoled', name: 'AMOLED Pure Black (OLED Eco)', color: '#38bdf8', icon: '🖤', desc: 'Nero Assoluto Batteria' },
+  { id: 'humanities_white', name: 'Lettere e Filosofia / Teologia', color: '#e2e8f0', icon: '📜', desc: 'Bianco Accademico & Perla' },
+  { id: 'law_blue', name: 'Giurisprudenza / Diritto', color: '#1d4ed8', icon: '⚖️', desc: 'Blu Notte Istituzionale' },
+  { id: 'engineering_black', name: 'Ingegneria e Architettura', color: '#27272a', icon: '⚙️', desc: 'Nero & Grafite Titanio' },
+  { id: 'medicine_red', name: 'Medicina e Chirurgia', color: '#dc2626', icon: '🩺', desc: 'Rosso Scarlatto' },
+  { id: 'pharmacy_garnet', name: 'Farmacia e Veterinaria', color: '#991b1b', icon: '💊', desc: 'Rosso Granata & Amaranto' },
+  { id: 'science_green', name: 'Scienze MM.FF.NN. e Matematica', color: '#16a34a', icon: '🔬', desc: 'Verde Brillante' },
+  { id: 'agriculture_darkgreen', name: 'Agraria', color: '#14532d', icon: '🌿', desc: 'Verde Cupo Foresta' },
+  { id: 'economics_yellow', name: 'Economia e Commercio', color: '#eab308', icon: '📈', desc: 'Giallo Oro' },
+  { id: 'psychology_grey', name: 'Psicologia e Pedagogia', color: '#64748b', icon: '🧠', desc: 'Grigio Ardesia & Rosa' },
+  { id: 'politics_purple', name: 'Scienze Politiche', color: '#7e22ce', icon: '🏛️', desc: 'Viola Tradizionale' },
+  { id: 'statistics_bluette', name: 'Statistica & Scienze Bancarie', color: '#2563eb', icon: '📊', desc: 'Bluette & Azzurro' },
+  { id: 'communication_vinaccia', name: 'Scienze della Comunicazione', color: '#9d174d', icon: '📣', desc: 'Vinaccia & Corallo' },
+  { id: 'languages_bordeaux', name: 'Lingue e Letterature', color: '#831843', icon: '🌍', desc: 'Rosso Bordeaux' },
+  { id: 'sociology_orange', name: 'Sociologia', color: '#ea580c', icon: '👥', desc: 'Arancione' },
+  { id: 'arts_celeste', name: 'Accademia Belle Arti', color: '#38bdf8', icon: '🎨', desc: 'Celeste Carta da Zucchero' },
+  { id: 'amoled', name: 'AMOLED Pure Black (OLED Eco)', color: '#000000', icon: '🖤', desc: 'Nero Assoluto (Solo Scura)' },
 ];
 
 const ThemeModal = ({ isOpen, onClose, currentPalette, onSelectPalette, theme, onToggleTheme }) => {
   if (!isOpen) return null;
+
+  const isAmoled = currentPalette === 'amoled';
 
   return (
     <AnimatePresence>
@@ -36,8 +45,8 @@ const ThemeModal = ({ isOpen, onClose, currentPalette, onSelectPalette, theme, o
                 <Sparkles size={20} />
               </div>
               <div>
-                <h3>Colori & Temi Facoltà</h3>
-                <p className="theme-header-sub">Scegli la palette della tua facoltà o il tema AMOLED</p>
+                <h3>Colori & Temi Ufficiali Facoltà</h3>
+                <p className="theme-header-sub">Colori tradizionali dell'ordinamento accademico italiano</p>
               </div>
             </div>
             <button className="theme-close-btn" onClick={onClose}>
@@ -47,20 +56,30 @@ const ThemeModal = ({ isOpen, onClose, currentPalette, onSelectPalette, theme, o
 
           {/* Quick Dark/Light Toggle */}
           <div className="theme-mode-row">
-            <span className="theme-mode-label">Modalità Aspetto:</span>
+            <span className="theme-mode-label">
+              Modalità Aspetto {isAmoled && <span style={{ fontSize: '11px', color: 'var(--accent-primary)', marginLeft: '6px' }}>(Disattivata per AMOLED)</span>}
+            </span>
             <div className="theme-mode-toggle">
               <button 
                 type="button" 
                 className={`theme-pill ${theme === 'dark' ? 'active' : ''}`}
                 onClick={() => theme !== 'dark' && onToggleTheme()}
+                disabled={isAmoled}
+                title={isAmoled ? 'La modalità AMOLED supporta esclusivamente il tema scuro' : 'Modalità Scura'}
               >
                 <Moon size={14} />
                 <span>Scura</span>
               </button>
               <button 
                 type="button" 
-                className={`theme-pill ${theme === 'light' ? 'active' : ''}`}
-                onClick={() => theme !== 'light' && onToggleTheme()}
+                className={`theme-pill ${theme === 'light' && !isAmoled ? 'active' : ''}`}
+                onClick={() => {
+                  if (isAmoled) return;
+                  theme !== 'light' && onToggleTheme();
+                }}
+                disabled={isAmoled}
+                style={{ opacity: isAmoled ? 0.35 : 1, cursor: isAmoled ? 'not-allowed' : 'pointer' }}
+                title={isAmoled ? 'La modalità AMOLED è concepita esclusivamente per sfondi neri su display OLED' : 'Modalità Chiara'}
               >
                 <Sun size={14} />
                 <span>Chiara</span>
@@ -81,7 +100,10 @@ const ThemeModal = ({ isOpen, onClose, currentPalette, onSelectPalette, theme, o
                 >
                   <div 
                     className="faculty-color-circle" 
-                    style={{ backgroundColor: pal.color }}
+                    style={{ 
+                      backgroundColor: pal.color,
+                      border: pal.id === 'humanities_white' ? '1.5px solid rgba(255,255,255,0.4)' : pal.id === 'amoled' ? '1.5px solid rgba(255,255,255,0.2)' : 'none'
+                    }}
                   >
                     <span>{pal.icon}</span>
                   </div>
@@ -101,7 +123,7 @@ const ThemeModal = ({ isOpen, onClose, currentPalette, onSelectPalette, theme, o
 
           <div className="theme-modal-footer">
             <button className="primary-btn theme-done-btn" onClick={onClose}>
-              Salva & Applica
+              Salva & Applica Tema
             </button>
           </div>
         </motion.div>

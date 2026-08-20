@@ -23,20 +23,8 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { generateShareLink, resetUserPassword } from '../utils/cloudSync';
 import { safeJsonParse } from '../utils/security';
+import { FACULTY_PALETTES } from './ThemeModal';
 import './AccountModal.css';
-
-export const FACULTY_PALETTES = [
-  { id: 'default', name: 'UniPlanner Classic', color: '#3b82f6', icon: '🌌', desc: 'Blu Spaziale Moderno' },
-  { id: 'engineering', name: 'Ingegneria / Architettura / Tech', color: '#0284c7', icon: '⚙️', desc: 'Ciano & Cobalto' },
-  { id: 'medicine', name: 'Medicina / Sanità / Farmacia', color: '#e11d48', icon: '🩺', desc: 'Rosso Rubino' },
-  { id: 'economics', name: 'Economia / Finanza / Management', color: '#d97706', icon: '📈', desc: 'Oro & Ambra' },
-  { id: 'law', name: 'Giurisprudenza / Diritto / Legge', color: '#6366f1', icon: '⚖️', desc: 'Indaco Istituzionale' },
-  { id: 'humanities', name: 'Lettere / Filosofia / Lingue', color: '#8b5cf6', icon: '🏛️', desc: 'Viola Ametista' },
-  { id: 'science', name: 'Scienze MFN / Biologia / Agraria', color: '#059669', icon: '🔬', desc: 'Verde Smeraldo' },
-  { id: 'politics', name: 'Scienze Politiche / Sociologia', color: '#ea580c', icon: '🌍', desc: 'Arancione Corallo' },
-  { id: 'psychology', name: 'Psicologia / Scienze Formazione', color: '#db2777', icon: '🧠', desc: 'Rosa Fucsia' },
-  { id: 'amoled', name: 'AMOLED Pure Black (OLED Eco)', color: '#38bdf8', icon: '🖤', desc: 'Nero Assoluto Batteria' },
-];
 
 const AccountModal = ({ onOpenLegal }) => {
   const { 
