@@ -57,6 +57,25 @@ const Grades = () => {
     }
   }, [settings, currentUser]);
 
+  const [currentTheme, setCurrentTheme] = useState(() => document.documentElement.getAttribute('data-theme') || 'dark');
+  const [currentAccent, setCurrentAccent] = useState(() => {
+    return getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#3b82f6';
+  });
+
+  useEffect(() => {
+    const updateThemeState = () => {
+      const t = document.documentElement.getAttribute('data-theme') || 'dark';
+      const c = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#3b82f6';
+      setCurrentTheme(t);
+      setCurrentAccent(c);
+    };
+
+    updateThemeState();
+    const observer = new MutationObserver(updateThemeState);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-palette'] });
+    return () => observer.disconnect();
+  }, []);
+
   // Calculations
   const completedExams = exams.filter(e => e.grade !== null);
   const gradedExams = completedExams.filter(e => e.grade !== 'IDONEO');
@@ -83,21 +102,30 @@ const Grades = () => {
     ? ((sumPonderata / gradedCfu) * 110 / 30 + (lodeCount * settings.lodeBonus)).toFixed(2) 
     : 0;
 
+  const isLight = currentTheme === 'light';
+
   // Chart Data
   const chartData = {
-    labels: gradedExams.map(e => e.name.substring(0, 10) + (e.name.length > 10 ? '...' : '')),
+    labels: gradedExams.map(e => e.name.substring(0, 12) + (e.name.length > 12 ? '...' : '')),
     datasets: [
       {
         fill: true,
         label: 'Andamento Voti',
         data: gradedExams.map(e => e.grade === '30L' ? 31 : Number(e.grade)),
-        borderColor: '#3b82f6',
-        backgroundColor: 'rgba(59, 130, 246, 0.2)',
-        tension: 0.4,
-        pointBackgroundColor: '#3b82f6',
-        pointBorderColor: '#fff',
+        borderColor: currentAccent,
+        backgroundColor: (context) => {
+          const ctx = context.chart.ctx;
+          const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+          gradient.addColorStop(0, currentAccent + '40'); // 25% opacity
+          gradient.addColorStop(1, currentAccent + '05'); // 2% opacity
+          return gradient;
+        },
+        tension: 0.35,
+        pointBackgroundColor: currentAccent,
+        pointBorderColor: isLight ? '#ffffff' : '#1e293b',
         pointBorderWidth: 2,
-        pointRadius: 4,
+        pointRadius: 5,
+        pointHoverRadius: 7,
       },
     ],
   };
@@ -111,23 +139,35 @@ const Grades = () => {
         max: 31,
         ticks: {
           stepSize: 1,
-          color: 'rgba(255, 255, 255, 0.5)',
+          color: isLight ? '#475569' : 'rgba(255, 255, 255, 0.65)',
+          font: { weight: 600, size: 11 },
           callback: (value) => value === 31 ? '30L' : value
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.05)',
+          color: isLight ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.06)',
+          drawBorder: false
         }
       },
       x: {
-        ticks: { color: 'rgba(255, 255, 255, 0.5)' },
+        ticks: { 
+          color: isLight ? '#475569' : 'rgba(255, 255, 255, 0.65)',
+          font: { weight: 600, size: 11 }
+        },
         grid: { display: false }
       }
     },
     plugins: {
       legend: { display: false },
       tooltip: {
+        backgroundColor: isLight ? '#ffffff' : '#0f172a',
+        titleColor: isLight ? '#0f172a' : '#f8fafc',
+        bodyColor: isLight ? '#334155' : '#e2e8f0',
+        borderColor: isLight ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.15)',
+        borderWidth: 1,
+        padding: 10,
+        cornerRadius: 8,
         callbacks: {
-          label: (context) => context.raw === 31 ? 'Voto: 30L' : `Voto: ${context.raw}`
+          label: (context) => context.raw === 31 ? ' Voto: 30 e Lode 🌟' : ` Voto: ${context.raw}`
         }
       }
     }

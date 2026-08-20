@@ -55,71 +55,178 @@
   --card-bg-gradient: linear-gradient(180deg, #ffffff, #f8fafc);
 }
 
-/* --- THEME COLOR PALETTES (FACOLTÀ & MODALITÀ AMOLED) --- */
+/* --- DEEP LUXURY FACULTY THEMES & COLOR PALETTES --- */
 
-/* 1. Ingegneria / Informatica / Architettura (Ciano & Cobalto) */
+/* 1. Ingegneria / Informatica / Architettura (Cyber Tech Ciano & Cobalto) */
 [data-palette="engineering"] {
+  --accent-primary: #0ea5e9;
+  --accent-hover: #0284c7;
+  --glow-1: rgba(14, 165, 233, 0.18);
+  --glow-2: rgba(2, 132, 199, 0.12);
+  --btn-gradient: linear-gradient(135deg, #0ea5e9, #0284c7);
+  --glass-border: rgba(14, 165, 233, 0.22);
+}
+[data-theme="light"][data-palette="engineering"],
+[data-theme="light"] [data-palette="engineering"] {
+  --bg-primary: #f0f9ff;
+  --bg-secondary: #ffffff;
   --accent-primary: #0284c7;
   --accent-hover: #0369a1;
+  --card-bg-gradient: linear-gradient(180deg, #ffffff, #f0f9ff);
+  --glass-border: rgba(2, 132, 199, 0.18);
 }
 
-/* 2. Medicina / Chirurgia / Professioni Sanitarie (Rosso Rubino & Carmesino) */
+/* 2. Medicina / Chirurgia / Sanità (Rosso Rubino & Carmesino) */
 [data-palette="medicine"] {
+  --accent-primary: #f43f5e;
+  --accent-hover: #e11d48;
+  --glow-1: rgba(244, 63, 94, 0.18);
+  --glow-2: rgba(225, 29, 72, 0.12);
+  --btn-gradient: linear-gradient(135deg, #f43f5e, #be123c);
+  --glass-border: rgba(244, 63, 94, 0.22);
+}
+[data-theme="light"][data-palette="medicine"],
+[data-theme="light"] [data-palette="medicine"] {
+  --bg-primary: #fff1f2;
+  --bg-secondary: #ffffff;
   --accent-primary: #e11d48;
   --accent-hover: #be123c;
+  --card-bg-gradient: linear-gradient(180deg, #ffffff, #fff1f2);
+  --glass-border: rgba(225, 29, 72, 0.18);
 }
 
-/* 3. Economia / Finanza / Management (Giallo Oro & Ambra) */
+/* 3. Economia / Finanza / Management (Oro Imperiale & Ambra di Lusso) */
 [data-palette="economics"] {
+  --accent-primary: #f59e0b;
+  --accent-hover: #d97706;
+  --glow-1: rgba(245, 158, 11, 0.18);
+  --glow-2: rgba(217, 119, 6, 0.12);
+  --btn-gradient: linear-gradient(135deg, #fbbf24, #d97706);
+  --glass-border: rgba(245, 158, 11, 0.22);
+}
+[data-theme="light"][data-palette="economics"],
+[data-theme="light"] [data-palette="economics"] {
+  --bg-primary: #fffbeb;
+  --bg-secondary: #ffffff;
   --accent-primary: #d97706;
   --accent-hover: #b45309;
+  --card-bg-gradient: linear-gradient(180deg, #ffffff, #fffbeb);
+  --glass-border: rgba(217, 119, 6, 0.18);
 }
 
-/* 4. Giurisprudenza / Legge / Diritto (Indaco & Zaffiro Istituzionale) */
+/* 4. Giurisprudenza / Diritto / Legge (Indaco Istituzionale & Zaffiro) */
 [data-palette="law"] {
   --accent-primary: #6366f1;
   --accent-hover: #4f46e5;
+  --glow-1: rgba(99, 102, 241, 0.18);
+  --glow-2: rgba(79, 70, 229, 0.12);
+  --btn-gradient: linear-gradient(135deg, #818cf8, #4f46e5);
+  --glass-border: rgba(99, 102, 241, 0.22);
+}
+[data-theme="light"][data-palette="law"],
+[data-theme="light"] [data-palette="law"] {
+  --bg-primary: #eef2ff;
+  --bg-secondary: #ffffff;
+  --accent-primary: #4f46e5;
+  --accent-hover: #4338ca;
+  --card-bg-gradient: linear-gradient(180deg, #ffffff, #eef2ff);
+  --glass-border: rgba(79, 70, 229, 0.18);
 }
 
-/* 5. Lettere / Filosofia / Lingue / Beni Culturali (Viola Ametista) */
+/* 5. Lettere / Filosofia / Lingue / Storia (Viola Ametista Rinascimentale) */
 [data-palette="humanities"] {
-  --accent-primary: #8b5cf6;
-  --accent-hover: #7c3aed;
+  --accent-primary: #a855f7;
+  --accent-hover: #9333ea;
+  --glow-1: rgba(168, 85, 247, 0.18);
+  --glow-2: rgba(147, 51, 234, 0.12);
+  --btn-gradient: linear-gradient(135deg, #c084fc, #9333ea);
+  --glass-border: rgba(168, 85, 247, 0.22);
+}
+[data-theme="light"][data-palette="humanities"],
+[data-theme="light"] [data-palette="humanities"] {
+  --bg-primary: #faf5ff;
+  --bg-secondary: #ffffff;
+  --accent-primary: #9333ea;
+  --accent-hover: #7e22ce;
+  --card-bg-gradient: linear-gradient(180deg, #ffffff, #faf5ff);
+  --glass-border: rgba(147, 51, 234, 0.18);
 }
 
-/* 6. Scienze MFN / Biologia / Chimica / Agraria (Verde Smeraldo) */
+/* 6. Scienze MFN / Biologia / Chimica / Agraria (Bio-Verde Smeraldo) */
 [data-palette="science"] {
+  --accent-primary: #10b981;
+  --accent-hover: #059669;
+  --glow-1: rgba(16, 185, 129, 0.18);
+  --glow-2: rgba(5, 150, 105, 0.12);
+  --btn-gradient: linear-gradient(135deg, #34d399, #059669);
+  --glass-border: rgba(16, 185, 129, 0.22);
+}
+[data-theme="light"][data-palette="science"],
+[data-theme="light"] [data-palette="science"] {
+  --bg-primary: #ecfdf5;
+  --bg-secondary: #ffffff;
   --accent-primary: #059669;
   --accent-hover: #047857;
+  --card-bg-gradient: linear-gradient(180deg, #ffffff, #ecfdf5);
+  --glass-border: rgba(5, 150, 105, 0.18);
 }
 
-/* 7. Scienze Politiche / Sociologia / Comunicazione (Arancione Corallo) */
+/* 7. Scienze Politiche / Sociologia / Comunicazione (Arancione Corallo Dinamico) */
 [data-palette="politics"] {
+  --accent-primary: #f97316;
+  --accent-hover: #ea580c;
+  --glow-1: rgba(249, 115, 22, 0.18);
+  --glow-2: rgba(234, 88, 12, 0.12);
+  --btn-gradient: linear-gradient(135deg, #fb923c, #ea580c);
+  --glass-border: rgba(249, 115, 22, 0.22);
+}
+[data-theme="light"][data-palette="politics"],
+[data-theme="light"] [data-palette="politics"] {
+  --bg-primary: #fff7ed;
+  --bg-secondary: #ffffff;
   --accent-primary: #ea580c;
   --accent-hover: #c2410c;
+  --card-bg-gradient: linear-gradient(180deg, #ffffff, #fff7ed);
+  --glass-border: rgba(234, 88, 12, 0.18);
 }
 
-/* 8. Psicologia / Scienze della Formazione / Pedagogia (Rosa & Fucsia) */
+/* 8. Psicologia / Scienze della Formazione / Pedagogia (Rosa Aurora & Fucsia) */
 [data-palette="psychology"] {
+  --accent-primary: #ec4899;
+  --accent-hover: #db2777;
+  --glow-1: rgba(236, 72, 153, 0.18);
+  --glow-2: rgba(219, 39, 119, 0.12);
+  --btn-gradient: linear-gradient(135deg, #f472b6, #db2777);
+  --glass-border: rgba(236, 72, 153, 0.22);
+}
+[data-theme="light"][data-palette="psychology"],
+[data-theme="light"] [data-palette="psychology"] {
+  --bg-primary: #fdf2f8;
+  --bg-secondary: #ffffff;
   --accent-primary: #db2777;
   --accent-hover: #be185d;
+  --card-bg-gradient: linear-gradient(180deg, #ffffff, #fdf2f8);
+  --glass-border: rgba(219, 39, 119, 0.18);
 }
 
 /* 9. Modalità AMOLED Pure Black (Nero Assoluto per Risparmio Batteria OLED) */
 [data-palette="amoled"] {
   --bg-primary: #000000;
-  --bg-secondary: #0a0a0c;
-  --bg-card: rgba(14, 14, 18, 0.85);
-  --bg-card-solid: #0c0c10;
+  --bg-secondary: #08080a;
+  --bg-card: rgba(12, 12, 14, 0.95);
+  --bg-card-solid: #0a0a0c;
   --bg-hover: rgba(255, 255, 255, 0.1);
-  --glass-bg: rgba(10, 10, 14, 0.85);
-  --glass-border: rgba(255, 255, 255, 0.12);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+  --glass-bg: rgba(8, 8, 10, 0.95);
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.9);
   --input-bg: rgba(255, 255, 255, 0.08);
   --accent-primary: #38bdf8;
   --accent-hover: #0284c7;
+  --glow-1: rgba(56, 189, 248, 0.15);
+  --glow-2: rgba(0, 0, 0, 0);
+  --btn-gradient: linear-gradient(135deg, #38bdf8, #0284c7);
   --modal-bg: linear-gradient(180deg, #0a0a0c, #000000);
-  --card-bg-gradient: linear-gradient(180deg, #0e0e12, #000000);
+  --card-bg-gradient: linear-gradient(180deg, #0a0a0c, #000000);
 }
 
 * {
@@ -152,6 +259,8 @@
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background-color: var(--bg-primary);
+  background-image: radial-gradient(at 10% 10%, var(--glow-1, rgba(59, 130, 246, 0.14)) 0px, transparent 60%), radial-gradient(at 90% 90%, var(--glow-2, rgba(139, 92, 246, 0.1)) 0px, transparent 60%);
+  background-attachment: fixed;
   color: var(--text-primary);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -225,7 +334,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .primary-btn {
-  background: var(--accent-primary);
+  background: var(--btn-gradient, var(--accent-primary));
   color: white;
   padding: 10px 20px;
   border-radius: 8px;
@@ -233,12 +342,14 @@ input:focus, select:focus, textarea:focus {
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: background 0.15s ease, transform 0.1s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px -2px var(--glow-1, rgba(59, 130, 246, 0.4));
+  transition: background 0.15s ease, transform 0.1s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
   will-change: transform;
 }
 
 .primary-btn:hover {
   background: var(--accent-hover);
+  box-shadow: 0 6px 20px -2px var(--glow-1, rgba(59, 130, 246, 0.6));
 }
 
 .primary-btn:active {
