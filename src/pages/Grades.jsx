@@ -47,7 +47,7 @@ ChartJS.register(
 
 const Grades = ({ exams: propExams, onOpenProModal }) => {
   const { currentUser } = useAuth();
-  const isPro = Boolean(currentUser?.isPremium || localStorage.getItem('uniplanner_pro_unlocked') === 'true');
+  const isPro = Boolean(currentUser?.isPremium);
 
   const [exams, setExams] = useState(() => {
     if (propExams && propExams.length > 0) return propExams;

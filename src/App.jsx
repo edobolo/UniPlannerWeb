@@ -66,14 +66,10 @@ function MainApp() {
   const { currentUser, setIsAuthModalOpen, setAuthModalTab } = useAuth();
   const isElectron = typeof window !== 'undefined' && window.electronAPI?.isElectron;
 
-  // Handle Friend Import from URL Query (?u=UP-XXXX) or PRO Unlock (?pro=true)
+  // Handle Friend Import from URL Query (?u=UP-XXXX)
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.search) {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('pro') === 'true' || urlParams.get('unlock') === 'pro') {
-        localStorage.setItem('uniplanner_pro_unlocked', 'true');
-      }
-    }
+    // Purge legacy pro test flag if present
+    localStorage.removeItem('uniplanner_pro_unlocked');
 
     const importFromUrl = async () => {
       if (typeof window === 'undefined' || !window.location.search) return;
@@ -621,7 +617,7 @@ function MainApp() {
       }}
       theme={theme}
       onToggleTheme={toggleTheme}
-      isPro={currentUser?.isPremium || localStorage.getItem('uniplanner_pro_unlocked') === 'true'}
+      isPro={Boolean(currentUser?.isPremium)}
       onOpenProModal={() => {
         setIsThemeModalOpen(false);
         setIsProModalOpen(true);
