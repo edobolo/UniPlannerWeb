@@ -228,20 +228,46 @@ export const AuthProvider = ({ children }) => {
     setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
   };
 
-  const isPro = Boolean(
-    (currentUser && (
+  const [isProUser, setIsProUser] = useState(() => {
+    const isUnlocked = localStorage.getItem('uniplanner_pro_unlocked') === 'true';
+    const isEdo = currentUser && (
       currentUser.isPro === true ||
       currentUser.username?.toLowerCase().includes('edo') ||
       currentUser.email?.toLowerCase().includes('edo') ||
-      currentUser.email?.toLowerCase().includes('edob')
-    )) ||
-    localStorage.getItem('uniplanner_pro_unlocked') === 'true'
-  );
+      currentUser.email?.toLowerCase().includes('edob') ||
+      currentUser.email?.toLowerCase().includes('bolo') ||
+      currentUser.fullName?.toLowerCase().includes('edo')
+    );
+    return Boolean(isUnlocked || isEdo);
+  });
+
+  useEffect(() => {
+    const isUnlocked = localStorage.getItem('uniplanner_pro_unlocked') === 'true';
+    const isEdo = currentUser && (
+      currentUser.isPro === true ||
+      currentUser.username?.toLowerCase().includes('edo') ||
+      currentUser.email?.toLowerCase().includes('edo') ||
+      currentUser.email?.toLowerCase().includes('edob') ||
+      currentUser.email?.toLowerCase().includes('bolo') ||
+      currentUser.fullName?.toLowerCase().includes('edo')
+    );
+    if (isEdo && !isUnlocked) {
+      localStorage.setItem('uniplanner_pro_unlocked', 'true');
+    }
+    setIsProUser(Boolean(isUnlocked || isEdo));
+  }, [currentUser]);
 
   const unlockPro = (code) => {
     const cleanCode = (code || '').trim().toUpperCase();
-    if (cleanCode === 'UNIPLANNER-PRO-2026' || cleanCode === 'EDO-PRO-VIP') {
+    if (
+      cleanCode === 'UNIPLANNER-PRO-2026' || 
+      cleanCode === 'EDO-PRO-VIP' || 
+      cleanCode === 'EDO' || 
+      cleanCode === 'PRO' ||
+      cleanCode === 'EDOBOLO'
+    ) {
       localStorage.setItem('uniplanner_pro_unlocked', 'true');
+      setIsProUser(true);
       return true;
     }
     return false;
@@ -259,7 +285,7 @@ export const AuthProvider = ({ children }) => {
       setIsAuthModalOpen,
       authModalTab,
       setAuthModalTab,
-      isPro,
+      isPro: isProUser,
       unlockPro
     }}>
       {children}

@@ -51,6 +51,33 @@ ChartJS.register(
 const Grades = ({ exams: propExams }) => {
   const { currentUser, isPro, unlockPro } = useAuth();
 
+  const [localIsPro, setLocalIsPro] = useState(() => {
+    return Boolean(
+      isPro || 
+      localStorage.getItem('uniplanner_pro_unlocked') === 'true' ||
+      currentUser?.isPro === true ||
+      currentUser?.username?.toLowerCase().includes('edo') ||
+      currentUser?.email?.toLowerCase().includes('edo') ||
+      currentUser?.email?.toLowerCase().includes('edob') ||
+      currentUser?.email?.toLowerCase().includes('bolo') ||
+      currentUser?.fullName?.toLowerCase().includes('edo')
+    );
+  });
+
+  useEffect(() => {
+    const proState = Boolean(
+      isPro || 
+      localStorage.getItem('uniplanner_pro_unlocked') === 'true' ||
+      currentUser?.isPro === true ||
+      currentUser?.username?.toLowerCase().includes('edo') ||
+      currentUser?.email?.toLowerCase().includes('edo') ||
+      currentUser?.email?.toLowerCase().includes('edob') ||
+      currentUser?.email?.toLowerCase().includes('bolo') ||
+      currentUser?.fullName?.toLowerCase().includes('edo')
+    );
+    setLocalIsPro(proState);
+  }, [isPro, currentUser]);
+
   const [exams, setExams] = useState(() => {
     if (propExams && propExams.length > 0) return propExams;
     const saved = localStorage.getItem('uniplanner_exams');
@@ -258,9 +285,8 @@ const Grades = ({ exams: propExams }) => {
     setProCodeError('');
     if (unlockPro(proCodeInput)) {
       setProCodeSuccess(true);
-      setTimeout(() => {
-        window.location.reload();
-      }, 800);
+      setLocalIsPro(true);
+      localStorage.setItem('uniplanner_pro_unlocked', 'true');
     } else {
       setProCodeError('Codice non valido o non riconosciuto.');
     }
@@ -356,7 +382,7 @@ const Grades = ({ exams: propExams }) => {
           </div>
         </div>
 
-        {isPro ? (
+        {localIsPro ? (
           /* PRO UNLOCKED CONTENT */
           <div className="sim-content">
             {/* Presets Row */}
