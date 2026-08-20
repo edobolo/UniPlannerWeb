@@ -19,7 +19,8 @@ import {
   User, 
   Bug,
   Palette,
-  Crown
+  Crown,
+  Bot
 } from 'lucide-react';
 import TitleBar from './components/TitleBar';
 import Exams from './pages/Exams'; // Pagina iniziale caricata istantaneamente
@@ -29,6 +30,7 @@ import ProUpgradeModal from './components/ProUpgradeModal';
 
 // 🚀 Dynamic Lazy Loading per framerate a 60 FPS e bundle compatto
 const Welcome = lazy(() => import('./pages/Welcome'));
+const AiStudyAssistant = lazy(() => import('./pages/AiStudyAssistant'));
 const Grades = lazy(() => import('./pages/Grades'));
 const Deadlines = lazy(() => import('./pages/Deadlines'));
 const Pomodoro = lazy(() => import('./pages/Pomodoro'));
@@ -209,6 +211,7 @@ function MainApp() {
 
   const navItems = [
     { id: 'esami', label: 'Piano di Studi', icon: BookOpen },
+    { id: 'ai-assistant', label: 'AI Tutor 🤖', icon: Bot },
     { id: 'voti', label: 'Statistiche', icon: TrendingUp },
     { id: 'orario', label: 'Orario Lezioni', icon: CalendarDays },
     { id: 'scadenze', label: 'Scadenze', icon: Calendar },
@@ -489,6 +492,19 @@ function MainApp() {
                 className="page-wrapper gpu-accelerated"
               >
                 <Exams />
+              </motion.div>
+            )}
+
+            {activeTab === 'ai-assistant' && (
+              <motion.div
+                key="ai-assistant"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                className="page-wrapper gpu-accelerated"
+              >
+                <AiStudyAssistant onOpenProModal={() => setIsProModalOpen(true)} />
               </motion.div>
             )}
 
