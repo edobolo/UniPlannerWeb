@@ -18,7 +18,8 @@ import {
   Sparkles, 
   User, 
   Bug,
-  Palette
+  Palette,
+  Crown
 } from 'lucide-react';
 import TitleBar from './components/TitleBar';
 import Exams from './pages/Exams'; // Pagina iniziale caricata istantaneamente
