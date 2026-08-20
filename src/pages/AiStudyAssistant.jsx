@@ -23,10 +23,13 @@ import {
   RefreshCw, 
   ThumbsUp, 
   ThumbsDown,
-  Volume2
+  ExternalLink,
+  ShieldCheck,
+  Zap,
+  X
 } from 'lucide-react';
 import { extractTextFromPDF } from '../utils/pdfExtractor';
-import { generateStudyKit } from '../utils/aiStudyService';
+import { generateStudyKit, testGeminiApiKey } from '../utils/aiStudyService';
 import { useAuth } from '../context/AuthContext';
 import { safeJsonParse } from '../utils/security';
 import './AiStudyAssistant.css';
@@ -40,7 +43,7 @@ Condizione necessaria e sufficiente per la diagonalizzabilità:
 
 Teorema Spettrale per matrici simmetriche reali:
 Ogni matrice simmetrica reale A (cioè tale che A = A^T) ammette una base ortonormale di autovettori ed è quindi ortogonalmente diagonalizzabile tramite una matrice ortogonale Q (tale che Q^(-1) = Q^T). Tutti i suoi autovalori sono reali.
-Applicazioni: Riduzione in forma canonica delle forme quadratiche, decomposizione ai valori singolari (SVD) e analisi delle componenti principali (PCA) in machine learning.
+Applicazioni pratiche: Riduzione in forma canonica delle forme quadratiche, decomposizione ai valori singolari (SVD) e analisi delle componenti principali (PCA) in machine learning.
 `;
 
 export default function AiStudyAssistant({ onOpenProModal }) {
@@ -55,8 +58,12 @@ export default function AiStudyAssistant({ onOpenProModal }) {
   const [pdfProgress, setPdfProgress] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  
+  // API Key modal states
   const [customKey, setCustomKey] = useState(() => localStorage.getItem('uniplanner_gemini_api_key') || '');
   const [showKeyModal, setShowKeyModal] = useState(false);
+  const [isTestingKey, setIsTestingKey] = useState(false);
+  const [keyTestResult, setKeyTestResult] = useState(null); // { valid: boolean, message: string }
 
   // Generated Study Kit Data
   const [studyKit, setStudyKit] = useState(() => {
@@ -105,9 +112,30 @@ export default function AiStudyAssistant({ onOpenProModal }) {
       }
       setRawText(text);
     } catch (err) {
-      setErrorMsg(err.message || 'Errore lettura PDF.');
+      setErrorMsg(err.message || 'Errore durante la lettura del PDF.');
     } finally {
       setIsExtractingPdf(false);
+    }
+  };
+
+  // Test API Key Action
+  const handleTestApiKey = async () => {
+    if (!customKey.trim()) {
+      setKeyTestResult({ valid: false, message: 'Inserisci prima la chiave API per testarla.' });
+      return;
+    }
+    setIsTestingKey(true);
+    setKeyTestResult(null);
+    try {
+      const result = await testGeminiApiKey(customKey);
+      setKeyTestResult(result);
+      if (result.valid) {
+        localStorage.setItem('uniplanner_gemini_api_key', customKey.trim());
+      }
+    } catch (e) {
+      setKeyTestResult({ valid: false, message: 'Errore di connessione.' });
+    } finally {
+      setIsTestingKey(false);
     }
   };
 
@@ -115,6 +143,13 @@ export default function AiStudyAssistant({ onOpenProModal }) {
   const handleGenerate = async () => {
     if (!rawText.trim()) {
       setErrorMsg('Inserisci del testo o carica un PDF con i tuoi appunti.');
+      return;
+    }
+
+    // Se non ha impostato una chiave e non è sul Raspberry con chiave di backend, apri la guida guidata
+    const savedKey = customKey || localStorage.getItem('uniplanner_gemini_api_key');
+    if (!savedKey) {
+      setShowKeyModal(true);
       return;
     }
 
@@ -129,11 +164,10 @@ export default function AiStudyAssistant({ onOpenProModal }) {
     setIsGenerating(true);
 
     try {
-      const kit = await generateStudyKit(rawText, customKey);
+      const kit = await generateStudyKit(rawText, savedKey);
       setStudyKit(kit);
       localStorage.setItem('uniplanner_saved_study_kit', JSON.stringify(kit));
       
-      // Increment free use if not pro
       if (!isPro) {
         localStorage.setItem('uniplanner_ai_free_uses', String(freeUsed + 1));
       }
@@ -173,7 +207,6 @@ export default function AiStudyAssistant({ onOpenProModal }) {
         correct++;
       }
     });
-    // Formula voto in trentesimi: (correct / total) * 30, arrotondato
     const rawVote = Math.round((correct / total) * 30);
     const score30 = Math.max(18, Math.min(30, rawVote));
     return { score30, correct, total, isLode: correct === total };
@@ -208,15 +241,15 @@ export default function AiStudyAssistant({ onOpenProModal }) {
             <div className="ai-badge-row">
               <span className="ai-badge-ai">
                 <Sparkles size={12} />
-                <span>AI Tutor Accademico</span>
+                <span>Tutor Accademico</span>
               </span>
               {!isPro && (
-                <span className="ai-badge-free">1 Prova Gratuita Disponibile</span>
+                <span className="ai-badge-free">1 Prova Gratuita</span>
               )}
             </div>
-            <h1>AI Study Assistant & Quiz Generator</h1>
+            <h1>Assistente Studio & Quiz Generator</h1>
             <p className="ai-header-sub">
-              Trasforma all'istante dispense, slide e appunti in 20 domande d'esame, Flashcard Anki e le 5 domande più temute all'orale.
+              Genera 20 domande d'esame a risposta multipla, Flashcards Spaced Repetition e le 5 domande più probabili per l'orale.
             </p>
           </div>
         </div>
@@ -225,10 +258,10 @@ export default function AiStudyAssistant({ onOpenProModal }) {
           <button 
             className="ai-key-btn" 
             onClick={() => setShowKeyModal(true)}
-            title="Configura Chiave API Google Gemini Personale (Opzionale)"
+            title="Configura Chiave Gratuita Google Gemini"
           >
             <Key size={15} />
-            <span>Chiave AI</span>
+            <span>{customKey ? 'Chiave AI Attiva' : 'Configura Chiave AI'}</span>
           </button>
         </div>
       </div>
@@ -255,14 +288,14 @@ export default function AiStudyAssistant({ onOpenProModal }) {
             onClick={() => setActiveSubTab('flashcards')}
           >
             <Layers size={15} />
-            <span>Flashcard Spaced Repetition ({studyKit.flashcards?.length || 0})</span>
+            <span>Flashcards ({studyKit.flashcards?.length || 0})</span>
           </button>
           <button 
             className={`ai-subtab-btn ${activeSubTab === 'oral' ? 'active' : ''}`}
             onClick={() => setActiveSubTab('oral')}
           >
             <Flame size={15} />
-            <span>Top 5 Domande Orale</span>
+            <span>Top 5 Orale</span>
           </button>
         </div>
       )}
@@ -294,8 +327,8 @@ export default function AiStudyAssistant({ onOpenProModal }) {
                   <UploadCloud size={30} />
                 </div>
                 <h3>Trascina qui le tue Slide o Dispense PDF</h3>
-                <p>oppure clicca per sfogliare i file del tuo computer</p>
-                <span className="dropzone-hint">Estrazione testo 100% lato client • Nessun caricamento pesante</span>
+                <p>oppure clicca per sfogliare i file del computer</p>
+                <span className="dropzone-hint">Estrazione testo 100% nel browser • Nessun file pesante caricato</span>
               </label>
 
               {isExtractingPdf && (
@@ -344,7 +377,7 @@ export default function AiStudyAssistant({ onOpenProModal }) {
                 ) : (
                   <>
                     <Sparkles size={18} />
-                    <span>Genera 20 Quiz, Flashcards & Guida Orale 🚀</span>
+                    <span>Genera 20 Quiz, Flashcards & Guida Orale</span>
                   </>
                 )}
               </button>
@@ -356,7 +389,6 @@ export default function AiStudyAssistant({ onOpenProModal }) {
       {/* TAB 2: EXAM QUIZ SIMULATION (20 QUESTIONS) */}
       {studyKit && activeSubTab === 'quiz' && (
         <div className="ai-quiz-layout">
-          {/* Quiz Header Bar */}
           <div className="quiz-topbar glass-panel">
             <div className="quiz-subject-info">
               <h2>{studyKit.subject}</h2>
@@ -378,13 +410,12 @@ export default function AiStudyAssistant({ onOpenProModal }) {
                     setIsTimerRunning(false);
                   }}
                 >
-                  Consegna Esame 🏁
+                  Consegna Esame
                 </button>
               )}
             </div>
           </div>
 
-          {/* Quiz Results Summary (when submitted) */}
           {quizSubmitted && (
             <motion.div 
               className="quiz-results-banner glass-panel"
@@ -421,7 +452,6 @@ export default function AiStudyAssistant({ onOpenProModal }) {
             </motion.div>
           )}
 
-          {/* Single Quiz Question Card */}
           {studyKit.quizzes[currentQuizIdx] && (
             <div className="quiz-card glass-panel">
               <div className="quiz-question-header">
@@ -459,7 +489,6 @@ export default function AiStudyAssistant({ onOpenProModal }) {
                 })}
               </div>
 
-              {/* Professor Explanation after submission */}
               {quizSubmitted && (
                 <motion.div 
                   className="quiz-explanation-box"
@@ -474,7 +503,6 @@ export default function AiStudyAssistant({ onOpenProModal }) {
                 </motion.div>
               )}
 
-              {/* Navigation Pagination */}
               <div className="quiz-nav-footer">
                 <button 
                   className="quiz-nav-arrow"
@@ -494,7 +522,7 @@ export default function AiStudyAssistant({ onOpenProModal }) {
                         key={dotIdx}
                         className={`quiz-dot ${isCurrent ? 'current' : ''} ${answered ? 'answered' : ''}`}
                         onClick={() => setCurrentQuizIdx(dotIdx)}
-                        title={`Vai alla domanda ${dotIdx + 1}`}
+                        title={`Domanda ${dotIdx + 1}`}
                       >
                         {dotIdx + 1}
                       </button>
@@ -516,12 +544,12 @@ export default function AiStudyAssistant({ onOpenProModal }) {
         </div>
       )}
 
-      {/* TAB 3: FLASHCARDS SPACED REPETITION (ANKI STYLE) */}
+      {/* TAB 3: FLASHCARDS SPACED REPETITION */}
       {studyKit && activeSubTab === 'flashcards' && (
         <div className="ai-flashcards-layout">
           <div className="flashcards-topbar glass-panel">
             <div>
-              <h2>Flashcards & Memorizzazione Attiva</h2>
+              <h2>Flashcards & Ripetizione Spaziata</h2>
               <span className="fc-progress-hint">
                 Carta {currentCardIdx + 1} di {studyKit.flashcards.length}
               </span>
@@ -540,14 +568,12 @@ export default function AiStudyAssistant({ onOpenProModal }) {
             </div>
           </div>
 
-          {/* 3D Flip Card Container */}
           <div className="flashcard-stage">
             {studyKit.flashcards[currentCardIdx] && (
               <div 
                 className={`flashcard-3d-card ${isCardFlipped ? 'flipped' : ''}`}
                 onClick={() => setIsCardFlipped(!isCardFlipped)}
               >
-                {/* Front Side */}
                 <div className="card-side card-front glass-panel">
                   <span className="card-category-tag">
                     {studyKit.flashcards[currentCardIdx].category || 'Concetto Chiave'}
@@ -561,21 +587,19 @@ export default function AiStudyAssistant({ onOpenProModal }) {
                   </div>
                 </div>
 
-                {/* Back Side */}
                 <div className="card-side card-back glass-panel">
-                  <span className="card-category-tag back">Soluzione / Definizione</span>
+                  <span className="card-category-tag back">Definizione / Soluzione</span>
                   <div className="card-body-content">
                     <p>{studyKit.flashcards[currentCardIdx].back}</p>
                   </div>
                   <div className="card-click-hint">
-                    <span>Valuta quanto ricordavi questo concetto:</span>
+                    <span>Valuta il livello di memorizzazione:</span>
                   </div>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Spaced Repetition Buttons */}
           <div className="fc-actions-row">
             <button 
               className="fc-rate-btn hard-btn" 
@@ -609,7 +633,7 @@ export default function AiStudyAssistant({ onOpenProModal }) {
             <Flame size={24} style={{ color: '#f59e0b' }} />
             <div>
               <h2>Top 5 Domande d'Esame Orale</h2>
-              <p>I collegamenti concettuali più frequenti e le risposte strutturate per puntare al 30 e Lode.</p>
+              <p>I collegamenti concettuali più richiesti con risposte modello strutturate.</p>
             </div>
           </div>
 
@@ -643,7 +667,7 @@ export default function AiStudyAssistant({ onOpenProModal }) {
         </div>
       )}
 
-      {/* GEMINI KEY MODAL */}
+      {/* MODAL CONFIGURAZIONE CHIAVE GEMINI 100% GRATUITA */}
       {showKeyModal && (
         <div className="modal-backdrop" onClick={() => setShowKeyModal(false)}>
           <motion.div 
@@ -653,38 +677,104 @@ export default function AiStudyAssistant({ onOpenProModal }) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="key-modal-header">
-              <Key size={20} style={{ color: 'var(--accent-primary)' }} />
-              <h3>Chiave API Google Gemini (Opzionale)</h3>
-            </div>
-            <p>
-              UniPlanner include già l'AI gratuita. Se desideri usare la tua chiave personale di Google Gemini (gratuita al 100% da Google AI Studio), incollala qui sotto per avere generazioni istantanee senza limiti:
-            </p>
-            <input 
-              type="password"
-              className="key-input-field"
-              placeholder="Incolla AIzaSy..."
-              value={customKey}
-              onChange={(e) => setCustomKey(e.target.value)}
-            />
-            <div className="key-modal-actions">
-              <button 
-                className="secondary-btn" 
-                onClick={() => {
-                  localStorage.removeItem('uniplanner_gemini_api_key');
-                  setCustomKey('');
-                  setShowKeyModal(false);
-                }}
-              >
-                Rimuovi
+              <div className="key-icon-halo">
+                <Key size={22} />
+              </div>
+              <div>
+                <h3>Attivazione Motore Google Gemini 2.0</h3>
+                <p className="key-modal-sub">100% Gratuito per Sempre • 1.500 richieste/giorno</p>
+              </div>
+              <button className="key-modal-close" onClick={() => setShowKeyModal(false)}>
+                <X size={18} />
               </button>
+            </div>
+
+            <div className="key-guide-steps">
+              <div className="guide-step-card">
+                <span className="step-num">1</span>
+                <div>
+                  <strong>Ottieni la tua Chiave da Google AI Studio</strong>
+                  <p>È completamente gratuita e non richiede carte di credito.</p>
+                  <a 
+                    href="https://aistudio.google.com/app/apikey" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="get-key-link"
+                  >
+                    <span>Apri Google AI Studio</span>
+                    <ExternalLink size={13} />
+                  </a>
+                </div>
+              </div>
+
+              <div className="guide-step-card">
+                <span className="step-num">2</span>
+                <div>
+                  <strong>Crea e Incolla la Chiave API</strong>
+                  <p>Clicca su <em>"Create API Key"</em> su Google e incollala qui sotto:</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="key-input-group">
+              <input 
+                type="password"
+                className="key-input-field"
+                placeholder="Incolla qui la chiave (es. AIzaSy...)"
+                value={customKey}
+                onChange={(e) => {
+                  setCustomKey(e.target.value);
+                  setKeyTestResult(null);
+                }}
+              />
               <button 
+                type="button" 
+                className="test-key-btn"
+                onClick={handleTestApiKey}
+                disabled={isTestingKey || !customKey.trim()}
+              >
+                {isTestingKey ? <RefreshCw size={14} className="spinner-icon" /> : <Zap size={14} />}
+                <span>Testa</span>
+              </button>
+            </div>
+
+            {keyTestResult && (
+              <div className={`key-test-feedback ${keyTestResult.valid ? 'success' : 'error'}`}>
+                {keyTestResult.valid ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
+                <span>{keyTestResult.message}</span>
+              </div>
+            )}
+
+            <div className="key-privacy-notice">
+              <ShieldCheck size={14} />
+              <span>La chiave viene salvata esclusivamente nel tuo browser in locale e non viene mai condivisa.</span>
+            </div>
+
+            <div className="key-modal-actions">
+              {customKey && (
+                <button 
+                  type="button"
+                  className="secondary-btn" 
+                  onClick={() => {
+                    localStorage.removeItem('uniplanner_gemini_api_key');
+                    setCustomKey('');
+                    setKeyTestResult(null);
+                  }}
+                >
+                  Rimuovi
+                </button>
+              )}
+              <button 
+                type="button"
                 className="primary-btn" 
                 onClick={() => {
-                  localStorage.setItem('uniplanner_gemini_api_key', customKey.trim());
+                  if (customKey.trim()) {
+                    localStorage.setItem('uniplanner_gemini_api_key', customKey.trim());
+                  }
                   setShowKeyModal(false);
                 }}
               >
-                Salva Chiave
+                Salva & Chiudi
               </button>
             </div>
           </motion.div>

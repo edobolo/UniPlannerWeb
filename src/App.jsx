@@ -211,7 +211,7 @@ function MainApp() {
 
   const navItems = [
     { id: 'esami', label: 'Piano di Studi', icon: BookOpen },
-    { id: 'ai-assistant', label: 'AI Tutor 🤖', icon: Bot },
+    { id: 'ai-assistant', label: 'Assistente AI', icon: Bot },
     { id: 'voti', label: 'Statistiche', icon: TrendingUp },
     { id: 'orario', label: 'Orario Lezioni', icon: CalendarDays },
     { id: 'scadenze', label: 'Scadenze', icon: Calendar },
