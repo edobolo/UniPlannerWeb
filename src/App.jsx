@@ -342,11 +342,30 @@ function MainApp() {
 
             <button 
               className="pro-upgrade-sidebar-btn"
-              onClick={() => setIsProModalOpen(true)}
-              title="Sblocca UniPlanner PRO"
+              onClick={async () => {
+                const isPro = currentUser?.isPremium || localStorage.getItem('uniplanner_pro_unlocked') === 'true';
+                if (isPro && currentUser?.friendCode) {
+                  try {
+                    const { apiFetch } = await import('./utils/cloudSync');
+                    const res = await apiFetch('/stripe/create-portal-session', {
+                      method: 'POST',
+                      body: JSON.stringify({ friendCode: currentUser.friendCode })
+                    });
+                    const data = await res.json();
+                    if (data.url) window.location.href = data.url;
+                    else alert(data.error || 'Errore apertura portale');
+                  } catch (err) {
+                    console.error(err);
+                    alert('Impossibile aprire il portale di gestione.');
+                  }
+                } else {
+                  setIsProModalOpen(true);
+                }
+              }}
+              title={currentUser?.isPremium ? "Gestisci il tuo abbonamento PRO" : "Sblocca UniPlanner PRO"}
             >
               <Crown size={15} style={{ color: '#f59e0b' }} />
-              <span>Passa a PRO ⚡</span>
+              <span>{currentUser?.isPremium || localStorage.getItem('uniplanner_pro_unlocked') === 'true' ? 'Gestisci PRO 👑' : 'Passa a PRO ⚡'}</span>
             </button>
 
             {!isElectron && (
