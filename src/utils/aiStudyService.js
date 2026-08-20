@@ -51,10 +51,12 @@ REGOLE TASSATIVE:
 MATERIALE DIDATTICO:
 `;
 
+const CANDIDATE_MODELS = ['gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-pro'];
+
 /**
  * Verifica la validità di una chiave API Google Gemini
  * @param {string} apiKey 
- * @returns {Promise<{ valid: boolean, message: string }>}
+ * @returns {Promise<{ valid: boolean, message: string, activeModel?: string }>}
  */
 export async function testGeminiApiKey(apiKey) {
   if (!apiKey || apiKey.trim().length < 15) {
@@ -62,29 +64,30 @@ export async function testGeminiApiKey(apiKey) {
   }
 
   const cleanKey = apiKey.trim();
-  const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${cleanKey}`;
 
-  try {
-    const res = await fetch(testUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: 'Rispondi con una sola parola: OK' }] }]
-      })
-    });
+  for (const model of CANDIDATE_MODELS) {
+    try {
+      const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanKey}`;
+      const res = await fetch(testUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: 'Rispondi con OK' }] }]
+        })
+      });
 
-    if (res.ok) {
-      return { valid: true, message: 'Connessione a Google Gemini 2.0 Flash riuscita!' };
+      if (res.ok) {
+        return { valid: true, message: `Connessione a Google Gemini (${model}) riuscita! 🚀`, activeModel: model };
+      }
+    } catch (e) {
+      // Prova il modello successivo
     }
-
-    const data = await res.json().catch(() => ({}));
-    return { 
-      valid: false, 
-      message: data.error?.message || `Errore API (Status ${res.status}). Verifica di aver copiato l'intera chiave.` 
-    };
-  } catch (err) {
-    return { valid: false, message: 'Impossibile contattare i server Google. Controlla la tua connessione.' };
   }
+
+  return { 
+    valid: false, 
+    message: 'Impossibile connettersi con questa chiave API. Verifica di aver copiato l\'intera stringa da Google AI Studio.' 
+  };
 }
 
 /**
@@ -101,33 +104,39 @@ export async function generateStudyKit(rawText, customApiKey = '') {
   const trimmedText = rawText.slice(0, 60000);
   const userKey = customApiKey.trim() || localStorage.getItem('uniplanner_gemini_api_key') || '';
 
-  // 1. Chiamata Diretta a Google Gemini (Se configurata la chiave gratuita)
+  // 1. Chiamata Diretta a Google Gemini (con fallback automatico sui modelli attivi)
   if (userKey) {
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${userKey}`;
-    try {
-      const response = await fetch(geminiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: PROMPT_INSTRUCTIONS + '\n\n' + trimmedText }] }],
-          generationConfig: {
-            temperature: 0.2,
-            responseMimeType: "application/json"
-          }
-        })
-      });
+    let lastError = null;
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error?.message || 'Errore durante la risposta da Gemini');
+    for (const model of CANDIDATE_MODELS) {
+      try {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${userKey}`;
+        const response = await fetch(geminiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: PROMPT_INSTRUCTIONS + '\n\n' + trimmedText }] }],
+            generationConfig: {
+              temperature: 0.2,
+              responseMimeType: "application/json"
+            }
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const generatedJsonText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          return parseAiJsonResponse(generatedJsonText);
+        } else {
+          const errData = await response.json().catch(() => ({}));
+          lastError = errData.error?.message || `Status ${response.status}`;
+        }
+      } catch (err) {
+        lastError = err.message;
       }
-
-      const generatedJsonText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      return parseAiJsonResponse(generatedJsonText);
-    } catch (err) {
-      console.error('Errore Gemini diretto:', err);
-      throw new Error(`Errore AI Gemini: ${err.message}`);
     }
+
+    throw new Error(`Errore AI Gemini: ${lastError || 'Nessun modello disponibile'}`);
   }
 
   // 2. Chiamata al Backend Raspberry Pi / Cloud API
@@ -145,8 +154,7 @@ export async function generateStudyKit(rawText, customApiKey = '') {
     console.warn('Backend AI proxy non raggiungibile:', backendErr);
   }
 
-  // 3. Se nessuna chiave è configurata e il backend è in attesa, chiedi di inserire la chiave Gemini gratuita
-  throw new Error('Per abilitare la generazione AI, inserisci la tua chiave gratuita Google Gemini cliccando sul pulsante "Configura Chiave AI" in alto a destra. È gratuita al 100% e si ottiene in 10 secondi.');
+  throw new Error('Per abilitare la generazione AI, inserisci la tua chiave gratuita Google Gemini cliccando su "Configura Chiave AI" in alto a destra.');
 }
 
 /**
