@@ -90,7 +90,13 @@ export function calculateDegreeProjection(exams, config, options = {}) {
   }
 
   // 1. Gestione scarto dei peggiori N crediti (se previsto dal regolamento)
-  let examsForCalc = [...validExams];
+  let examsForCalc = [];
+  
+  // Create copies of exams with explicit CFU to allow partial subtraction
+  validExams.forEach(e => {
+    examsForCalc.push({ ...e, _calcCfu: Number(e.credits || e.cfu) || 0 });
+  });
+  
   let cfuDiscardedCount = 0;
 
   if (config.discardWorstCfu > 0 && examsForCalc.length > 2) {
@@ -102,20 +108,29 @@ export function calculateDegreeProjection(exams, config, options = {}) {
     });
 
     let cfuToDiscard = config.discardWorstCfu;
-    const filteredList = [];
 
-    for (const ex of examsForCalc) {
-      const cfu = Number(ex.credits || ex.cfu) || 0;
-      if (cfuToDiscard > 0 && cfuToDiscard >= cfu) {
-        cfuToDiscard -= cfu;
-        cfuDiscardedCount += cfu;
-        // Salta questo esame (scartato)
-      } else {
-        filteredList.push(ex);
+    for (let i = 0; i < examsForCalc.length; i++) {
+      const ex = examsForCalc[i];
+      if (cfuToDiscard <= 0) break;
+      
+      if (ex._calcCfu > 0) {
+        if (cfuToDiscard >= ex._calcCfu) {
+          // Discard the whole exam
+          cfuDiscardedCount += ex._calcCfu;
+          cfuToDiscard -= ex._calcCfu;
+          ex._calcCfu = 0;
+        } else {
+          // Discard only a fraction of the exam
+          cfuDiscardedCount += cfuToDiscard;
+          ex._calcCfu -= cfuToDiscard;
+          cfuToDiscard = 0;
+        }
       }
     }
-    examsForCalc = filteredList;
   }
+
+  // Filter out exams that were fully discarded
+  examsForCalc = examsForCalc.filter(e => e._calcCfu > 0);
 
   // 2. Calcolo Media (Ponderata o Aritmetica)
   let sumPonderata = 0;
@@ -128,7 +143,7 @@ export function calculateDegreeProjection(exams, config, options = {}) {
   });
 
   examsForCalc.forEach(e => {
-    const cfu = Number(e.credits || e.cfu) || 0;
+    const cfu = e._calcCfu;
     let numericGrade = e.grade === '30L' ? 30 : Number(e.grade);
 
     if (e.grade === '30L' && config.lodeValue === 'WEIGHTED_31') {
@@ -229,24 +244,43 @@ export function calculateRequiredAverageForTarget(exams, targetFinalGrade, confi
   }
 
   // Punti esterni (tesi + bonus carriera)
-  const externalPoints = (options.thesisPoints || 0) + (options.hasInCorso ? config.inCorsoBonus : 0) + (options.hasErasmus ? config.erasmusBonus : 0);
+  const externalPoints = (options.thesisPoints || 0) + 
+                         (options.hasInCorso ? config.inCorsoBonus : 0) + 
+                         (options.hasErasmus ? config.erasmusBonus : 0) + 
+                         (options.hasSperimentale ? 1 : 0);
   
-  // Base di partenza richiesta su 110
-  const requiredBase = targetFinalGrade - externalPoints;
+  // Base di partenza richiesta su 110 (esclusi bonus esterni e lodi passate)
+  const requiredBase = targetFinalGrade - externalPoints - currentProjection.lodeBonusApplied;
+  
   // Media ponderata complessiva finale richiesta (su 30)
   const requiredOverallAvg = (requiredBase * 30) / 110;
 
-  // Somma ponderata attuale
-  const currentWeightedSum = validExams.reduce((acc, e) => {
-    const val = e.grade === '30L' ? 30 : Number(e.grade);
-    return acc + (val * (Number(e.credits || e.cfu) || 0));
-  }, 0);
-
-  const totalTargetCfuForAvg = currentGradedCfu + remainingCfu;
-  const targetTotalWeightedSum = requiredOverallAvg * totalTargetCfuForAvg;
+  // CFU totali che verranno effettivamente valutati alla laurea
+  const totalEvaluatedCfu = targetTotalCfu - config.discardWorstCfu;
   
+  // Somma ponderata totale richiesta alla fine
+  const targetTotalWeightedSum = requiredOverallAvg * totalEvaluatedCfu;
+  
+  // Somma ponderata attualmente accumulata (già epurata dagli scarti attuali!)
+  const currentlyEvaluatedCfu = currentGradedCfu - currentProjection.cfuDiscarded;
+  const currentWeightedSum = currentProjection.activeWeightedAverage * currentlyEvaluatedCfu;
+  
+  // Somma ponderata mancante
   const requiredSumFromRemaining = targetTotalWeightedSum - currentWeightedSum;
-  const requiredAvg = requiredSumFromRemaining / remainingCfu;
+  
+  // CFU rimanenti che verranno effettivamente valutati (al netto degli eventuali scarti non ancora utilizzati)
+  const cfuStillToDiscard = Math.max(0, config.discardWorstCfu - currentProjection.cfuDiscarded);
+  const effectiveRemainingCfu = remainingCfu - cfuStillToDiscard;
+
+  if (effectiveRemainingCfu <= 0) {
+    return {
+      achievable: currentProjection.finalProjected >= targetFinalGrade,
+      requiredAverage: null,
+      message: 'Hai già accumulato i CFU valutabili necessari.'
+    };
+  }
+
+  const requiredAvg = requiredSumFromRemaining / effectiveRemainingCfu;
 
   if (requiredAvg <= 18) {
     return {

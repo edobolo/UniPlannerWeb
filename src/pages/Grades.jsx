@@ -156,7 +156,7 @@ const Grades = ({ exams: propExams }) => {
     exams, 
     simTargetGrade, 
     degreeConfig, 
-    { thesisPoints, hasInCorso, hasErasmus }, 
+    { thesisPoints, hasInCorso, hasErasmus, hasSperimentale }, 
     settings.targetCfu
   );
 
