@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bot, 
@@ -82,6 +82,8 @@ export default function AiStudyAssistant({ onOpenProModal }) {
   const [currentCardIdx, setCurrentCardIdx] = useState(0);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [cardMastery, setCardMastery] = useState({}); // { [cardId]: 'hard' | 'good' | 'easy' }
+  const [isDeckFinished, setIsDeckFinished] = useState(false);
+  const [onlyHardMode, setOnlyHardMode] = useState(false);
 
   // Timer Effect
   useEffect(() => {
@@ -199,7 +201,9 @@ export default function AiStudyAssistant({ onOpenProModal }) {
   };
 
   const calculateScore = () => {
-    if (!studyKit?.quizzes) return { score30: 18, correct: 0, total: 20 };
+    if (!studyKit?.quizzes || studyKit.quizzes.length === 0) {
+      return { score30: 0, correct: 0, total: 20, isPassed: false, isLode: false };
+    }
     const total = studyKit.quizzes.length;
     let correct = 0;
     studyKit.quizzes.forEach((q, idx) => {
@@ -208,18 +212,30 @@ export default function AiStudyAssistant({ onOpenProModal }) {
       }
     });
     const rawVote = Math.round((correct / total) * 30);
-    const score30 = Math.max(18, Math.min(30, rawVote));
-    return { score30, correct, total, isLode: correct === total };
+    const isPassed = rawVote >= 18;
+    const isLode = correct === total && total >= 10;
+    return { score30: rawVote, correct, total, isPassed, isLode };
   };
 
+  const allCards = studyKit?.flashcards || [];
+  const activeCards = onlyHardMode 
+    ? allCards.filter((_, idx) => cardMastery[idx] === 'hard')
+    : allCards;
+
   const handleRateCard = (rating) => {
+    const activeCardObj = activeCards[currentCardIdx];
+    const originalIndex = allCards.indexOf(activeCardObj);
+
     setCardMastery(prev => ({
       ...prev,
-      [currentCardIdx]: rating
+      [originalIndex !== -1 ? originalIndex : currentCardIdx]: rating
     }));
     setIsCardFlipped(false);
-    if (currentCardIdx < (studyKit?.flashcards?.length || 1) - 1) {
+
+    if (currentCardIdx < activeCards.length - 1) {
       setTimeout(() => setCurrentCardIdx(i => i + 1), 150);
+    } else {
+      setIsDeckFinished(true);
     }
   };
 
@@ -423,15 +439,21 @@ export default function AiStudyAssistant({ onOpenProModal }) {
               animate={{ opacity: 1, scale: 1 }}
             >
               <div className="results-badge-score">
-                <Award size={40} style={{ color: '#f59e0b' }} />
+                <Award size={40} style={{ color: calculateScore().isPassed ? '#10b981' : '#ef4444' }} />
                 <div className="score-texts">
                   <h3>Esito Simulazione d'Esame</h3>
                   <div className="final-grade-display">
-                    Voto: <strong>{calculateScore().score30}/30</strong>
+                    Voto: <strong style={{ color: calculateScore().isPassed ? '#10b981' : '#ef4444' }}>
+                      {calculateScore().score30}/30
+                    </strong>
                     {calculateScore().isLode && <span className="lode-tag">e Lode 🌟</span>}
+                    {!calculateScore().isPassed && (
+                      <span className="insufficient-tag">Insufficiente (&lt; 18) ❌</span>
+                    )}
                   </div>
                   <p>
                     Hai risposto correttamente a <strong>{calculateScore().correct}</strong> su <strong>{calculateScore().total}</strong> domande in {formatTime(quizTimer)}.
+                    {!calculateScore().isPassed && " Ti consigliamo di ripassare le Flashcard prima di ritentare!"}
                   </p>
                 </div>
               </div>
@@ -568,61 +590,141 @@ export default function AiStudyAssistant({ onOpenProModal }) {
             </div>
           </div>
 
-          <div className="flashcard-stage">
-            {studyKit.flashcards[currentCardIdx] && (
-              <div 
-                className={`flashcard-3d-card ${isCardFlipped ? 'flipped' : ''}`}
-                onClick={() => setIsCardFlipped(!isCardFlipped)}
-              >
-                <div className="card-side card-front glass-panel">
-                  <span className="card-category-tag">
-                    {studyKit.flashcards[currentCardIdx].category || 'Concetto Chiave'}
-                  </span>
-                  <div className="card-body-content">
-                    <h3>{studyKit.flashcards[currentCardIdx].front}</h3>
-                  </div>
-                  <div className="card-click-hint">
-                    <RotateCw size={14} />
-                    <span>Clicca per girare la carta</span>
-                  </div>
-                </div>
-
-                <div className="card-side card-back glass-panel">
-                  <span className="card-category-tag back">Definizione / Soluzione</span>
-                  <div className="card-body-content">
-                    <p>{studyKit.flashcards[currentCardIdx].back}</p>
-                  </div>
-                  <div className="card-click-hint">
-                    <span>Valuta il livello di memorizzazione:</span>
-                  </div>
-                </div>
+          {/* Mazzo Concluso / Schermata di Riepilogo e Riavvio */}
+          {isDeckFinished ? (
+            <motion.div 
+              className="fc-deck-finished-card glass-panel"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+            >
+              <div className="finished-badge-halo">
+                <Award size={48} style={{ color: '#10b981' }} />
               </div>
-            )}
-          </div>
+              <h3>Ottimo Lavoro! Hai completato il mazzo 🎉</h3>
+              <p>
+                Hai memorizzato <strong>{Object.values(cardMastery).filter(v => v === 'easy' || v === 'good').length}</strong> concetti. 
+                {Object.values(cardMastery).filter(v => v === 'hard').length > 0 && (
+                  <span> Ci sono <strong>{Object.values(cardMastery).filter(v => v === 'hard').length}</strong> concetti contrassegnati come difficili.</span>
+                )}
+              </p>
 
-          <div className="fc-actions-row">
-            <button 
-              className="fc-rate-btn hard-btn" 
-              onClick={() => handleRateCard('hard')}
-            >
-              <ThumbsDown size={16} />
-              <span>Difficile (Rivedi Subito)</span>
-            </button>
-            <button 
-              className="fc-rate-btn good-btn" 
-              onClick={() => handleRateCard('good')}
-            >
-              <Check size={16} />
-              <span>Buono (Ricordato a fatica)</span>
-            </button>
-            <button 
-              className="fc-rate-btn easy-btn" 
-              onClick={() => handleRateCard('easy')}
-            >
-              <ThumbsUp size={16} />
-              <span>Facile (Memorizzato! 🧠)</span>
-            </button>
-          </div>
+              <div className="deck-finished-actions">
+                <button 
+                  className="secondary-btn restart-deck-btn"
+                  onClick={() => {
+                    setCurrentCardIdx(0);
+                    setIsCardFlipped(false);
+                    setIsDeckFinished(false);
+                    setOnlyHardMode(false);
+                  }}
+                >
+                  <RefreshCw size={15} />
+                  <span>Ricomincia Tutto il Mazzo</span>
+                </button>
+
+                {Object.values(cardMastery).filter(v => v === 'hard').length > 0 && (
+                  <button 
+                    className="primary-btn review-hard-btn"
+                    onClick={() => {
+                      setOnlyHardMode(true);
+                      setCurrentCardIdx(0);
+                      setIsCardFlipped(false);
+                      setIsDeckFinished(false);
+                    }}
+                  >
+                    <Flame size={15} />
+                    <span>Ripassa solo quelle Difficili ({Object.values(cardMastery).filter(v => v === 'hard').length})</span>
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          ) : (
+            <>
+              {/* 3D Flip Card Container */}
+              <div className="flashcard-stage">
+                {activeCards[currentCardIdx] && (
+                  <div 
+                    className={`flashcard-3d-card ${isCardFlipped ? 'flipped' : ''}`}
+                    onClick={() => setIsCardFlipped(!isCardFlipped)}
+                  >
+                    <div className="card-side card-front glass-panel">
+                      <span className="card-category-tag">
+                        {activeCards[currentCardIdx].category || 'Concetto Chiave'}
+                      </span>
+                      <div className="card-body-content">
+                        <h3>{activeCards[currentCardIdx].front}</h3>
+                      </div>
+                      <div className="card-click-hint">
+                        <RotateCw size={14} />
+                        <span>Clicca per girare la carta</span>
+                      </div>
+                    </div>
+
+                    <div className="card-side card-back glass-panel">
+                      <span className="card-category-tag back">Definizione / Soluzione</span>
+                      <div className="card-body-content">
+                        <p>{activeCards[currentCardIdx].back}</p>
+                      </div>
+                      <div className="card-click-hint">
+                        <span>Valuta il livello di memorizzazione:</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Spaced Repetition Buttons */}
+              <div className="fc-actions-row">
+                <button 
+                  className="fc-rate-btn hard-btn" 
+                  onClick={() => handleRateCard('hard')}
+                >
+                  <ThumbsDown size={16} />
+                  <span>Difficile (Rivedi Subito)</span>
+                </button>
+                <button 
+                  className="fc-rate-btn good-btn" 
+                  onClick={() => handleRateCard('good')}
+                >
+                  <Check size={16} />
+                  <span>Buono (Ricordato a fatica)</span>
+                </button>
+                <button 
+                  className="fc-rate-btn easy-btn" 
+                  onClick={() => handleRateCard('easy')}
+                >
+                  <ThumbsUp size={16} />
+                  <span>Facile (Memorizzato! 🧠)</span>
+                </button>
+              </div>
+
+              {/* Card Navigation Footer */}
+              <div className="fc-nav-controls">
+                <button 
+                  className="fc-nav-arrow"
+                  disabled={currentCardIdx === 0}
+                  onClick={() => {
+                    setIsCardFlipped(false);
+                    setCurrentCardIdx(i => i - 1);
+                  }}
+                >
+                  <ChevronLeft size={16} />
+                  <span>Precedente</span>
+                </button>
+                <button 
+                  className="fc-nav-arrow"
+                  disabled={currentCardIdx >= activeCards.length - 1}
+                  onClick={() => {
+                    setIsCardFlipped(false);
+                    setCurrentCardIdx(i => i + 1);
+                  }}
+                >
+                  <span>Successiva</span>
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
