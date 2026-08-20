@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Crown, Rocket, CheckCircle2, X, Loader2 } from 'lucide-react';
 import { BACKEND_URL } from '../utils/cloudSync';
@@ -11,7 +11,7 @@ export default function ProUpgradeModal({ isOpen, onClose, friendCode }) {
   // Questi verranno sostituiti con i veri price_...
   const plans = [
     {
-      id: 'price_mensile_placeholder',
+      id: 'price_1U6ZCCGgjWDI5KlvrFZykyxQ',
       name: 'Mensile',
       icon: <Sparkles className="plan-icon" />,
       price: '1,99 €',
@@ -20,7 +20,7 @@ export default function ProUpgradeModal({ isOpen, onClose, friendCode }) {
       color: '#38bdf8'
     },
     {
-      id: 'price_annuale_placeholder',
+      id: 'price_1U6Z9rGgjWDI5KlvAhilRbOy',
       name: 'Annuale',
       icon: <Crown className="plan-icon" />,
       price: '9,99 €',
@@ -30,7 +30,7 @@ export default function ProUpgradeModal({ isOpen, onClose, friendCode }) {
       badge: 'PIÙ SCELTO'
     },
     {
-      id: 'price_tantum_placeholder',
+      id: 'price_1U6Z9AGgjWDI5KlvFxLCbUT5',
       name: "Founder's Edition",
       icon: <Rocket className="plan-icon" />,
       price: '19,99 €',
@@ -46,7 +46,7 @@ export default function ProUpgradeModal({ isOpen, onClose, friendCode }) {
     setError('');
 
     try {
-      const res = await fetch(${BACKEND_URL}/stripe/create-checkout-session, {
+      const res = await fetch(`${BACKEND_URL}/stripe/create-checkout-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ friendCode, priceId })
@@ -112,7 +112,7 @@ export default function ProUpgradeModal({ isOpen, onClose, friendCode }) {
                 )}
                 
                 <div className="plan-header">
-                  <div className="plan-icon-wrapper" style={{ color: plan.color, backgroundColor: ${plan.color}15 }}>
+                  <div className="plan-icon-wrapper" style={{ color: plan.color, backgroundColor: `${plan.color}15` }}>
                     {plan.icon}
                   </div>
                   <h3>{plan.name}</h3>
