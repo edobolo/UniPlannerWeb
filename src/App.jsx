@@ -343,8 +343,8 @@ function MainApp() {
             <button 
               className="pro-upgrade-sidebar-btn"
               onClick={async () => {
-                const isPro = currentUser?.isPremium || localStorage.getItem('uniplanner_pro_unlocked') === 'true';
-                if (isPro && currentUser?.friendCode) {
+                const isRealPro = Boolean(currentUser?.isPremium && currentUser?.stripeCustomerId);
+                if (isRealPro && currentUser?.friendCode) {
                   try {
                     const { apiFetch } = await import('./utils/cloudSync');
                     const res = await apiFetch('/stripe/create-portal-session', {
@@ -365,7 +365,7 @@ function MainApp() {
               title={currentUser?.isPremium ? "Gestisci il tuo abbonamento PRO" : "Sblocca UniPlanner PRO"}
             >
               <Crown size={15} style={{ color: '#f59e0b' }} />
-              <span>{currentUser?.isPremium || localStorage.getItem('uniplanner_pro_unlocked') === 'true' ? 'Gestisci PRO 👑' : 'Passa a PRO ⚡'}</span>
+              <span>{currentUser?.isPremium && currentUser?.stripeCustomerId ? 'Gestisci PRO 👑' : 'Passa a PRO ⚡'}</span>
             </button>
 
             {!isElectron && (
