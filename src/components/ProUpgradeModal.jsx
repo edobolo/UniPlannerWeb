@@ -46,10 +46,15 @@ export default function ProUpgradeModal({ isOpen, onClose, friendCode }) {
     setError('');
 
     try {
+      const codeToSend = friendCode || localStorage.getItem('uniplanner_friend_code') || 'OSPITE_' + Math.random().toString(36).substring(2, 7).toUpperCase();
+
       const res = await fetch(`${BACKEND_URL}/stripe/create-checkout-session`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ friendCode, priceId })
+        headers: { 
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify({ friendCode: codeToSend, priceId })
       });
 
       const data = await res.json();
