@@ -24,6 +24,7 @@ import TitleBar from './components/TitleBar';
 import Exams from './pages/Exams'; // Pagina iniziale caricata istantaneamente
 import AccountModal from './components/AccountModal';
 import ThemeModal from './components/ThemeModal';
+import ProUpgradeModal from './components/ProUpgradeModal';
 
 // 🚀 Dynamic Lazy Loading per framerate a 60 FPS e bundle compatto
 const Welcome = lazy(() => import('./pages/Welcome'));
@@ -55,6 +56,7 @@ function MainApp() {
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [isBugModalOpen, setIsBugModalOpen] = useState(false);
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
+  const [isProModalOpen, setIsProModalOpen] = useState(false);
   const [legalInitialTab, setLegalInitialTab] = useState('privacy');
   const [updateDownloaded, setUpdateDownloaded] = useState(false);
   const [updateInfo, setUpdateInfo] = useState(null);
@@ -337,6 +339,15 @@ function MainApp() {
               </div>
             </div>
 
+            <button 
+              className="pro-upgrade-sidebar-btn"
+              onClick={() => setIsProModalOpen(true)}
+              title="Sblocca UniPlanner PRO"
+            >
+              <Crown size={15} style={{ color: '#f59e0b' }} />
+              <span>Passa a PRO ⚡</span>
+            </button>
+
             {!isElectron && (
               <button 
                 className="download-app-btn"
@@ -590,6 +601,13 @@ function MainApp() {
       }}
       theme={theme}
       onToggleTheme={toggleTheme}
+    />
+
+    {/* Pro Upgrade Modal */}
+    <ProUpgradeModal 
+      isOpen={isProModalOpen}
+      onClose={() => setIsProModalOpen(false)}
+      friendCode={currentUser?.friendCode}
     />
 
     {/* Lazy Modals with Suspense */}
