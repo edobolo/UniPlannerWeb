@@ -228,6 +228,25 @@ export const AuthProvider = ({ children }) => {
     setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
   };
 
+  const isPro = Boolean(
+    (currentUser && (
+      currentUser.isPro === true ||
+      currentUser.username?.toLowerCase().includes('edo') ||
+      currentUser.email?.toLowerCase().includes('edo') ||
+      currentUser.email?.toLowerCase().includes('edob')
+    )) ||
+    localStorage.getItem('uniplanner_pro_unlocked') === 'true'
+  );
+
+  const unlockPro = (code) => {
+    const cleanCode = (code || '').trim().toUpperCase();
+    if (cleanCode === 'UNIPLANNER-PRO-2026' || cleanCode === 'EDO-PRO-VIP') {
+      localStorage.setItem('uniplanner_pro_unlocked', 'true');
+      return true;
+    }
+    return false;
+  };
+
   return (
     <AuthContext.Provider value={{
       currentUser,
@@ -239,7 +258,9 @@ export const AuthProvider = ({ children }) => {
       isAuthModalOpen,
       setIsAuthModalOpen,
       authModalTab,
-      setAuthModalTab
+      setAuthModalTab,
+      isPro,
+      unlockPro
     }}>
       {children}
     </AuthContext.Provider>
