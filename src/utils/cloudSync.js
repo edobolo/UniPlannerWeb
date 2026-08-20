@@ -6,6 +6,19 @@
 export const BACKEND_URL = 'https://shabby-myself-gleeful.ngrok-free.dev/api';
 
 /**
+ * Wrapper per fetch che include sempre gli header necessari per Ngrok e CORS
+ */
+export const apiFetch = async (endpoint, options = {}) => {
+  const url = endpoint.startsWith('http') ? endpoint : `${BACKEND_URL}${endpoint}`;
+  const headers = {
+    'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
+    ...(options.headers || {})
+  };
+  return fetch(url, { ...options, headers });
+};
+
+/**
  * Normalizza il codice amico in formato maiuscolo e senza spazi
  */
 export const normalizeFriendCode = (code) => {
@@ -65,11 +78,8 @@ export const publishUserProfile = async (user, exams = [], schedule = [], deadli
   };
 
   try {
-    const res = await fetch(`${BACKEND_URL}/sync`, {
+    const res = await apiFetch('/sync', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
       body: JSON.stringify(payload)
     });
 
@@ -86,11 +96,8 @@ export const publishUserProfile = async (user, exams = [], schedule = [], deadli
 export const connectMutualFriend = async (myCode, targetCode) => {
   if (!myCode || !targetCode) return null;
   try {
-    const res = await fetch(`${BACKEND_URL}/friends/connect`, {
+    const res = await apiFetch('/friends/connect', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
       body: JSON.stringify({
         myCode: normalizeFriendCode(myCode),
         targetCode: normalizeFriendCode(targetCode)
@@ -113,7 +120,7 @@ export const connectMutualFriend = async (myCode, targetCode) => {
 export const fetchMyFriendsList = async (myCode) => {
   if (!myCode) return [];
   try {
-    const res = await fetch(`${BACKEND_URL}/friends/my-list/${encodeURIComponent(normalizeFriendCode(myCode))}`);
+    const res = await apiFetch(`/friends/my-list/${encodeURIComponent(normalizeFriendCode(myCode))}`);
     if (res.ok) {
       const data = await res.json();
       return data.friends || [];
@@ -141,7 +148,7 @@ export const fetchUserProfile = async (queryInput) => {
   }
 
   try {
-    const res = await fetch(`${BACKEND_URL}/friends/${encodeURIComponent(code)}`);
+    const res = await apiFetch(`/friends/${encodeURIComponent(code)}`);
     if (res.ok) {
       const data = await res.json();
       if (data && (data.friendCode || data.username)) {
@@ -172,9 +179,8 @@ export const generateShareLink = (user) => {
  */
 export const sendBugReport = async ({ friendCode, username, message, errorLog }) => {
   try {
-    const res = await fetch(`${BACKEND_URL}/report-bug`, {
+    const res = await apiFetch('/report-bug', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         friendCode: friendCode || 'ANON',
         username: username || 'Anonimo',
@@ -196,9 +202,8 @@ export const sendBugReport = async ({ friendCode, username, message, errorLog })
  */
 export const resetUserPassword = async (friendCode, email, newPassword) => {
   try {
-    const res = await fetch(`${BACKEND_URL}/auth/reset-password`, {
+    const res = await apiFetch('/auth/reset-password', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ friendCode, email, newPassword })
     });
     const data = await res.json();
@@ -214,9 +219,8 @@ export const resetUserPassword = async (friendCode, email, newPassword) => {
  */
 export const loginUserOnline = async (identifier, password) => {
   try {
-    const res = await fetch(`${BACKEND_URL}/auth/login`, {
+    const res = await apiFetch('/auth/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ identifier, password })
     });
     const data = await res.json();
