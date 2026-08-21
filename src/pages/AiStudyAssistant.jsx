@@ -928,60 +928,38 @@ export default function AiStudyAssistant({ onOpenProModal }) {
               </div>
             )}
 
-            {/* GROQ SETTINGS */}
+            {/* GROQ SETTINGS (100% KEYLESS DEFAULT) */}
             {selectedProvider === 'groq' && (
               <div className="provider-settings-content">
                 <div className="model-variant-selector">
-                  <div 
-                    className={`model-card-option ${selectedModelType === 'llama70b' || selectedModelType === 'flash' ? 'selected' : ''}`}
-                    onClick={() => setSelectedModelType('llama70b')}
-                  >
+                  <div className="model-card-option selected">
                     <div className="model-card-header">
-                      <strong>Meta Llama 3.3 70B</strong>
-                      <span className="badge-tag free">Ultra-Veloce 🚀</span>
+                      <strong>Meta Llama 3.3 70B (Groq Cloud)</strong>
+                      <span className="badge-tag free">Attivo & Gratuito ⚡</span>
                     </div>
-                    <p>L'AI open source più veloce al mondo: genera 20 quiz in meno di 1 secondo grazie ai chip LPU Groq.</p>
+                    <p>
+                      Motore AI ultraveloce a latenza zero già integrato in UniPlanner. Genera 20 domande d'esame in appena 1-2 secondi senza bisogno di alcuna registrazione.
+                    </p>
                   </div>
                 </div>
 
-                <div className="key-guide-steps">
-                  <div className="guide-step-card">
-                    <span className="step-num">1</span>
-                    <div>
-                      <strong>Ottieni la tua Chiave Groq Cloud</strong>
-                      <p>100% gratuita con 14.400 richieste/giorno.</p>
-                      <a 
-                        href="https://console.groq.com/keys" 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="get-key-link"
-                      >
-                        <span>Apri Groq Console</span>
-                        <ExternalLink size={13} />
-                      </a>
-                    </div>
+                <div className="groq-ready-banner">
+                  <CheckCircle2 size={24} style={{ color: '#10b981', flexShrink: 0 }} />
+                  <div>
+                    <strong>Nessuna Chiave Richiesta!</strong>
+                    <p>Questo motore è già configurato e pronto all'uso per tutti gli studenti a costo zero.</p>
                   </div>
                 </div>
 
-                <div className="key-input-group">
-                  <input 
-                    type="password"
-                    className="key-input-field"
-                    placeholder="Incolla qui la chiave Groq (es. gsk_...)"
-                    value={groqKey}
-                    onChange={(e) => {
-                      setGroqKey(e.target.value);
-                      setKeyTestResult(null);
-                    }}
-                  />
+                <div className="optional-groq-key-section">
                   <button 
                     type="button" 
-                    className="test-key-btn"
+                    className="test-key-btn full-width-test"
                     onClick={handleTestApiKey}
-                    disabled={isTestingKey || !groqKey.trim()}
+                    disabled={isTestingKey}
                   >
                     {isTestingKey ? <RefreshCw size={14} className="spinner-icon" /> : <Zap size={14} />}
-                    <span>Testa</span>
+                    <span>Testa Connessione Motore Groq</span>
                   </button>
                 </div>
               </div>
