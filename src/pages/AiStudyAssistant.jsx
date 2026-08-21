@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Bot, 
   Sparkles, 
@@ -30,8 +30,7 @@ import {
 import { extractTextFromPDF } from '../utils/pdfExtractor';
 import { 
   generateStudyKit, 
-  testGeminiApiKey, 
-  GEMINI_MODEL_PRESETS 
+  testGeminiApiKey 
 } from '../utils/aiStudyService';
 import { useAuth } from '../context/AuthContext';
 import { safeJsonParse } from '../utils/security';
@@ -64,7 +63,6 @@ export default function AiStudyAssistant({ onOpenProModal }) {
   
   // Google Gemini Configuration States (Salvate per sempre in localStorage)
   const [showKeyModal, setShowKeyModal] = useState(false);
-  const [selectedModelType, setSelectedModelType] = useState(() => localStorage.getItem('uniplanner_ai_model_type') || 'flash');
   const [geminiKey, setGeminiKey] = useState(() => localStorage.getItem('uniplanner_gemini_api_key') || '');
   
   const [isTestingKey, setIsTestingKey] = useState(false);
@@ -146,12 +144,10 @@ export default function AiStudyAssistant({ onOpenProModal }) {
     setKeyTestResult(null);
 
     try {
-      const result = await testGeminiApiKey(geminiKey.trim(), selectedModelType);
+      const result = await testGeminiApiKey(geminiKey.trim());
       setKeyTestResult(result);
       if (result.valid) {
-        // Salvataggio permanente
         localStorage.setItem('uniplanner_gemini_api_key', geminiKey.trim());
-        localStorage.setItem('uniplanner_ai_model_type', selectedModelType);
       }
     } catch (e) {
       setKeyTestResult({ valid: false, message: 'Errore di connessione con Google Gemini.' });
@@ -165,7 +161,6 @@ export default function AiStudyAssistant({ onOpenProModal }) {
     if (geminiKey.trim()) {
       localStorage.setItem('uniplanner_gemini_api_key', geminiKey.trim());
     }
-    localStorage.setItem('uniplanner_ai_model_type', selectedModelType);
     setShowKeyModal(false);
   };
 
@@ -194,8 +189,7 @@ export default function AiStudyAssistant({ onOpenProModal }) {
 
     try {
       const kit = await generateStudyKit(rawText, {
-        apiKey: currentKey,
-        modelType: selectedModelType
+        apiKey: currentKey
       });
 
       setStudyKit(kit);
@@ -296,17 +290,15 @@ export default function AiStudyAssistant({ onOpenProModal }) {
             <div className="ai-badge-row">
               <span className="ai-badge-ai">
                 <Sparkles size={12} />
-                <span>
-                  {selectedModelType === 'pro' ? 'Google Gemini Pro 🧠' : 'Google Gemini Flash ⚡ (Gratuito)'}
-                </span>
+                <span>Google Gemini Flash ⚡ (100% Gratuito)</span>
               </span>
               {isConfigured ? (
                 <span className="ai-badge-active">
                   <CheckCircle2 size={11} />
-                  <span>Chiave Attiva</span>
+                  <span>Motore AI Attivo</span>
                 </span>
               ) : (
-                <span className="ai-badge-free">Configurazione Rapida (30s)</span>
+                <span className="ai-badge-free">Attivazione Rapida (30s)</span>
               )}
             </div>
             <h1>Assistente Studio & Quiz Generator</h1>
@@ -327,7 +319,7 @@ export default function AiStudyAssistant({ onOpenProModal }) {
             title="Configura Google Gemini"
           >
             <Key size={15} />
-            <span>{isConfigured ? 'Impostazioni Gemini' : 'Attiva Chiave Gratuita'}</span>
+            <span>{isConfigured ? 'Chiave Gemini Attiva' : 'Attiva Chiave Gratuita'}</span>
           </button>
         </div>
       </div>
@@ -838,13 +830,11 @@ export default function AiStudyAssistant({ onOpenProModal }) {
         </div>
       )}
 
-      {/* MODAL CONFIGURAZIONE GOOGLE GEMINI (CON GUIDA PRATICA INTEGRATA) */}
+      {/* MODAL CONFIGURAZIONE GOOGLE GEMINI FLASH (100% GRATUITO) */}
       {showKeyModal && (
         <div className="modal-backdrop" onClick={() => setShowKeyModal(false)}>
-          <motion.div 
+          <div 
             className="ai-key-modal glass-panel"
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="key-modal-header">
@@ -852,8 +842,8 @@ export default function AiStudyAssistant({ onOpenProModal }) {
                 <Key size={22} />
               </div>
               <div>
-                <h3>Impostazioni Google Gemini</h3>
-                <p className="key-modal-sub">Attivazione Motore AI Ufficiale Google</p>
+                <h3>Configurazione Google Gemini Flash</h3>
+                <p className="key-modal-sub">100% Gratuito per Sempre • 1.500 richieste/giorno</p>
               </div>
               <button 
                 type="button" 
@@ -864,49 +854,18 @@ export default function AiStudyAssistant({ onOpenProModal }) {
               </button>
             </div>
 
-            {/* SELETTORE VERSIONE: FLASH vs PRO */}
-            <div className="model-variant-selector">
-              <div 
-                className={`model-card-option ${selectedModelType === 'flash' ? 'selected' : ''}`}
-                onClick={() => {
-                  setSelectedModelType('flash');
-                  setKeyTestResult(null);
-                }}
-              >
-                <div className="model-card-header">
-                  <strong>Gemini Flash</strong>
-                  <span className="badge-tag free">100% Gratuito ⚡</span>
-                </div>
-                <p>Consigliato per tutti gli studenti: fino a 100 pagine di slide con 1.500 generazioni gratis/giorno.</p>
-              </div>
-
-              <div 
-                className={`model-card-option ${selectedModelType === 'pro' ? 'selected' : ''}`}
-                onClick={() => {
-                  setSelectedModelType('pro');
-                  setKeyTestResult(null);
-                }}
-              >
-                <div className="model-card-header">
-                  <strong>Gemini Pro</strong>
-                  <span className="badge-tag pro">Abbonamento 🧠</span>
-                </div>
-                <p>Massimo reasoning per materie complesse e tomi da 500 pagine. Per account con piano Google Pro / Cloud.</p>
-              </div>
-            </div>
-
-            {/* GUIDA PRATICA STEP-BY-STEP (SEMPRE BEN VISIBILE) */}
+            {/* GUIDA PRATICA STEP-BY-STEP (INTERAMENTE VISIBILE E NON TAGLIATA) */}
             <div className="gemini-interactive-guide">
               <div className="guide-header-static">
                 <BookOpen size={16} className="guide-icon-sparkle" />
-                <strong>Guida Rapida: Come ottenere la tua chiave gratuita (30s)</strong>
+                <strong>Guida Rapida: Come ottenere la tua chiave gratuita in 30s</strong>
               </div>
 
               <div className="guide-steps-container">
                 <div className="guide-step-item">
                   <span className="step-circle">1</span>
-                  <div>
-                    <p>Apri <strong>Google AI Studio</strong> ed esegui l'accesso con il tuo account Google (100% gratis, nessuna carta di credito):</p>
+                  <div className="step-content">
+                    <p>Apri <strong>Google AI Studio</strong> ed esegui l'accesso con il tuo normale account Google (nessuna carta di credito richiesta):</p>
                     <a 
                       href="https://aistudio.google.com/app/apikey" 
                       target="_blank" 
@@ -921,15 +880,15 @@ export default function AiStudyAssistant({ onOpenProModal }) {
 
                 <div className="guide-step-item">
                   <span className="step-circle">2</span>
-                  <div>
+                  <div className="step-content">
                     <p>Clicca sul pulsante blu <strong>"Create API key"</strong> in alto a destra e seleziona il tuo progetto Google.</p>
                   </div>
                 </div>
 
                 <div className="guide-step-item">
                   <span className="step-circle">3</span>
-                  <div>
-                    <p>Copia la stringa che inizia per <code>AIzaSy...</code> e incollala nel box qui sotto. <strong>Rimane salvata per sempre</strong> nel browser!</p>
+                  <div className="step-content">
+                    <p>Copia la stringa che inizia per <code>AIzaSy...</code> e incollala nel box qui sotto. <strong>Rimarrà salvata per sempre</strong> nel browser!</p>
                   </div>
                 </div>
               </div>
@@ -972,7 +931,7 @@ export default function AiStudyAssistant({ onOpenProModal }) {
 
             <div className="key-privacy-notice">
               <ShieldCheck size={14} />
-              <span>La chiave viene memorizzata esclusivamente in locale nel tuo browser in modo protetto e permanente.</span>
+              <span>La chiave viene salvata esclusivamente sul tuo dispositivo in locale in modo protetto.</span>
             </div>
 
             <div className="key-modal-actions">
@@ -997,7 +956,7 @@ export default function AiStudyAssistant({ onOpenProModal }) {
                 Salva & Chiudi
               </button>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
     </div>

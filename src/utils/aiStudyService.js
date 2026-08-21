@@ -51,31 +51,14 @@ REGOLE TASSATIVE:
 MATERIALE DIDATTICO:
 `;
 
-export const GEMINI_MODEL_PRESETS = {
-  flash: {
-    id: 'flash',
-    name: 'Gemini Flash (Consigliato & Gratuito)',
-    badge: '100% Gratuito ⚡',
-    desc: 'Velocissimo, 1.500 richieste/giorno gratis da Google AI Studio. Ottimizzato per dispense fino a 100 pagine.',
-    models: ['gemini-3.6-flash', 'gemini-3.1-flash', 'gemini-2.5-flash', 'gemini-1.5-flash']
-  },
-  pro: {
-    id: 'pro',
-    name: 'Gemini Pro (Abbonati Google / Reasoning)',
-    badge: 'Massima Precisione 🧠',
-    desc: 'Ragionamento profondo per tomi da 500 pagine e materie complesse. Per account con piano Pro / Google Cloud.',
-    models: ['gemini-3.1-pro-preview', 'gemini-3.1-pro', 'gemini-3.6-pro', 'gemini-2.5-pro', 'gemini-1.5-pro']
-  }
-};
+const FLASH_MODELS = ['gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
 
 /**
- * Esegue una chiamata a Google Gemini provando a cascata i modelli e auto-adattandosi ai suggerimenti di Google
+ * Esegue una chiamata a Google Gemini Flash con fallback a cascata e auto-healing
  */
-async function callGeminiCascade(apiKey, modelType, payloadBuilder) {
+async function callGeminiFlash(apiKey, payloadBuilder) {
   const cleanKey = (apiKey || '').trim();
-  const preset = GEMINI_MODEL_PRESETS[modelType] || GEMINI_MODEL_PRESETS.flash;
-  
-  const modelQueue = [...preset.models];
+  const modelQueue = [...FLASH_MODELS];
   const tried = new Set();
   let lastError = '';
 
@@ -100,7 +83,7 @@ async function callGeminiCascade(apiKey, modelType, payloadBuilder) {
         const msg = errData.error?.message || `Status ${res.status}`;
         lastError = msg;
 
-        // Auto-Adattamento: se Google risponde "Please update your code to use models/XYZ", mettilo in cima alla coda!
+        // Auto-adattamento se Google suggerisce un modello
         const match = msg.match(/models\/([a-zA-Z0-9\.\-_]+)/);
         if (match && match[1] && !tried.has(match[1])) {
           modelQueue.unshift(match[1]);
@@ -115,34 +98,34 @@ async function callGeminiCascade(apiKey, modelType, payloadBuilder) {
 }
 
 /**
- * Testa la connessione con Google Gemini
+ * Testa la connessione con Google Gemini Flash
  */
-export async function testGeminiApiKey(apiKey = '', modelType = 'flash') {
+export async function testGeminiApiKey(apiKey = '') {
   const cleanKey = (apiKey || '').trim();
   if (!cleanKey || cleanKey.length < 10) {
     return { valid: false, message: 'Inserisci prima la tua chiave API di Google Gemini.' };
   }
 
-  const result = await callGeminiCascade(cleanKey, modelType, () => ({
+  const result = await callGeminiFlash(cleanKey, () => ({
     contents: [{ parts: [{ text: 'Rispondi solo con: OK' }] }]
   }));
 
   if (result.success) {
     return {
       valid: true,
-      message: `Connessione a Google ${result.model} verificata con successo! 🚀`,
+      message: `Connessione a Google Gemini Flash verificata con successo! 🚀`,
       activeModel: result.model
     };
   }
 
   return {
     valid: false,
-    message: `Errore Google API: ${result.error || 'Nessun modello disponibile su questa chiave.'}`
+    message: `Errore Google API: ${result.error || 'Chiave non valida o scaduta.'}`
   };
 }
 
 /**
- * Genera il kit di studio completo tramite Google Gemini
+ * Genera il kit di studio completo tramite Google Gemini Flash
  */
 export async function generateStudyKit(rawText, options = {}) {
   if (!rawText || rawText.trim().length < 40) {
@@ -150,14 +133,13 @@ export async function generateStudyKit(rawText, options = {}) {
   }
 
   const trimmedText = rawText.slice(0, 100000);
-  const modelType = options.modelType || localStorage.getItem('uniplanner_ai_model_type') || 'flash';
   const apiKey = (options.apiKey || localStorage.getItem('uniplanner_gemini_api_key') || '').trim();
 
   if (!apiKey) {
     throw new Error('Nessuna chiave API Google Gemini configurata. Inserisci la tua chiave gratuita nelle impostazioni.');
   }
 
-  const result = await callGeminiCascade(apiKey, modelType, () => ({
+  const result = await callGeminiFlash(apiKey, () => ({
     contents: [{ parts: [{ text: PROMPT_INSTRUCTIONS + '\n\n' + trimmedText }] }],
     generationConfig: {
       temperature: 0.2,
