@@ -471,7 +471,6 @@
   transform: translateY(-2px);
   box-shadow: 0 8px 20px -6px rgba(139, 92, 246, 0.4);
 }
-
 /* ============================================================
    MOBILE & SMARTPHONE NAVIGATION (Chrome Android & iOS Safari)
    ============================================================ */
@@ -554,7 +553,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 64px;
+  height: 60px;
   padding: 4px 4px calc(env(safe-area-inset-bottom, 0px) + 4px) 4px;
   background: var(--glass-bg);
   backdrop-filter: blur(20px);
@@ -616,8 +615,9 @@
 /* Media Queries for Phone Screens */
 @media (max-width: 768px) {
   .app-root {
-    height: 100dvh;
     height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
   }
 
   .sidebar {
@@ -634,32 +634,45 @@
 
   .app-container {
     flex-direction: column;
-    height: calc(100% - 56px);
-    overflow-y: auto;
+    height: calc(100% - 52px);
+    overflow: hidden !important; /* CRITICAL: No scroll here */
+    display: flex;
+    flex: 1;
+    min-height: 0;
   }
 
   .main-content {
-    padding: 10px 12px 80px 12px;
+    padding: 12px 10px 96px 10px !important;
     width: 100%;
-    overflow-x: hidden;
+    overflow-y: auto !important; /* CRITICAL: Single scroll container */
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important; /* Fast iOS/Android momentum */
+    scroll-behavior: smooth;
+    flex: 1;
+    min-height: 0;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
   }
 
   .page-wrapper {
-    min-height: calc(100% - 20px);
+    min-height: 100%;
+    width: 100%;
+    max-width: 100%;
   }
 
   /* Modals on phone screen */
   .modal-overlay {
     padding: 10px;
-    align-items: flex-end;
+    align-items: center;
   }
 
   .modal-content {
-    max-width: 100% !important;
-    border-radius: 20px 20px 0 0 !important;
-    max-height: 90vh !important;
+    max-width: 96% !important;
+    border-radius: 20px !important;
+    max-height: 88vh !important;
   }
 }
+
 .pro-upgrade-sidebar-btn {
   width: 100%;
   padding: 10px 14px;
@@ -676,6 +689,7 @@
   transition: all 0.2s ease;
   margin-top: 12px;
 }
+
 .pro-upgrade-sidebar-btn:hover {
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.2));
   transform: translateY(-1px);
