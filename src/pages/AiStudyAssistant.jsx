@@ -63,6 +63,7 @@ export default function AiStudyAssistant({ onOpenProModal }) {
   const [isExtractingFile, setIsExtractingFile] = useState(false);
   const [fileProgress, setFileProgress] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   
   // Google Gemini Configuration States (Salvate per sempre in localStorage)
@@ -111,9 +112,8 @@ export default function AiStudyAssistant({ onOpenProModal }) {
     return () => clearInterval(interval);
   }, [isTimerRunning, quizSubmitted]);
 
-  // Handle Multi-Format Upload (PDF, TXT, MD, PNG, JPG, WEBP)
-  const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
+  // Process Unified File (Used by both Drag & Drop and File Input)
+  const processFile = async (file) => {
     if (!file) return;
 
     setErrorMsg('');
@@ -145,7 +145,6 @@ export default function AiStudyAssistant({ onOpenProModal }) {
         reader.onload = (event) => {
           const dataUrl = event.target.result;
           const mimeType = file.type || `image/${ext === 'jpg' ? 'jpeg' : ext}`;
-          // Estrai il Base64 puro togliendo l'header "data:image/...;base64,"
           const base64Data = dataUrl.split(',')[1];
           setUploadedImage({
             mimeType,
@@ -186,7 +185,7 @@ export default function AiStudyAssistant({ onOpenProModal }) {
       return;
     }
 
-    setErrorMsg('Formato non supportato. Carica un file PDF, TXT, Markdown o un\'immagine (PNG, JPG).');
+    setErrorMsg('Formato non supportato. Trascina un file PDF, TXT, Markdown o un\'immagine (PNG, JPG).');
   };
 
   // Test Gemini Key Action
@@ -223,7 +222,7 @@ export default function AiStudyAssistant({ onOpenProModal }) {
   // Generate Study Kit Action
   const handleGenerate = async () => {
     if (!rawText.trim() && !uploadedImage) {
-      setErrorMsg('Inserisci del testo, carica un documento (PDF/TXT/MD) o una foto/screenshot.');
+      setErrorMsg('Inserisci del testo, trascina un documento (PDF/TXT/MD) o una foto/screenshot.');
       return;
     }
 
@@ -437,21 +436,48 @@ export default function AiStudyAssistant({ onOpenProModal }) {
       {(!studyKit || activeSubTab === 'input') && (
         <div className="ai-input-layout">
           <div className="ai-upload-box glass-panel">
-            <div className="upload-dropzone">
+            <div 
+              className={`upload-dropzone ${isDragging ? 'dragging' : ''}`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(true);
+              }}
+              onDragEnter={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(false);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(false);
+                const file = e.dataTransfer.files?.[0];
+                if (file) processFile(file);
+              }}
+            >
               <input 
                 type="file" 
                 accept=".pdf,.txt,.md,.png,.jpg,.jpeg,.webp,application/pdf,text/plain,text/markdown,image/*" 
-                onChange={handleFileUpload}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) processFile(file);
+                }}
                 disabled={isExtractingFile || isGenerating}
                 id="multi-file-input"
                 style={{ display: 'none' }}
               />
               <label htmlFor="multi-file-input" className="dropzone-label">
                 <div className="dropzone-icon-circle">
-                  <UploadCloud size={30} />
+                  <UploadCloud size={32} />
                 </div>
-                <h3>Trascina qui i tuoi Appunti, PDF o Foto</h3>
-                <p>Supporta <strong>PDF</strong>, <strong>Testo (TXT, MD)</strong> o <strong>Immagini (PNG, JPG)</strong></p>
+                <h3>{isDragging ? 'Rilascia qui il file!' : 'Trascina qui i tuoi Appunti, PDF o Foto'}</h3>
+                <p>oppure clicca per sfogliare i file dal computer</p>
                 <div className="supported-formats-pills">
                   <span>📕 PDF Slide / Libri</span>
                   <span>📝 TXT & Markdown</span>
@@ -462,9 +488,9 @@ export default function AiStudyAssistant({ onOpenProModal }) {
               {isExtractingFile && (
                 <div className="extraction-progress">
                   <div className="progress-bar-bg">
-                    <div className="progress-bar-fill" style={{ width: `${fileProgress || 50}%` }} />
+                    <div className="progress-bar-fill" style={{ width: `${fileProgress || 60}%` }} />
                   </div>
-                  <span>Lettura del materiale in corso...</span>
+                  <span>Lettura ed elaborazione del file in corso...</span>
                 </div>
               )}
             </div>

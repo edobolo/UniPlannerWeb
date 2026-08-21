@@ -1695,3 +1695,21 @@
   max-height: 220px;
   object-fit: contain;
 }
+/* Interactive Drag-and-Drop Active States */
+.upload-dropzone {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer !important;
+}
+
+.upload-dropzone.dragging {
+  border-color: var(--accent-primary) !important;
+  background: rgba(56, 189, 248, 0.15) !important;
+  transform: scale(1.02) !important;
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.25) !important;
+}
+
+.upload-dropzone.dragging .dropzone-icon-circle {
+  transform: translateY(-4px) scale(1.1) !important;
+  background: var(--accent-primary) !important;
+  color: #0f172a !important;
+}
