@@ -66,7 +66,6 @@ export default function AiStudyAssistant({ onOpenProModal }) {
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [selectedModelType, setSelectedModelType] = useState(() => localStorage.getItem('uniplanner_ai_model_type') || 'flash');
   const [geminiKey, setGeminiKey] = useState(() => localStorage.getItem('uniplanner_gemini_api_key') || '');
-  const [showGuideDetails, setShowGuideDetails] = useState(false);
   
   const [isTestingKey, setIsTestingKey] = useState(false);
   const [keyTestResult, setKeyTestResult] = useState(null); // { valid: boolean, message: string }
@@ -896,53 +895,44 @@ export default function AiStudyAssistant({ onOpenProModal }) {
               </div>
             </div>
 
-            {/* GUIDA PRATICA STEP-BY-STEP (INTERATTIVA) */}
+            {/* GUIDA PRATICA STEP-BY-STEP (SEMPRE BEN VISIBILE) */}
             <div className="gemini-interactive-guide">
-              <div className="guide-header-toggle" onClick={() => setShowGuideDetails(!showGuideDetails)}>
-                <div className="guide-toggle-left">
-                  <BookOpen size={16} className="guide-icon-sparkle" />
-                  <strong>Come ottenere la tua chiave gratuita in 30 secondi</strong>
-                </div>
-                <span className="guide-toggle-tag">{showGuideDetails ? 'Nascondi ▲' : 'Mostra Guida ▼'}</span>
+              <div className="guide-header-static">
+                <BookOpen size={16} className="guide-icon-sparkle" />
+                <strong>Guida Rapida: Come ottenere la tua chiave gratuita (30s)</strong>
               </div>
 
-              {(showGuideDetails || !geminiKey) && (
-                <motion.div 
-                  className="guide-steps-container"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                >
-                  <div className="guide-step-item">
-                    <span className="step-circle">1</span>
-                    <div>
-                      <p>Apri <strong>Google AI Studio</strong> ed esegui l'accesso con il tuo normale account Google (nessuna carta di credito richiesta):</p>
-                      <a 
-                        href="https://aistudio.google.com/app/apikey" 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="guide-direct-link"
-                      >
-                        <span>Apri Google AI Studio (aistudio.google.com)</span>
-                        <ExternalLink size={13} />
-                      </a>
-                    </div>
+              <div className="guide-steps-container">
+                <div className="guide-step-item">
+                  <span className="step-circle">1</span>
+                  <div>
+                    <p>Apri <strong>Google AI Studio</strong> ed esegui l'accesso con il tuo account Google (100% gratis, nessuna carta di credito):</p>
+                    <a 
+                      href="https://aistudio.google.com/app/apikey" 
+                      target="_blank" 
+                      rel="noreferrer"
+                      className="guide-direct-link"
+                    >
+                      <span>Apri Google AI Studio (aistudio.google.com)</span>
+                      <ExternalLink size={13} />
+                    </a>
                   </div>
+                </div>
 
-                  <div className="guide-step-item">
-                    <span className="step-circle">2</span>
-                    <div>
-                      <p>Clicca sul pulsante blu <strong>"Create API key"</strong> in alto a destra e seleziona il tuo progetto Google predefinito.</p>
-                    </div>
+                <div className="guide-step-item">
+                  <span className="step-circle">2</span>
+                  <div>
+                    <p>Clicca sul pulsante blu <strong>"Create API key"</strong> in alto a destra e seleziona il tuo progetto Google.</p>
                   </div>
+                </div>
 
-                  <div className="guide-step-item">
-                    <span className="step-circle">3</span>
-                    <div>
-                      <p>Copia la stringa che inizia per <code>AIzaSy...</code> e incollala nel box qui sotto. <strong>Rimarrà salvata per sempre</strong> nel tuo browser!</p>
-                    </div>
+                <div className="guide-step-item">
+                  <span className="step-circle">3</span>
+                  <div>
+                    <p>Copia la stringa che inizia per <code>AIzaSy...</code> e incollala nel box qui sotto. <strong>Rimane salvata per sempre</strong> nel browser!</p>
                   </div>
-                </motion.div>
-              )}
+                </div>
+              </div>
             </div>
 
             {/* INPUT CHIAVE CON SALVATAGGIO AUTOMATICO */}

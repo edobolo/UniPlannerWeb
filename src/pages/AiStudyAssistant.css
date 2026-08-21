@@ -1533,3 +1533,12 @@
 .guide-direct-link:hover {
   transform: translateY(-1px);
 }
+.guide-header-static {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(56, 189, 248, 0.1);
+  color: var(--text-primary);
+  font-size: 13.5px;
+}
