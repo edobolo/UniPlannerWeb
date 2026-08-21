@@ -28,11 +28,11 @@ import './Exams.css';
 
 const YEAR_OPTIONS = ["1° Anno", "2° Anno", "3° Anno", "4° Anno", "5° Anno", "Opzionale", "N/D"];
 const SORT_OPTIONS = [
-  { id: 'MANUAL', label: 'Personalizzato' },
   { id: 'YEAR_ASC', label: 'Per Anno (Standard)' },
-  { id: 'RECENT', label: 'Aggiunti di recente' },
   { id: 'NAME', label: 'Alfabetico (A-Z)' },
-  { id: 'GRADE_DESC', label: 'Voto (Migliori)' }
+  { id: 'GRADE_DESC', label: 'Voto (Migliori)' },
+  { id: 'RECENT', label: 'Aggiunti di recente' },
+  { id: 'MANUAL', label: 'Personalizzato (Trascina Desktop)' }
 ];
 
 const formatTime = (mins) => {
@@ -67,6 +67,7 @@ const dropAnimation = {
 const ExamCardContent = ({ exam, handleDelete, setRecordGrade, setRecordCredits, setRecordingId, setTimeRecordingId, isOverlay = false, dragHandleProps = {} }) => {
   const isDone = exam.grade !== null;
   const yearColor = getYearColor(exam.year);
+  const hasDragHandle = dragHandleProps && Object.keys(dragHandleProps).length > 0;
 
   return (
     <div 
@@ -77,9 +78,11 @@ const ExamCardContent = ({ exam, handleDelete, setRecordGrade, setRecordCredits,
       
       <div className="card-header">
         <div className="header-left">
-          <div className="drag-handle" title="Trascina per riordinare" {...dragHandleProps}>
-            <GripHorizontal size={18} />
-          </div>
+          {hasDragHandle && (
+            <div className="drag-handle" title="Trascina per riordinare" {...dragHandleProps}>
+              <GripHorizontal size={18} />
+            </div>
+          )}
           <span className="modern-badge">{exam.year}</span>
         </div>
         {!isOverlay && (
@@ -416,7 +419,7 @@ const Exams = () => {
             <h3>Nessun Esame Programmato</h3>
             <p>Inizia ad aggiungere gli esami del tuo corso di laurea usando la barra qui sopra.</p>
           </motion.div>
-        ) : (
+        ) : sortMethod === 'MANUAL' ? (
           <DndContext 
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -458,6 +461,20 @@ const Exams = () => {
               ) : null}
             </DragOverlay>
           </DndContext>
+        ) : (
+          <div className={`exams-layout ${viewMode === 'grid' ? 'layout-grid' : 'layout-list'}`}>
+            {sortedExams.map(exam => (
+              <ExamCardContent 
+                key={exam.id}
+                exam={exam}
+                handleDelete={handleDelete}
+                setRecordGrade={setRecordGrade}
+                setRecordCredits={setRecordCredits}
+                setRecordingId={setRecordingId}
+                setTimeRecordingId={setTimeRecordingId}
+              />
+            ))}
+          </div>
         )}
       </div>
 
