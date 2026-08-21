@@ -1,3 +1,4 @@
+// api/calendar.js - Vercel Serverless Function per Live iCalendar Feed (RFC 5545)
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -10,44 +11,219 @@ export default async function handler(req, res) {
   const queryCode = req.query.code || req.query.friendCode || req.query.id || '';
   const code = String(queryCode).replace(/\.ics$/i, '').toUpperCase().trim();
 
-  if (!code) {
-    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
-    return res.status(200).send('BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//UniPlanner//IT\r\nX-WR-CALNAME:UniPlanner\r\nEND:VCALENDAR');
-  }
+  let studentData = {
+    friendCode: code || 'UNIPLANNER',
+    fullName: 'Studente UniPlanner',
+    schedule: [],
+    exams: [],
+    deadlines: []
+  };
 
-  try {
-    const backendRes = await fetch(`https://shabby-myself-gleeful.ngrok-free.dev/api/calendar/${code}.ics`, {
-      headers: {
-        'ngrok-skip-browser-warning': 'true'
+  if (code) {
+    try {
+      // 1. Interroga l'endpoint friends/search già attivo sul Raspberry Pi
+      const searchRes = await fetch(`https://shabby-myself-gleeful.ngrok-free.dev/api/friends/search?code=${encodeURIComponent(code)}`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+
+      if (searchRes.ok) {
+        const found = await searchRes.json();
+        if (found && !found.error) {
+          studentData = {
+            ...studentData,
+            ...found,
+            schedule: found.schedule || [],
+            exams: found.exams || [],
+            deadlines: found.deadlines || []
+          };
+        }
       }
-    });
-
-    if (backendRes.ok) {
-      const icsData = await backendRes.text();
-      res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
-      res.setHeader('Content-Disposition', 'inline; filename="uniplanner.ics"');
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      return res.status(200).send(icsData);
+    } catch (err) {
+      console.warn('Errore lettura dati studente da Raspberry Pi:', err);
     }
-  } catch (err) {
-    console.error('Errore proxy calendar Raspberry Pi:', err);
   }
 
-  // Fallback iCal se il Raspberry Pi è offline
-  const fallbackIcs = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//UniPlanner//IT//UniPlanner Web//IT',
-    'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH',
-    `X-WR-CALNAME:UniPlanner (${code})`,
-    'X-WR-TIMEZONE:Europe/Rome',
-    'X-WR-CALDESC:Sincronizzazione orario UniPlanner',
-    'END:VCALENDAR'
-  ].join('\r\n');
+  // 2. Genera il file .ics conforme a RFC 5545
+  const icsString = buildIcsContent(studentData);
 
   res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
   res.setHeader('Content-Disposition', 'inline; filename="uniplanner.ics"');
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  return res.status(200).send(fallbackIcs);
+  return res.status(200).send(icsString);
+}
+
+function buildIcsContent(student) {
+  const DAY_MAP = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
+  const pad = (n) => String(n).padStart(2, '0');
+  const formatUtc = (d) => {
+    return `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
+  };
+  const escapeIcs = (str) => {
+    if (!str) return '';
+    return String(str).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+  };
+
+  const now = new Date();
+  const dtstamp = formatUtc(now);
+  const untilDate = new Date(now);
+  untilDate.setMonth(untilDate.getMonth() + 6);
+  const untilStr = formatUtc(untilDate);
+
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//UniPlanner//IT//UniPlanner Web App//IT',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    `X-WR-CALNAME:UniPlanner - ${escapeIcs(student.fullName || student.username || 'Orario Lezioni')}`,
+    'X-WR-TIMEZONE:Europe/Rome',
+    'X-WR-CALDESC:Sincronizzazione automatica orario lezioni ed esami UniPlanner',
+    'REFRESH-INTERVAL;VALUE=DURATION:PT1H',
+    'X-PUBLISHED-TTL:PT1H'
+  ];
+
+  const schedule = Array.isArray(student.schedule) ? student.schedule : [];
+  const exams = Array.isArray(student.exams) ? student.exams : [];
+  const deadlines = Array.isArray(student.deadlines) ? student.deadlines : [];
+
+  let eventsCount = 0;
+
+  // 1. LEZIONI SETTIMANALI & A DATA SPECIFICA
+  schedule.forEach((l, idx) => {
+    const subject = l.subject || 'Lezione Universitaria';
+    const room = l.room ? `Aula: ${l.room}` : '';
+    const prof = l.professor ? `Docente: ${l.professor}` : '';
+    const desc = [prof, room].filter(Boolean).join('\n');
+    const [startH, startM] = (l.startTime || '09:00').split(':').map(Number);
+    const [endH, endM] = (l.endTime || '11:00').split(':').map(Number);
+
+    if (l.date) {
+      const d = new Date(l.date);
+      const dtStart = new Date(d);
+      dtStart.setHours(startH || 9, startM || 0, 0, 0);
+      const dtEnd = new Date(d);
+      dtEnd.setHours(endH || 11, endM || 0, 0, 0);
+
+      lines.push(
+        'BEGIN:VEVENT',
+        `UID:les_single_${l.id || idx}_${dtStart.getTime()}@uniplanner.it`,
+        `DTSTAMP:${dtstamp}`,
+        `DTSTART:${formatUtc(dtStart)}`,
+        `DTEND:${formatUtc(dtEnd)}`,
+        `SUMMARY:${escapeIcs(subject)}`,
+        l.room ? `LOCATION:${escapeIcs(l.room)}` : '',
+        desc ? `DESCRIPTION:${escapeIcs(desc)}` : '',
+        'STATUS:CONFIRMED',
+        'END:VEVENT'
+      );
+      eventsCount++;
+    } else {
+      const dayIdx = typeof l.dayIndex === 'number' ? l.dayIndex : 0;
+      const currentDay = (now.getDay() + 6) % 7;
+      let diff = dayIdx - currentDay;
+      if (diff < 0) diff += 7;
+      const startTarget = new Date(now);
+      startTarget.setDate(now.getDate() + diff);
+      const dtStart = new Date(startTarget);
+      dtStart.setHours(startH || 9, startM || 0, 0, 0);
+      const dtEnd = new Date(startTarget);
+      dtEnd.setHours(endH || 11, endM || 0, 0, 0);
+
+      lines.push(
+        'BEGIN:VEVENT',
+        `UID:les_rec_${l.id || idx}_${dayIdx}@uniplanner.it`,
+        `DTSTAMP:${dtstamp}`,
+        `DTSTART:${formatUtc(dtStart)}`,
+        `DTEND:${formatUtc(dtEnd)}`,
+        `RRULE:FREQ=WEEKLY;BYDAY=${DAY_MAP[dayIdx] || 'MO'};UNTIL=${untilStr}`,
+        `SUMMARY:${escapeIcs(subject)}`,
+        l.room ? `LOCATION:${escapeIcs(l.room)}` : '',
+        desc ? `DESCRIPTION:${escapeIcs(desc)}` : '',
+        'STATUS:CONFIRMED',
+        'BEGIN:VALARM',
+        'TRIGGER:-PT15M',
+        'ACTION:DISPLAY',
+        `DESCRIPTION:Promemoria: Lezione di ${escapeIcs(subject)}`,
+        'END:VALARM',
+        'END:VEVENT'
+      );
+      eventsCount++;
+    }
+  });
+
+  // 2. APPELLI D'ESAME
+  exams.forEach((ex, idx) => {
+    if (!ex.date) return;
+    const d = new Date(ex.date);
+    if (isNaN(d.getTime())) return;
+    const dtStart = new Date(d);
+    if (ex.time) {
+      const [h, m] = ex.time.split(':').map(Number);
+      dtStart.setHours(h || 9, m || 0, 0, 0);
+    } else {
+      dtStart.setHours(9, 0, 0, 0);
+    }
+    const dtEnd = new Date(dtStart);
+    dtEnd.setHours(dtStart.getHours() + 2);
+
+    lines.push(
+      'BEGIN:VEVENT',
+      `UID:exam_${ex.id || idx}_${dtStart.getTime()}@uniplanner.it`,
+      `DTSTAMP:${dtstamp}`,
+      `DTSTART:${formatUtc(dtStart)}`,
+      `DTEND:${formatUtc(dtEnd)}`,
+      `SUMMARY:🎯 Esame: ${escapeIcs(ex.name || 'Esame')}`,
+      ex.classroom ? `LOCATION:${escapeIcs(ex.classroom)}` : '',
+      'STATUS:CONFIRMED',
+      'BEGIN:VALARM',
+      'TRIGGER:-P1D',
+      'ACTION:DISPLAY',
+      `DESCRIPTION:Domani hai l'esame di ${escapeIcs(ex.name || '')}!`,
+      'END:VALARM',
+      'END:VEVENT'
+    );
+    eventsCount++;
+  });
+
+  // 3. SCADENZE & CONSEGNE
+  deadlines.forEach((dead, idx) => {
+    if (!dead.date || dead.completed) return;
+    const d = new Date(dead.date);
+    if (isNaN(d.getTime())) return;
+    const dtStart = new Date(d);
+    dtStart.setHours(18, 0, 0, 0);
+    const dtEnd = new Date(d);
+    dtEnd.setHours(19, 0, 0, 0);
+
+    lines.push(
+      'BEGIN:VEVENT',
+      `UID:deadline_${dead.id || idx}_${dtStart.getTime()}@uniplanner.it`,
+      `DTSTAMP:${dtstamp}`,
+      `DTSTART:${formatUtc(dtStart)}`,
+      `DTEND:${formatUtc(dtEnd)}`,
+      `SUMMARY:⏳ Scadenza: ${escapeIcs(dead.title || 'Consegna')}`,
+      'STATUS:CONFIRMED',
+      'END:VEVENT'
+    );
+    eventsCount++;
+  });
+
+  // Se non ci sono ancora eventi, aggiungi un VEVENT segnaposto così Google non rifiuta il calendario vuoto!
+  if (eventsCount === 0) {
+    const endPlaceholder = new Date(now.getTime() + 3600000);
+    lines.push(
+      'BEGIN:VEVENT',
+      `UID:welcome_${student.friendCode || 'demo'}@uniplanner.it`,
+      `DTSTAMP:${dtstamp}`,
+      `DTSTART:${dtstamp}`,
+      `DTEND:${formatUtc(endPlaceholder)}`,
+      'SUMMARY:🎓 UniPlanner Calendario Connesso!',
+      'DESCRIPTION:La sincronizzazione con UniPlanner è attiva con successo. Le tue lezioni ed esami compariranno qui.',
+      'STATUS:CONFIRMED',
+      'END:VEVENT'
+    );
+  }
+
+  lines.push('END:VCALENDAR');
+  return lines.filter(Boolean).join('\r\n');
 }
