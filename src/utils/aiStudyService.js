@@ -4,7 +4,7 @@ const PROMPT_INSTRUCTIONS = `
 Sei un Professore Universitario ed esaminatore accademico di altissimo livello.
 Analizza accuratamente il materiale didattico fornito (testo, dispense, appunti scritti a mano, slide o immagini di lavagne/schemi) ed elabora un KIT D'ESAME RIGOROSO E COMPLETO.
 
-DEVI RESTITUIRE ESCLUSIVAMENTE UN JSON VALIDO (senza markdown aggiuntivo, senza blocchi di codice non richiesti, solo JSON grezzo) con questa esatta struttura:
+DEVI RESTITUIRE ESCLUSIVAMENTE UN JSON VALIDO (senza markdown aggiuntivo, senza spiegazioni fuori dal JSON, solo JSON valido) con questa esatta struttura:
 
 {
   "subject": "Nome Materia / Argomento Principale",
@@ -42,16 +42,23 @@ DEVI RESTITUIRE ESCLUSIVAMENTE UN JSON VALIDO (senza markdown aggiuntivo, senza 
 }
 
 REGOLE TASSATIVE:
-1. Genera ESATTAMENTE 20 domande a risposta multipla ('quizzes').
-2. Genera tra 12 e 18 'flashcards'.
-3. Genera ESATTAMENTE 5 'oralQuestions'.
-4. 'correctIndex' deve essere un numero intero da 0 a 3.
+1. Genera fino a 15-20 domande a risposta multipla ('quizzes'). Se il testo è breve, focalizzati sui punti essenziali.
+2. Genera tra 10 e 18 'flashcards'.
+3. Genera 5 'oralQuestions'.
+4. 'correctIndex' deve essere un numero intero tra 0 e 3.
 5. Lingua: ITALIANO formale universitario.
 
 MATERIALE DIDATTICO:
 `;
 
-const FLASH_MODELS = ['gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+// Modelli ufficiali Google Gemini Flash supportati dall'API v1beta
+const FLASH_MODELS = [
+  'gemini-2.0-flash',
+  'gemini-1.5-flash',
+  'gemini-2.5-flash',
+  'gemini-1.5-flash-latest',
+  'gemini-1.5-flash-8b'
+];
 
 /**
  * Esegue una chiamata a Google Gemini Flash con fallback a cascata e auto-healing
@@ -83,7 +90,7 @@ async function callGeminiFlash(apiKey, payloadBuilder) {
         const msg = errData.error?.message || `Status ${res.status}`;
         lastError = msg;
 
-        // Auto-adattamento se Google suggerisce un modello
+        // Se Google menziona un modello attivo, mettilo in cima
         const match = msg.match(/models\/([a-zA-Z0-9\.\-_]+)/);
         if (match && match[1] && !tried.has(match[1])) {
           modelQueue.unshift(match[1]);
@@ -107,13 +114,13 @@ export async function testGeminiApiKey(apiKey = '') {
   }
 
   const result = await callGeminiFlash(cleanKey, () => ({
-    contents: [{ parts: [{ text: 'Rispondi solo con: OK' }] }]
+    contents: [{ parts: [{ text: 'Rispondi solo con la parola: OK' }] }]
   }));
 
   if (result.success) {
     return {
       valid: true,
-      message: `Connessione a Google Gemini Flash verificata con successo! 🚀`,
+      message: `Connessione a Google Gemini Flash (${result.model}) verificata con successo! 🚀`,
       activeModel: result.model
     };
   }
@@ -126,8 +133,6 @@ export async function testGeminiApiKey(apiKey = '') {
 
 /**
  * Genera il kit di studio completo tramite Google Gemini Flash (Testo + Immagini Multimodali)
- * @param {string | { text?: string, image?: { mimeType: string, data: string, previewUrl?: string } }} inputData
- * @param {Object} options - { apiKey }
  */
 export async function generateStudyKit(inputData, options = {}) {
   let textContent = '';
@@ -144,6 +149,11 @@ export async function generateStudyKit(inputData, options = {}) {
     throw new Error('Inserisci del testo, carica un documento (PDF/TXT/MD) o un\'immagine (PNG/JPG).');
   }
 
+  // Se il testo è veramente gigantesco (es. oltre 100.000 caratteri), avvisa chiaramente
+  if (textContent.length > 100000) {
+    throw new Error('Il documento caricato è molto lungo (supera i 100.000 caratteri). Prova a caricare un singolo capitolo o sezione per ottenere i risultati migliori.');
+  }
+
   const apiKey = (options.apiKey || localStorage.getItem('uniplanner_gemini_api_key') || '').trim();
   if (!apiKey) {
     throw new Error('Nessuna chiave API Google Gemini configurata. Inserisci la tua chiave gratuita nelle impostazioni.');
@@ -151,9 +161,9 @@ export async function generateStudyKit(inputData, options = {}) {
 
   const parts = [];
 
-  // 1. Aggiungi il prompt con eventuale testo
+  // 1. Aggiungi il prompt con il testo
   const promptWithText = textContent.trim() 
-    ? `${PROMPT_INSTRUCTIONS}\n\n${textContent.slice(0, 100000)}`
+    ? `${PROMPT_INSTRUCTIONS}\n\n${textContent}`
     : `${PROMPT_INSTRUCTIONS}\n\nAnalizza questa immagine contenente appunti di studio, slide o formule ed elabora il kit completo d'esame.`;
 
   parts.push({ text: promptWithText });
@@ -182,17 +192,26 @@ export async function generateStudyKit(inputData, options = {}) {
     return parseAiJsonResponse(rawJsonText);
   }
 
-  throw new Error(`Errore durante la generazione Google Gemini: ${result.error || 'Verifica la connessione.'}`);
+  // Messaggio d'errore reale e dettagliato
+  const err = result.error || 'Verifica la connessione internet o la chiave API.';
+  if (err.includes('API_KEY_INVALID') || err.includes('key not valid')) {
+    throw new Error('La chiave API Google Gemini inserita non è valida. Controlla di averla copiata correttamente da Google AI Studio.');
+  } else if (err.includes('RESOURCE_EXHAUSTED') || err.includes('quota')) {
+    throw new Error('Quota richieste Google Gemini temporaneamente esaurita. Attendi 30 secondi e riprova.');
+  }
+
+  throw new Error(`Errore Google Gemini: ${err}`);
 }
 
 /**
- * Parsing e pulizia sicura del JSON restituito dall'AI
+ * Parsing e pulizia sicura del JSON restituito dall'AI con auto-riparazione
  */
 function parseAiJsonResponse(rawString) {
-  if (!rawString) throw new Error('Risposta vuota da parte di Google Gemini.');
+  if (!rawString) throw new Error('Risposta vuota ricevuta da Google Gemini. Riprova tra qualche istante.');
 
   let clean = rawString.trim();
 
+  // Rimuovi blocchi markdown se presenti
   if (clean.startsWith('```json')) {
     clean = clean.replace(/^```json\s*/, '').replace(/\s*```$/, '');
   } else if (clean.startsWith('```')) {
@@ -205,6 +224,9 @@ function parseAiJsonResponse(rawString) {
     clean = clean.substring(firstBrace, lastBrace + 1);
   }
 
+  // Rimuovi virgole prima di chiusure di parentesi
+  clean = clean.replace(/,\s*([}\]])/g, '$1');
+
   try {
     const parsed = JSON.parse(clean);
     return {
@@ -216,6 +238,6 @@ function parseAiJsonResponse(rawString) {
     };
   } catch (parseError) {
     console.error('Errore parsing JSON Gemini:', parseError, rawString);
-    throw new Error('Il modello ha generato una risposta non standard. Riprova con un materiale più leggibile o sintetico.');
+    throw new Error('L\'intelligenza artificiale ha risposto in un formato non conforme. Riprova a cliccare su Genera.');
   }
 }
