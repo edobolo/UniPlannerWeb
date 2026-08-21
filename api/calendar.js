@@ -28,8 +28,8 @@ export default async function handler(req, res) {
 
   if (code) {
     try {
-      // 1. Interroga l'endpoint friends/search già attivo sul Raspberry Pi
-      const searchRes = await fetch(`https://shabby-myself-gleeful.ngrok-free.dev/api/friends/search?code=${encodeURIComponent(code)}`, {
+      // Interroga l'endpoint /api/friends/:code attivo sul backend Raspberry Pi
+      const searchRes = await fetch(`https://shabby-myself-gleeful.ngrok-free.dev/api/friends/${encodeURIComponent(code)}`, {
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
 
@@ -39,9 +39,9 @@ export default async function handler(req, res) {
           studentData = {
             ...studentData,
             ...found,
-            schedule: found.schedule || [],
-            exams: found.exams || [],
-            deadlines: found.deadlines || []
+            schedule: Array.isArray(found.schedule) ? found.schedule : [],
+            exams: Array.isArray(found.exams) ? found.exams : [],
+            deadlines: Array.isArray(found.deadlines) ? found.deadlines : []
           };
         }
       }
@@ -50,7 +50,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // 2. Genera il file .ics conforme a RFC 5545
+  // Genera il file .ics conforme a RFC 5545
   const icsString = buildIcsContent(studentData);
 
   res.setHeader('Content-Type', 'text/calendar; charset=utf-8');

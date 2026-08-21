@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar as CalendarIcon, 
@@ -19,6 +19,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { getLiveCalendarUrls, downloadIcsFile } from '../utils/calendarGenerator';
+import { publishUserProfile } from '../utils/cloudSync';
 import { useAuth } from '../context/AuthContext';
 import './CalendarSyncModal.css';
 
@@ -30,15 +31,41 @@ export default function CalendarSyncModal({
   deadlines = [] 
 }) {
   const { currentUser } = useAuth();
-  const friendCode = currentUser?.friendCode || 'DEMO123';
+  
+  // Ottieni o genera codice amico sicuro
+  const [friendCode] = useState(() => {
+    if (currentUser?.friendCode) return currentUser.friendCode;
+    let saved = localStorage.getItem('uniplanner_guest_sync_code');
+    if (!saved) {
+      saved = 'UP_' + Math.random().toString(36).substring(2, 7).toUpperCase();
+      localStorage.setItem('uniplanner_guest_sync_code', saved);
+    }
+    return saved;
+  });
 
   const [copied, setCopied] = useState(false);
-  const [activeGuideTab, setActiveGuideTab] = useState(null); // 'ios' | 'android' | 'mac'
+  const [activeGuideTab, setActiveGuideTab] = useState(null); // 'ios' | 'android'
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
   const [syncOptions, setSyncOptions] = useState({
     includeSchedule: true,
     includeExams: true,
     includeDeadlines: true
   });
+
+  // Pubblica in automatico le lezioni e gli esami sul cloud non appena si apre il modal
+  useEffect(() => {
+    if (isOpen && friendCode) {
+      setIsCloudSyncing(true);
+      const userToSync = currentUser || {
+        friendCode: friendCode,
+        username: 'Studente',
+        fullName: 'Studente UniPlanner'
+      };
+
+      publishUserProfile(userToSync, schedule, exams, deadlines)
+        .finally(() => setIsCloudSyncing(false));
+    }
+  }, [isOpen, friendCode, schedule, exams, deadlines]);
 
   if (!isOpen) return null;
 
@@ -78,7 +105,9 @@ export default function CalendarSyncModal({
                 <Sparkles size={12} />
                 <span>Live Sync in Tempo Reale</span>
               </span>
-              <span className="cal-badge-sub">Zero esportazioni manuali</span>
+              <span className="cal-badge-sub">
+                {isCloudSyncing ? 'Sincronizzazione orario in corso...' : `${schedule.length} lezioni collegate`}
+              </span>
             </div>
             <h2>Sincronizza con il tuo Calendario</h2>
             <p>
@@ -162,7 +191,7 @@ export default function CalendarSyncModal({
 
         {/* Live Feed URL Copy Box */}
         <div className="cal-feed-copy-section">
-          <label>Il tuo Link di Sottoscrizione Privato (iCalendar):</label>
+          <label>Il tuo Link di Sottoscrizione Privato (.ics):</label>
           <div className="feed-input-group">
             <input 
               type="text" 
@@ -191,7 +220,7 @@ export default function CalendarSyncModal({
                 checked={syncOptions.includeSchedule}
                 onChange={(e) => setSyncOptions(p => ({ ...p, includeSchedule: e.target.checked }))}
               />
-              <span>Lezioni Settimanali</span>
+              <span>Lezioni Settimanali ({schedule.length})</span>
             </label>
             <label className="checkbox-item">
               <input 
@@ -199,7 +228,7 @@ export default function CalendarSyncModal({
                 checked={syncOptions.includeExams}
                 onChange={(e) => setSyncOptions(p => ({ ...p, includeExams: e.target.checked }))}
               />
-              <span>Appelli d'Esame</span>
+              <span>Appelli d'Esame ({exams.length})</span>
             </label>
             <label className="checkbox-item">
               <input 
@@ -207,7 +236,7 @@ export default function CalendarSyncModal({
                 checked={syncOptions.includeDeadlines}
                 onChange={(e) => setSyncOptions(p => ({ ...p, includeDeadlines: e.target.checked }))}
               />
-              <span>Scadenze & Consegne</span>
+              <span>Scadenze & Consegne ({deadlines.length})</span>
             </label>
           </div>
         </div>
@@ -241,10 +270,10 @@ export default function CalendarSyncModal({
           {activeGuideTab === 'android' && (
             <div className="guide-acc-content">
               <ol>
-                <li>Clicca sul pulsante <strong>"Google Calendar"</strong> qui sopra, oppure:</li>
-                <li>Apri <strong>calendar.google.com</strong> dal browser del computer.</li>
+                <li>Clicca sul pulsante <strong>"Copia Link"</strong> qui sopra.</li>
+                <li>Clicca sul pulsante <strong>"Google Calendar"</strong> (o apri <em>calendar.google.com</em> dal computer).</li>
                 <li>Nella barra laterale sinistra clicca su <strong>"+"</strong> accanto ad <em>Altri calendari</em> &gt; <strong>Da URL</strong>.</li>
-                <li>Incolla il link e tocca <strong>Aggiungi calendario</strong>. Comparirà subito nell'app Google Calendar sul tuo smartphone!</li>
+                <li>Incolla il link copiato e tocca <strong>Aggiungi calendario</strong>: tutte le tue lezioni settimanali compariranno in automatico!</li>
               </ol>
             </div>
           )}
@@ -254,7 +283,7 @@ export default function CalendarSyncModal({
         <div className="cal-modal-footer">
           <div className="cal-privacy-badge">
             <ShieldCheck size={14} />
-            <span>Feed privato cifrato associato al tuo profilo UniPlanner.</span>
+            <span>Feed privato associato al tuo profilo ({friendCode}).</span>
           </div>
           <button type="button" className="primary-btn" onClick={onClose}>
             Fatto
