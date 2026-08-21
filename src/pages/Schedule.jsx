@@ -38,7 +38,7 @@ const PRESET_COLORS = [
   '#38bdf8', '#818cf8', '#34d399', '#fbbf24', '#f472b6', '#a78bfa', '#fb7185', '#60a5fa'
 ];
 
-const Schedule = () => {
+const Schedule = ({ onOpenProModal }) => {
   const { currentUser } = useAuth();
   const [lessons, setLessons] = useState(() => {
     const saved = safeJsonParse(localStorage.getItem(STORAGE_SCHEDULE_KEY), []);
@@ -1060,7 +1060,8 @@ const Schedule = () => {
         )}
       </AnimatePresence>
 
-      <CalendarSyncModal
+      <CalendarSyncModal 
+        onOpenProModal={onOpenProModal}
         isOpen={isSyncModalOpen}
         onClose={() => setIsSyncModalOpen(false)}
         schedule={lessons}

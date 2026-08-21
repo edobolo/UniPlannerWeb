@@ -2,17 +2,30 @@
 .cal-sync-modal {
   background: var(--bg-card) !important;
   border: 1px solid var(--glass-border) !important;
-  padding: 26px 30px !important;
+  padding: 24px 28px !important;
   border-radius: 20px !important;
   max-width: 620px !important;
   width: 95% !important;
-  max-height: 92vh !important;
+  max-height: 88vh !important;
   overflow-y: auto !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 20px !important;
+  gap: 18px !important;
   margin: auto !important;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+  scroll-behavior: smooth;
+}
+
+/* Custom Scrollbar */
+.cal-sync-modal::-webkit-scrollbar {
+  width: 6px;
+}
+.cal-sync-modal::-webkit-scrollbar-track {
+  background: transparent;
+}
+.cal-sync-modal::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
 }
 
 .cal-sync-header {
@@ -39,6 +52,7 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 6px;
+  flex-wrap: wrap;
 }
 
 .cal-badge-live {
@@ -56,6 +70,40 @@
 .cal-badge-sub {
   font-size: 11.5px;
   color: var(--text-secondary);
+}
+
+.cal-badge-pro-active {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(236, 72, 153, 0.2));
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.cal-badge-pro-locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cal-badge-pro-locked:hover {
+  background: rgba(245, 158, 11, 0.25);
+  transform: translateY(-1px);
 }
 
 .cal-sync-header h2 {
@@ -107,20 +155,68 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--glass-border);
-  border-radius: 14px;
-  padding: 14px;
   text-decoration: none;
   color: var(--text-primary);
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
+  position: relative;
+  text-align: left;
 }
 
 .cal-platform-card:hover {
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.platform-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pro-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: linear-gradient(135deg, #f59e0b, #ec4899);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.free-chip {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.pro-locked-card {
+  border: 1px dashed rgba(245, 158, 11, 0.35) !important;
+}
+
+.pro-locked-card:hover {
+  border-color: #f59e0b !important;
+  background: rgba(245, 158, 11, 0.08) !important;
+}
+
+.platform-lock {
+  color: #f59e0b;
+  margin-left: auto;
+  opacity: 0.85;
 }
 
 .platform-icon-wrap {
@@ -135,12 +231,12 @@
 
 .platform-icon-wrap.apple {
   background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  color: #fff;
 }
 
 .platform-icon-wrap.google {
-  background: rgba(234, 67, 53, 0.15);
-  color: #ea4335;
+  background: rgba(66, 133, 244, 0.15);
+  color: #4285f4;
 }
 
 .platform-icon-wrap.outlook {
@@ -149,52 +245,96 @@
 }
 
 .platform-icon-wrap.download {
-  background: rgba(56, 189, 248, 0.15);
-  color: var(--accent-primary);
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
 }
 
 .platform-info {
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-width: 0;
 }
 
 .platform-info strong {
   font-size: 13.5px;
-  font-weight: 700;
   color: var(--text-primary);
 }
 
 .platform-info span {
   font-size: 11.5px;
   color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .platform-arrow {
   color: var(--text-secondary);
-  transition: transform 0.15s ease;
+  margin-left: auto;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
 }
 
 .cal-platform-card:hover .platform-arrow {
-  color: var(--text-primary);
-  transform: translateX(2px);
+  opacity: 1;
+  color: var(--accent-primary);
 }
 
-/* Feed Copy Section */
+/* Live Feed URL Copy Section */
 .cal-feed-copy-section {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: rgba(56, 189, 248, 0.04);
-  border: 1px solid rgba(56, 189, 248, 0.18);
-  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.25);
   padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+}
+
+.feed-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .cal-feed-copy-section label {
   font-size: 12px;
   font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.refresh-feed-btn {
+  background: transparent;
+  border: none;
   color: var(--accent-primary);
+  font-size: 11.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.refresh-feed-btn:hover {
+  background: rgba(56, 189, 248, 0.15);
+}
+
+.pro-only-text {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #f59e0b;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.pro-only-text:hover {
+  text-decoration: underline;
 }
 
 .feed-input-group {
@@ -204,37 +344,51 @@
 
 .feed-url-input {
   flex: 1;
-  background: var(--bg-primary);
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--glass-border);
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-family: monospace;
+  border-radius: 8px;
+  padding: 8px 12px;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-primary);
+  font-family: monospace;
+  outline: none;
+}
+
+.blurred-pro-input {
+  opacity: 0.6;
 }
 
 .feed-copy-btn {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 6px;
+  padding: 8px 14px;
   background: var(--accent-primary);
-  color: #0f172a;
+  color: #fff;
   border: none;
-  border-radius: 10px;
-  padding: 0 16px;
+  border-radius: 8px;
   font-size: 12.5px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
 }
 
-.feed-copy-btn.copied {
-  background: #10b981;
-  color: white;
+.feed-copy-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
 }
 
-/* Options checkboxes */
+.feed-copy-btn.copied {
+  background: #10b981;
+}
+
+.pro-btn-glow {
+  background: linear-gradient(135deg, #f59e0b, #ec4899) !important;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3) !important;
+}
+
+/* Options Row */
 .cal-options-row {
   display: flex;
   flex-direction: column;
@@ -242,15 +396,15 @@
 }
 
 .options-label {
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text-secondary);
 }
 
 .options-checkboxes {
   display: flex;
-  gap: 16px;
   flex-wrap: wrap;
+  gap: 12px;
 }
 
 .checkbox-item {
@@ -258,15 +412,13 @@
   align-items: center;
   gap: 6px;
   font-size: 12.5px;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   cursor: pointer;
 }
 
 .checkbox-item input {
-  accent-color: var(--accent-primary);
-  width: 15px;
-  height: 15px;
   cursor: pointer;
+  accent-color: var(--accent-primary);
 }
 
 /* Guides Accordion */
@@ -323,13 +475,14 @@
   margin-bottom: 0;
 }
 
-/* Footer */
+/* Footer (Mai tagliato!) */
 .cal-modal-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 10px;
+  padding-top: 14px;
   border-top: 1px solid var(--glass-border);
+  margin-top: 4px;
 }
 
 .cal-privacy-badge {
@@ -338,4 +491,10 @@
   gap: 6px;
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+.cal-done-btn {
+  padding: 8px 24px !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
 }

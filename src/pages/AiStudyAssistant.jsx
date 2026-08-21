@@ -350,6 +350,21 @@ export default function AiStudyAssistant({ onOpenProModal }) {
                 <Sparkles size={12} />
                 <span>Google Gemini Flash (Multimodale ⚡)</span>
               </span>
+              {isPro ? (
+                <span className="cal-badge-pro-active">
+                  <Crown size={11} />
+                  <span>PRO Illimitato</span>
+                </span>
+              ) : (
+                <span 
+                  className="cal-badge-pro-locked" 
+                  onClick={() => onOpenProModal && onOpenProModal()}
+                  title="Gli utenti free hanno 1 richiesta di prova gratuita. Clicca per passare a PRO!"
+                >
+                  <Crown size={11} />
+                  <span>{Number(localStorage.getItem('uniplanner_ai_free_uses') || 0) === 0 ? '1 Prova Gratuita' : 'Prova terminata • Passa a PRO'}</span>
+                </span>
+              )}
               {isConfigured ? (
                 <span className="ai-badge-active">
                   <CheckCircle2 size={11} />

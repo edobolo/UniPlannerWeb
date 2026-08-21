@@ -530,7 +530,7 @@ function MainApp() {
                 transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
                 className="page-wrapper gpu-accelerated"
               >
-                <Schedule />
+                <Schedule onOpenProModal={() => setIsProModalOpen(true)} />
               </motion.div>
             )}
 
