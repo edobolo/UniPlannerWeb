@@ -17,7 +17,8 @@ import {
   ChevronUp,
   Clock,
   BookOpen,
-  RefreshCw
+  RefreshCw,
+  Info
 } from 'lucide-react';
 import { getLiveCalendarUrls, downloadIcsFile } from '../utils/calendarGenerator';
 import { publishUserProfile } from '../utils/cloudSync';
@@ -47,6 +48,7 @@ export default function CalendarSyncModal({
   const [copied, setCopied] = useState(false);
   const [activeGuideTab, setActiveGuideTab] = useState(null); // 'ios' | 'android'
   const [isCloudSyncing, setIsCloudSyncing] = useState(false);
+  const [syncSuccess, setSyncSuccess] = useState(false);
   const [syncOptions, setSyncOptions] = useState({
     includeSchedule: true,
     includeExams: true,
@@ -64,7 +66,8 @@ export default function CalendarSyncModal({
     };
 
     try {
-      await publishUserProfile(userToSync, schedule, exams, deadlines);
+      const ok = await publishUserProfile(userToSync, schedule, exams, deadlines);
+      if (ok) setSyncSuccess(true);
     } catch (e) {
       console.warn('Errore sync cloud:', e);
     } finally {
@@ -130,7 +133,7 @@ export default function CalendarSyncModal({
                 <span>Live Sync in Tempo Reale</span>
               </span>
               <span className="cal-badge-sub">
-                {isCloudSyncing ? 'Sincronizzazione orario in corso...' : `${schedule.length} lezioni pronte per il Calendario`}
+                {isCloudSyncing ? 'Sincronizzazione orario in corso...' : `${schedule.length} lezioni collegate (${friendCode})`}
               </span>
             </div>
             <h2>Sincronizza con il tuo Calendario</h2>
@@ -214,7 +217,7 @@ export default function CalendarSyncModal({
         {/* Live Feed URL Copy Box */}
         <div className="cal-feed-copy-section">
           <div className="feed-header-row">
-            <label>Il tuo Link di Sottoscrizione Privato (.ics):</label>
+            <label>Il tuo Link di Sottoscrizione (.ics):</label>
             <button 
               type="button" 
               className="refresh-feed-btn"
@@ -223,7 +226,7 @@ export default function CalendarSyncModal({
               title="Forza aggiornamento dati sul cloud"
             >
               <RefreshCw size={12} className={isCloudSyncing ? 'spinner-icon' : ''} />
-              <span>{isCloudSyncing ? 'Aggiornamento...' : 'Aggiorna Dati'}</span>
+              <span>{isCloudSyncing ? 'Aggiornamento...' : 'Ricarica Dati Cloud'}</span>
             </button>
           </div>
           <div className="feed-input-group">
@@ -275,7 +278,7 @@ export default function CalendarSyncModal({
           </div>
         </div>
 
-        {/* Quick Step-by-Step Guides Accordion */}
+        {/* Quick Step-by-Step Guides Accordion (Formattazione Pulita e Chiara) */}
         <div className="cal-guides-accordion">
           <div className="guide-acc-header" onClick={() => setActiveGuideTab(activeGuideTab === 'ios' ? null : 'ios')}>
             <div className="guide-title-left">
@@ -287,9 +290,9 @@ export default function CalendarSyncModal({
           {activeGuideTab === 'ios' && (
             <div className="guide-acc-content">
               <ol>
-                <li>Clicca sul riquadro <strong>"Apple Calendar"</strong> qui sopra dal tuo iPhone (apre l'iscrizione immediata).</li>
-                <li>Oppure vai su <em>Impostazioni &gt; Calendario &gt; Account &gt; Aggiungi account &gt; Altro &gt; Aggiungi calendario con sottoscrizione</em> e incolla il link.</li>
-                <li>Tocca <strong>Salva</strong>: il calendario rimarrà sincronizzato in tempo reale!</li>
+                <li>Clicca sul riquadro <strong>"Apple Calendar"</strong> qui sopra dal tuo iPhone (apre direttamente l'app Calendario con la richiesta di iscrizione).</li>
+                <li>Oppure apri l'app <em>Impostazioni &gt; Calendario &gt; Account &gt; Aggiungi account &gt; Altro &gt; Aggiungi calendario con sottoscrizione</em> e incolla il link.</li>
+                <li>Tocca <strong>Salva</strong>: il calendario rimarrà sincronizzato in tempo reale con i cambi d'aula e orari!</li>
               </ol>
             </div>
           )}
@@ -304,9 +307,9 @@ export default function CalendarSyncModal({
           {activeGuideTab === 'android' && (
             <div className="guide-acc-content">
               <ol>
-                <li>Clicca sul riquadro <strong>"Google Calendar"</strong> qui sopra e premi <strong>"Aggiungi"</strong>.</li>
-                <li>Se preferisci farlo a mano: apri <em>calendar.google.com</em> dal computer $\rightarrow$ nella colonna sinistra clicca su <strong>"+"</strong> accanto ad <em>Altri calendari</em> $\rightarrow$ <strong>Da URL</strong> $\rightarrow$ incolla il link copiato.</li>
-                <li>In pochi secondi tutte le lezioni settimanali e gli appelli compariranno nella tua griglia e sull'app Google Calendar del tuo smartphone!</li>
+                <li>Clicca sul riquadro <strong>"Google Calendar"</strong> qui sopra e premi su <strong>"Aggiungi"</strong>.</li>
+                <li>In alternativa, dal computer: apri <em>calendar.google.com</em> &gt; nella barra laterale sinistra clicca su <strong>"+"</strong> (accanto ad <em>Altri calendari</em>) &gt; <strong>Da URL</strong> &gt; incolla il link copiato.</li>
+                <li>Tutte le tue lezioni settimanali compariranno sia su computer che nell'app Google Calendar sul tuo smartphone Android!</li>
               </ol>
             </div>
           )}
@@ -316,7 +319,7 @@ export default function CalendarSyncModal({
         <div className="cal-modal-footer">
           <div className="cal-privacy-badge">
             <ShieldCheck size={14} />
-            <span>Feed privato associato al tuo profilo ({friendCode}).</span>
+            <span>Feed privato cifrato associato al tuo profilo ({friendCode}).</span>
           </div>
           <button type="button" className="primary-btn" onClick={onClose}>
             Fatto
