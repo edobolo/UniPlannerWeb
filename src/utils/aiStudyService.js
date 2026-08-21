@@ -1,8 +1,8 @@
-﻿import { apiFetch } from './cloudSync';
+import { apiFetch } from './cloudSync';
 
 const PROMPT_INSTRUCTIONS = `
 Sei un Professore Universitario ed esaminatore accademico di altissimo livello.
-Analizza il seguente materiale didattico ed elabora un KIT D'ESAME RIGOROSO E COMPLETO.
+Analizza accuratamente il materiale didattico fornito (testo, dispense, appunti scritti a mano, slide o immagini di lavagne/schemi) ed elabora un KIT D'ESAME RIGOROSO E COMPLETO.
 
 DEVI RESTITUIRE ESCLUSIVAMENTE UN JSON VALIDO (senza markdown aggiuntivo, senza blocchi di codice non richiesti, solo JSON grezzo) con questa esatta struttura:
 
@@ -125,22 +125,51 @@ export async function testGeminiApiKey(apiKey = '') {
 }
 
 /**
- * Genera il kit di studio completo tramite Google Gemini Flash
+ * Genera il kit di studio completo tramite Google Gemini Flash (Testo + Immagini Multimodali)
+ * @param {string | { text?: string, image?: { mimeType: string, data: string, previewUrl?: string } }} inputData
+ * @param {Object} options - { apiKey }
  */
-export async function generateStudyKit(rawText, options = {}) {
-  if (!rawText || rawText.trim().length < 40) {
-    throw new Error('Il testo inserito è troppo breve. Incolla almeno qualche paragrafo di appunti o carica un PDF.');
+export async function generateStudyKit(inputData, options = {}) {
+  let textContent = '';
+  let imageContent = null;
+
+  if (typeof inputData === 'string') {
+    textContent = inputData;
+  } else if (inputData && typeof inputData === 'object') {
+    textContent = inputData.text || '';
+    imageContent = inputData.image || null;
   }
 
-  const trimmedText = rawText.slice(0, 100000);
-  const apiKey = (options.apiKey || localStorage.getItem('uniplanner_gemini_api_key') || '').trim();
+  if (!textContent.trim() && !imageContent) {
+    throw new Error('Inserisci del testo, carica un documento (PDF/TXT/MD) o un\'immagine (PNG/JPG).');
+  }
 
+  const apiKey = (options.apiKey || localStorage.getItem('uniplanner_gemini_api_key') || '').trim();
   if (!apiKey) {
     throw new Error('Nessuna chiave API Google Gemini configurata. Inserisci la tua chiave gratuita nelle impostazioni.');
   }
 
+  const parts = [];
+
+  // 1. Aggiungi il prompt con eventuale testo
+  const promptWithText = textContent.trim() 
+    ? `${PROMPT_INSTRUCTIONS}\n\n${textContent.slice(0, 100000)}`
+    : `${PROMPT_INSTRUCTIONS}\n\nAnalizza questa immagine contenente appunti di studio, slide o formule ed elabora il kit completo d'esame.`;
+
+  parts.push({ text: promptWithText });
+
+  // 2. Se è presente un'immagine (Vision), inviala come inlineData
+  if (imageContent && imageContent.data && imageContent.mimeType) {
+    parts.push({
+      inlineData: {
+        mimeType: imageContent.mimeType,
+        data: imageContent.data
+      }
+    });
+  }
+
   const result = await callGeminiFlash(apiKey, () => ({
-    contents: [{ parts: [{ text: PROMPT_INSTRUCTIONS + '\n\n' + trimmedText }] }],
+    contents: [{ parts }],
     generationConfig: {
       temperature: 0.2,
       responseMimeType: "application/json",
@@ -187,6 +216,6 @@ function parseAiJsonResponse(rawString) {
     };
   } catch (parseError) {
     console.error('Errore parsing JSON Gemini:', parseError, rawString);
-    throw new Error('Il modello ha generato una risposta non standard. Riprova con un testo leggermente più sintetico.');
+    throw new Error('Il modello ha generato una risposta non standard. Riprova con un materiale più leggibile o sintetico.');
   }
 }

@@ -25,6 +25,9 @@ import {
   ShieldCheck,
   Zap,
   BookOpen,
+  Image as ImageIcon,
+  FileCode,
+  Trash2,
   X
 } from 'lucide-react';
 import { extractTextFromPDF } from '../utils/pdfExtractor';
@@ -56,8 +59,9 @@ export default function AiStudyAssistant({ onOpenProModal }) {
   
   // Input states
   const [rawText, setRawText] = useState('');
-  const [isExtractingPdf, setIsExtractingPdf] = useState(false);
-  const [pdfProgress, setPdfProgress] = useState(0);
+  const [uploadedImage, setUploadedImage] = useState(null); // { mimeType, data, previewUrl, name }
+  const [isExtractingFile, setIsExtractingFile] = useState(false);
+  const [fileProgress, setFileProgress] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   
@@ -107,30 +111,82 @@ export default function AiStudyAssistant({ onOpenProModal }) {
     return () => clearInterval(interval);
   }, [isTimerRunning, quizSubmitted]);
 
-  // Handle PDF Upload & Extraction
-  const handlePdfUpload = async (e) => {
+  // Handle Multi-Format Upload (PDF, TXT, MD, PNG, JPG, WEBP)
+  const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
-      setErrorMsg('Carica un file in formato PDF valido.');
+
+    setErrorMsg('');
+    const ext = file.name.split('.').pop().toLowerCase();
+
+    // 1. GESTIONE FILE DI TESTO (.TXT / .MD)
+    if (ext === 'txt' || ext === 'md' || file.type === 'text/plain' || file.type === 'text/markdown') {
+      try {
+        setIsExtractingFile(true);
+        const text = await file.text();
+        if (!text || text.trim().length < 20) {
+          throw new Error('Il file di testo sembra vuoto.');
+        }
+        setRawText(text);
+        setUploadedImage(null);
+      } catch (err) {
+        setErrorMsg(err.message || 'Errore durante la lettura del file di testo.');
+      } finally {
+        setIsExtractingFile(false);
+      }
       return;
     }
 
-    setErrorMsg('');
-    setIsExtractingPdf(true);
-    setPdfProgress(0);
-
-    try {
-      const text = await extractTextFromPDF(file, (percent) => setPdfProgress(percent));
-      if (!text || text.length < 50) {
-        throw new Error('Il PDF sembra vuoto o scansionato come sola immagine.');
+    // 2. GESTIONE IMMAGINI E FOTO (.PNG, .JPG, .JPEG, .WEBP) -> MULTIMODALE VISION
+    if (['png', 'jpg', 'jpeg', 'webp'].includes(ext) || file.type.startsWith('image/')) {
+      try {
+        setIsExtractingFile(true);
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const dataUrl = event.target.result;
+          const mimeType = file.type || `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+          // Estrai il Base64 puro togliendo l'header "data:image/...;base64,"
+          const base64Data = dataUrl.split(',')[1];
+          setUploadedImage({
+            mimeType,
+            data: base64Data,
+            previewUrl: dataUrl,
+            name: file.name
+          });
+          setIsExtractingFile(false);
+        };
+        reader.onerror = () => {
+          setErrorMsg('Impossibile caricare l\'immagine.');
+          setIsExtractingFile(false);
+        };
+        reader.readAsDataURL(file);
+      } catch (err) {
+        setErrorMsg('Errore durante la lettura dell\'immagine.');
+        setIsExtractingFile(false);
       }
-      setRawText(text);
-    } catch (err) {
-      setErrorMsg(err.message || 'Errore durante la lettura del PDF.');
-    } finally {
-      setIsExtractingPdf(false);
+      return;
     }
+
+    // 3. GESTIONE DOCUMENTI PDF (.PDF)
+    if (ext === 'pdf' || file.type === 'application/pdf') {
+      setIsExtractingFile(true);
+      setFileProgress(0);
+      try {
+        const text = await extractTextFromPDF(file, (percent) => setFileProgress(percent));
+        if (!text || text.length < 50) {
+          throw new Error('Il PDF sembra vuoto o scansionato come sola immagine.');
+        }
+        setRawText(text);
+        setUploadedImage(null);
+      } catch (err) {
+        setErrorMsg(err.message || 'Errore durante la lettura del PDF.');
+      } finally {
+        setIsExtractingFile(false);
+      }
+      return;
+    }
+
+    setErrorMsg('Formato non supportato. Carica un file PDF, TXT, Markdown o un\'immagine (PNG, JPG).');
   };
 
   // Test Gemini Key Action
@@ -166,8 +222,8 @@ export default function AiStudyAssistant({ onOpenProModal }) {
 
   // Generate Study Kit Action
   const handleGenerate = async () => {
-    if (!rawText.trim()) {
-      setErrorMsg('Inserisci del testo o carica un PDF con i tuoi appunti.');
+    if (!rawText.trim() && !uploadedImage) {
+      setErrorMsg('Inserisci del testo, carica un documento (PDF/TXT/MD) o una foto/screenshot.');
       return;
     }
 
@@ -188,7 +244,10 @@ export default function AiStudyAssistant({ onOpenProModal }) {
     setIsGenerating(true);
 
     try {
-      const kit = await generateStudyKit(rawText, {
+      const kit = await generateStudyKit({
+        text: rawText,
+        image: uploadedImage
+      }, {
         apiKey: currentKey
       });
 
@@ -290,7 +349,7 @@ export default function AiStudyAssistant({ onOpenProModal }) {
             <div className="ai-badge-row">
               <span className="ai-badge-ai">
                 <Sparkles size={12} />
-                <span>Google Gemini Flash ⚡ (100% Gratuito)</span>
+                <span>Google Gemini Flash (Multimodale ⚡)</span>
               </span>
               {isConfigured ? (
                 <span className="ai-badge-active">
@@ -303,7 +362,7 @@ export default function AiStudyAssistant({ onOpenProModal }) {
             </div>
             <h1>Assistente Studio & Quiz Generator</h1>
             <p className="ai-header-sub">
-              Genera 20 domande d'esame a risposta multipla, Flashcards Spaced Repetition e le 5 domande più probabili per l'orale.
+              Genera 20 domande d'esame a risposta multipla, Flashcards Spaced Repetition e le 5 domande più probabili per l'orale da PDF, Testi, Appunti o Foto.
             </p>
           </div>
         </div>
@@ -381,30 +440,58 @@ export default function AiStudyAssistant({ onOpenProModal }) {
             <div className="upload-dropzone">
               <input 
                 type="file" 
-                accept=".pdf,application/pdf" 
-                onChange={handlePdfUpload}
-                disabled={isExtractingPdf || isGenerating}
-                id="pdf-input-element"
+                accept=".pdf,.txt,.md,.png,.jpg,.jpeg,.webp,application/pdf,text/plain,text/markdown,image/*" 
+                onChange={handleFileUpload}
+                disabled={isExtractingFile || isGenerating}
+                id="multi-file-input"
                 style={{ display: 'none' }}
               />
-              <label htmlFor="pdf-input-element" className="dropzone-label">
+              <label htmlFor="multi-file-input" className="dropzone-label">
                 <div className="dropzone-icon-circle">
                   <UploadCloud size={30} />
                 </div>
-                <h3>Trascina qui le tue Slide o Dispense PDF</h3>
-                <p>oppure clicca per sfogliare i file del computer</p>
-                <span className="dropzone-hint">Estrazione testo 100% nel browser • Fino a 100 pagine di appunti</span>
+                <h3>Trascina qui i tuoi Appunti, PDF o Foto</h3>
+                <p>Supporta <strong>PDF</strong>, <strong>Testo (TXT, MD)</strong> o <strong>Immagini (PNG, JPG)</strong></p>
+                <div className="supported-formats-pills">
+                  <span>📕 PDF Slide / Libri</span>
+                  <span>📝 TXT & Markdown</span>
+                  <span>📸 Foto Quaderno & Lavagne</span>
+                </div>
               </label>
 
-              {isExtractingPdf && (
+              {isExtractingFile && (
                 <div className="extraction-progress">
                   <div className="progress-bar-bg">
-                    <div className="progress-bar-fill" style={{ width: `${pdfProgress}%` }} />
+                    <div className="progress-bar-fill" style={{ width: `${fileProgress || 50}%` }} />
                   </div>
-                  <span>Estrazione testo in corso... {pdfProgress}%</span>
+                  <span>Lettura del materiale in corso...</span>
                 </div>
               )}
             </div>
+
+            {/* ANTEPRIMA IMMAGINE SE CARICATA */}
+            {uploadedImage && (
+              <div className="image-preview-card">
+                <div className="preview-header">
+                  <div className="preview-title">
+                    <ImageIcon size={16} />
+                    <span>Foto caricata: <strong>{uploadedImage.name}</strong></span>
+                  </div>
+                  <button 
+                    type="button" 
+                    className="remove-img-btn"
+                    onClick={() => setUploadedImage(null)}
+                    title="Rimuovi immagine"
+                  >
+                    <Trash2 size={15} />
+                    <span>Rimuovi</span>
+                  </button>
+                </div>
+                <div className="preview-img-wrapper">
+                  <img src={uploadedImage.previewUrl} alt="Appunti caricati" />
+                </div>
+              </div>
+            )}
 
             <div className="divider-text">oppure incolla direttamente gli appunti</div>
 
@@ -417,11 +504,14 @@ export default function AiStudyAssistant({ onOpenProModal }) {
                 rows={8}
               />
               <div className="textarea-footer">
-                <span>{rawText.length} caratteri inseriti</span>
+                <span>{rawText.length} caratteri inseriti {uploadedImage ? '+ 1 Foto allegata' : ''}</span>
                 <button 
                   type="button" 
                   className="sample-text-btn"
-                  onClick={() => setRawText(SAMPLE_LECTURE_TEXT.trim())}
+                  onClick={() => {
+                    setRawText(SAMPLE_LECTURE_TEXT.trim());
+                    setUploadedImage(null);
+                  }}
                 >
                   Carica Esempio di Prova (Algebra Lineare)
                 </button>
@@ -433,7 +523,7 @@ export default function AiStudyAssistant({ onOpenProModal }) {
                 type="button"
                 className="primary-btn ai-start-btn" 
                 onClick={handleGenerate}
-                disabled={isGenerating || isExtractingPdf || !rawText.trim()}
+                disabled={isGenerating || isExtractingFile || (!rawText.trim() && !uploadedImage)}
               >
                 {isGenerating ? (
                   <>
@@ -614,7 +704,7 @@ export default function AiStudyAssistant({ onOpenProModal }) {
                   onClick={() => setCurrentQuizIdx(i => i + 1)}
                 >
                   <span>Successiva</span>
-                  <ChevronRight size={18} />
+                  <ChevronRight size={16} />
                 </button>
               </div>
             </div>
