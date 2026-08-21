@@ -64,7 +64,7 @@ const dropAnimation = {
 };
 
 // Exam Card Content Presentation
-const ExamCardContent = ({ exam, handleDelete, setRecordGrade, setRecordCredits, setRecordingId, setTimeRecordingId, isOverlay = false }) => {
+const ExamCardContent = ({ exam, handleDelete, setRecordGrade, setRecordCredits, setRecordingId, setTimeRecordingId, isOverlay = false, dragHandleProps = {} }) => {
   const isDone = exam.grade !== null;
   const yearColor = getYearColor(exam.year);
 
