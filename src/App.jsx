@@ -271,6 +271,14 @@ function MainApp() {
             {theme === 'dark' ? <Sun size={18} className="sun-icon" /> : <Moon size={18} className="moon-icon" />}
           </button>
 
+          <button 
+            className="mobile-icon-btn" 
+            onClick={() => setIsThemeModalOpen(true)}
+            title="Temi Facoltà"
+          >
+            <Palette size={18} />
+          </button>
+
           <div 
             className="mobile-user-avatar" 
             onClick={handleOpenAccount}

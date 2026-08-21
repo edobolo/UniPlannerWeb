@@ -575,29 +575,39 @@
 
 /* Mobile & Smartphone Responsive Rules */
 @media (max-width: 768px) {
+  .grades-container {
+    width: 100%;
+    gap: 16px;
+  }
+
   .grades-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+    width: 100%;
   }
 
   .stats-grid,
   .goals-grid,
-  .sim-presets-grid,
-  .sim-controls-grid,
-  .sim-results-board {
+  .calc-presets-grid,
+  .calc-controls-grid,
+  .projection-cards-row {
     grid-template-columns: 1fr !important;
     gap: 12px;
+    width: 100%;
   }
 
   .stat-card,
-  .degree-simulator-card {
-    padding: 16px;
+  .goal-card,
+  .advanced-calc-container,
+  .chart-container {
+    padding: 16px 14px !important;
+    width: 100%;
   }
 
   .chart-container {
-    padding: 16px 12px;
-    min-height: 250px;
+    min-height: 240px;
+    overflow-x: hidden;
   }
 
   .unlock-input-wrap {

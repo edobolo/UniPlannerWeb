@@ -30,7 +30,7 @@ const ThemeModal = ({ isOpen, onClose, currentPalette, onSelectPalette, theme, o
 
   return (
     <AnimatePresence>
-      <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-overlay theme-modal-overlay" onClick={onClose}>
         <motion.div 
           className="theme-modal glass-panel"
           initial={{ opacity: 0, scale: 0.94, y: 15 }}

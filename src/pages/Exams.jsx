@@ -75,7 +75,7 @@ const ExamCardContent = ({ exam, handleDelete, setRecordGrade, setRecordCredits,
       
       <div className="card-header">
         <div className="header-left">
-          <div className="drag-handle" title="Trascina per riordinare">
+          <div className="drag-handle" title="Trascina per riordinare" {...dragHandleProps}>
             <GripHorizontal size={18} />
           </div>
           <span className="modern-badge">{exam.year}</span>
@@ -149,9 +149,8 @@ const SortableExamCard = (props) => {
       style={style}
       className={`sortable-card-wrapper ${isDragging ? 'placeholder-active' : ''}`}
       {...attributes}
-      {...listeners}
     >
-      <ExamCardContent {...props} />
+      <ExamCardContent {...props} dragHandleProps={listeners} />
     </div>
   );
 };
@@ -179,9 +178,15 @@ const Exams = () => {
   const [studyTimeInput, setStudyTimeInput] = useState('');
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 4, // Instant responsive drag
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250, // Long-press to drag on touch, allowing normal vertical scrolling
+        tolerance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
