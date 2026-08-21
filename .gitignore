@@ -32,4 +32,5 @@ public/downloads/*.zip
 # Raspberry Backend Local Sync
 raspberry-server.js
 raspberry-stripeController.js
+raspberry-aiController.js
 public/downloads/*.blockmap

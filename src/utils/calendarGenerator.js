@@ -253,13 +253,13 @@ export function getLiveCalendarUrls(friendCode) {
 
   const cleanCode = encodeURIComponent(friendCode.trim().toUpperCase());
   
-  // URL HTTPS del feed dal server
-  const httpsUrl = `${BACKEND_URL}/calendar/${cleanCode}.ics`;
-  
-  // URL WebCal per Apple Calendar (iOS / iPadOS / macOS) e Outlook
+  // Utilizziamo il dominio di produzione Vercel che evita qualsiasi blocco/warning di Ngrok
+  const baseUrl = typeof window !== 'undefined' && window.location.origin.includes('vercel.app')
+    ? window.location.origin
+    : 'https://uniplanner-web-app.vercel.app';
+
+  const httpsUrl = `${baseUrl}/api/calendar?code=${cleanCode}`;
   const webcalUrl = httpsUrl.replace(/^https?:\/\//, 'webcal://');
-  
-  // URL di aggiunta automatica su Google Calendar
   const googleCalendarUrl = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(httpsUrl)}`;
 
   return { httpsUrl, webcalUrl, googleCalendarUrl };
