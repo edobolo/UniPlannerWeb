@@ -210,22 +210,6 @@ function buildIcsContent(student) {
     eventsCount++;
   });
 
-  // Segnaposto se non ci sono eventi
-  if (eventsCount === 0) {
-    const endPlaceholder = new Date(now.getTime() + 3600000);
-    lines.push(
-      'BEGIN:VEVENT',
-      `UID:welcome_${student.friendCode || 'demo'}@uniplanner.it`,
-      `DTSTAMP:${dtstamp}`,
-      `DTSTART:${dtstamp}`,
-      `DTEND:${formatUtc(endPlaceholder)}`,
-      'SUMMARY:🎓 UniPlanner Calendario Connesso!',
-      'DESCRIPTION:La sincronizzazione con UniPlanner è attiva con successo. Le tue lezioni ed esami compariranno qui.',
-      'STATUS:CONFIRMED',
-      'END:VEVENT'
-    );
-  }
-
   lines.push('END:VCALENDAR');
   return lines.filter(Boolean).join('\r\n');
 }
