@@ -25,6 +25,7 @@ import { sanitizeText, safeJsonParse } from '../utils/security';
 import { parseScheduleExcel, parseScheduleICS, exportScheduleToICS, calculateWeekOffset } from '../utils/scheduleImport';
 import { useAuth } from '../context/AuthContext';
 import { publishUserProfile } from '../utils/cloudSync';
+import CalendarSyncModal from '../components/CalendarSyncModal';
 import './Schedule.css';
 
 const STORAGE_SCHEDULE_KEY = 'uniplanner_schedule_v1';
@@ -68,6 +69,7 @@ const Schedule = () => {
 
   // Import Modal & Preview State
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [importPreview, setImportPreview] = useState(null);
   const [importError, setImportError] = useState('');
   const [isParsing, setIsParsing] = useState(false);
@@ -457,6 +459,16 @@ const Schedule = () => {
           </button>
 
           {/* Import from Excel / ICS */}
+          <button 
+            className="gcal-action-btn sync-calendar-btn" 
+            onClick={() => setIsSyncModalOpen(true)}
+            title="Sincronizza lezioni ed esami con Apple Calendar, Google Calendar e Outlook"
+          >
+            <CalendarDays size={15} />
+            <span>Sincronizza Calendario</span>
+            <span className="live-dot-pulse" />
+          </button>
+
           <button 
             className="gcal-action-btn import-btn"
             onClick={() => {
@@ -1055,6 +1067,14 @@ const Schedule = () => {
           </div>
         )}
       </AnimatePresence>
+
+      <CalendarSyncModal
+        isOpen={isSyncModalOpen}
+        onClose={() => setIsSyncModalOpen(false)}
+        schedule={lessons}
+        exams={safeJsonParse(localStorage.getItem('uniplanner_exams_v1'), [])}
+        deadlines={safeJsonParse(localStorage.getItem('uniplanner_deadlines_v1'), [])}
+      />
     </div>
   );
 };
