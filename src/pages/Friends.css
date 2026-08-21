@@ -1157,3 +1157,160 @@
   color: #ddd6fe;
 }
 
+
+
+/* ==========================================================================
+   📱 FRIENDS MOBILE OVERHAUL: Full Width, No Clipping, Scrollable Mini-Calendar
+   ========================================================================== */
+@media (max-width: 768px) {
+  .friends-page-container,
+  .friends-container {
+    padding: 0 2px 80px 2px !important;
+    gap: 14px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  .friends-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .friends-header-actions,
+  .header-actions-group {
+    width: 100% !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .my-friend-code-card,
+  .my-code-pill {
+    width: 100% !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+  }
+
+  .add-friend-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .friends-layout-grid,
+  .friends-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 14px !important;
+    min-height: auto !important;
+  }
+
+  /* Friends List Panel */
+  .friends-sidebar-panel,
+  .friends-list-panel {
+    width: 100% !important;
+    padding: 14px 12px !important;
+    max-height: none !important;
+    box-sizing: border-box !important;
+  }
+
+  .friends-list-container,
+  .friends-cards-scroll {
+    max-height: 280px !important;
+  }
+
+  /* Selected Friend Detail Panel */
+  .friend-detail-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 16px 12px !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  .friend-detail-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 14px !important;
+    width: 100% !important;
+  }
+
+  .detail-header-left {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+  }
+
+  .detail-name-row {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  .detail-name-row h2 {
+    font-size: 17px !important;
+    line-height: 1.3 !important;
+    word-break: break-word !important;
+  }
+
+  .friend-stats-strip {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .friend-stat-item {
+    padding: 10px 14px !important;
+  }
+
+  .friend-nav-tabs {
+    display: flex !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 6px !important;
+    padding-bottom: 4px !important;
+    scrollbar-width: none !important;
+    width: 100% !important;
+  }
+  .friend-nav-tabs::-webkit-scrollbar { display: none !important; }
+
+  .f-tab {
+    flex-shrink: 0 !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Exams Grid */
+  .f-exam-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .f-exam-card {
+    padding: 12px 14px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Schedule Mini GCal on Mobile */
+  .f-schedule-view {
+    width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  .mini-gcal-container {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 12px !important;
+    border: 1px solid var(--glass-border) !important;
+  }
+
+  .mini-gcal-header-row,
+  .mini-gcal-grid {
+    min-width: 480px !important;
+  }
+}

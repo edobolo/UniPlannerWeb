@@ -1040,3 +1040,22 @@
     flex: 1 1 100% !important;
   }
 }
+
+
+/* Fast Glide Calendar Scroll on Mobile */
+@media (max-width: 768px) {
+  .schedule-container,
+  .gcal-page-container {
+    padding-bottom: 90px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  .gcal-grid-scroll-container,
+  .gcal-scroll-area {
+    -webkit-overflow-scrolling: touch !important;
+    scroll-snap-type: x proximity !important;
+    scroll-behavior: smooth !important;
+  }
+}

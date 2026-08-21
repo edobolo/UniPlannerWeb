@@ -921,3 +921,22 @@
     font-size: 60px !important;
   }
 }
+
+
+/* ==========================================================================
+   📱 POMODORO MOBILE: Goals Panel Bottom Clearance
+   ========================================================================== */
+@media (max-width: 768px) {
+  .pomodoro-container {
+    padding-bottom: 90px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  .goals-section,
+  .pomo-goals-card {
+    margin-bottom: 20px !important;
+    padding: 16px 12px !important;
+  }
+}

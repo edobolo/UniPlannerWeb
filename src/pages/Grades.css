@@ -703,3 +703,88 @@
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45);
 }
+
+
+/* ==========================================================================
+   📱 GRADES & DEGREE SIMULATOR MOBILE FIT
+   ========================================================================== */
+@media (max-width: 768px) {
+  .grades-container {
+    padding-bottom: 80px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  .chart-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 250px !important;
+    padding: 12px 6px 20px 6px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  .advanced-calc-container {
+    padding: 16px 12px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  .calc-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .calc-header h2 {
+    font-size: 17px !important;
+    line-height: 1.3 !important;
+  }
+
+  .calc-presets-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .preset-card {
+    padding: 10px 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .calc-controls-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .calc-control-group {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .calc-range-slider {
+    width: 100% !important;
+  }
+
+  .projection-dashboard {
+    padding: 14px 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .projection-cards-row {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .proj-stat-card {
+    padding: 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
