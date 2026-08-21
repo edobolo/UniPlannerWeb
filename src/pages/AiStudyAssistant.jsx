@@ -26,10 +26,16 @@ import {
   ExternalLink,
   ShieldCheck,
   Zap,
+  Cpu,
   X
 } from 'lucide-react';
 import { extractTextFromPDF } from '../utils/pdfExtractor';
-import { generateStudyKit, testGeminiApiKey } from '../utils/aiStudyService';
+import { 
+  generateStudyKit, 
+  testAiConnection, 
+  GEMINI_MODEL_PRESETS, 
+  GROQ_MODEL_PRESETS 
+} from '../utils/aiStudyService';
 import { useAuth } from '../context/AuthContext';
 import { safeJsonParse } from '../utils/security';
 import './AiStudyAssistant.css';
@@ -58,10 +64,14 @@ export default function AiStudyAssistant({ onOpenProModal }) {
   const [pdfProgress, setPdfProgress] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  
-  // API Key modal states
-  const [customKey, setCustomKey] = useState(() => localStorage.getItem('uniplanner_gemini_api_key') || '');
+
+  // AI Settings Modal States
   const [showKeyModal, setShowKeyModal] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState(() => localStorage.getItem('uniplanner_ai_provider') || 'gemini');
+  const [selectedModelType, setSelectedModelType] = useState(() => localStorage.getItem('uniplanner_ai_model_type') || 'flash');
+  const [geminiKey, setGeminiKey] = useState(() => localStorage.getItem('uniplanner_gemini_api_key') || '');
+  const [groqKey, setGroqKey] = useState(() => localStorage.getItem('uniplanner_groq_api_key') || '');
+  
   const [isTestingKey, setIsTestingKey] = useState(false);
   const [keyTestResult, setKeyTestResult] = useState(null); // { valid: boolean, message: string }
 
@@ -120,22 +130,31 @@ export default function AiStudyAssistant({ onOpenProModal }) {
     }
   };
 
-  // Test API Key Action
+  // Test Connection Action
   const handleTestApiKey = async () => {
-    if (!customKey.trim()) {
-      setKeyTestResult({ valid: false, message: 'Inserisci prima la chiave API per testarla.' });
+    const activeKey = selectedProvider === 'gemini' ? geminiKey : groqKey;
+    if (!activeKey.trim()) {
+      setKeyTestResult({ valid: false, message: 'Inserisci prima la chiave API da testare.' });
       return;
     }
+
     setIsTestingKey(true);
     setKeyTestResult(null);
+
     try {
-      const result = await testGeminiApiKey(customKey);
+      const result = await testAiConnection(selectedProvider, activeKey, selectedModelType);
       setKeyTestResult(result);
       if (result.valid) {
-        localStorage.setItem('uniplanner_gemini_api_key', customKey.trim());
+        if (selectedProvider === 'gemini') {
+          localStorage.setItem('uniplanner_gemini_api_key', geminiKey.trim());
+        } else {
+          localStorage.setItem('uniplanner_groq_api_key', groqKey.trim());
+        }
+        localStorage.setItem('uniplanner_ai_provider', selectedProvider);
+        localStorage.setItem('uniplanner_ai_model_type', selectedModelType);
       }
     } catch (e) {
-      setKeyTestResult({ valid: false, message: 'Errore di connessione.' });
+      setKeyTestResult({ valid: false, message: 'Errore di connessione con il provider.' });
     } finally {
       setIsTestingKey(false);
     }
@@ -148,9 +167,11 @@ export default function AiStudyAssistant({ onOpenProModal }) {
       return;
     }
 
-    // Se non ha impostato una chiave e non è sul Raspberry con chiave di backend, apri la guida guidata
-    const savedKey = customKey || localStorage.getItem('uniplanner_gemini_api_key');
-    if (!savedKey) {
+    const currentKey = selectedProvider === 'gemini' 
+      ? (geminiKey || localStorage.getItem('uniplanner_gemini_api_key')) 
+      : (groqKey || localStorage.getItem('uniplanner_groq_api_key'));
+
+    if (!currentKey) {
       setShowKeyModal(true);
       return;
     }
@@ -166,7 +187,12 @@ export default function AiStudyAssistant({ onOpenProModal }) {
     setIsGenerating(true);
 
     try {
-      const kit = await generateStudyKit(rawText, savedKey);
+      const kit = await generateStudyKit(rawText, {
+        provider: selectedProvider,
+        modelType: selectedModelType,
+        apiKey: currentKey
+      });
+
       setStudyKit(kit);
       localStorage.setItem('uniplanner_saved_study_kit', JSON.stringify(kit));
       
@@ -180,9 +206,12 @@ export default function AiStudyAssistant({ onOpenProModal }) {
       setQuizSubmitted(false);
       setQuizTimer(0);
       setIsTimerRunning(true);
+      
       setCurrentCardIdx(0);
       setIsCardFlipped(false);
       setCardMastery({});
+      setIsDeckFinished(false);
+      setOnlyHardMode(false);
 
       setActiveSubTab('quiz');
     } catch (err) {
@@ -245,6 +274,13 @@ export default function AiStudyAssistant({ onOpenProModal }) {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
+  const getActiveModelBadgeLabel = () => {
+    if (selectedProvider === 'gemini') {
+      return selectedModelType === 'pro' ? 'Google Gemini Pro 🧠' : 'Google Gemini Flash ⚡';
+    }
+    return 'Groq Llama 3.3 70B 🚀';
+  };
+
   return (
     <div className="ai-assistant-container">
       {/* Header Banner */}
@@ -257,7 +293,7 @@ export default function AiStudyAssistant({ onOpenProModal }) {
             <div className="ai-badge-row">
               <span className="ai-badge-ai">
                 <Sparkles size={12} />
-                <span>Tutor Accademico</span>
+                <span>{getActiveModelBadgeLabel()}</span>
               </span>
               {!isPro && (
                 <span className="ai-badge-free">1 Prova Gratuita</span>
@@ -274,10 +310,10 @@ export default function AiStudyAssistant({ onOpenProModal }) {
           <button 
             className="ai-key-btn" 
             onClick={() => setShowKeyModal(true)}
-            title="Configura Chiave Gratuita Google Gemini"
+            title="Configura Motore AI e Chiavi API"
           >
-            <Key size={15} />
-            <span>{customKey ? 'Chiave AI Attiva' : 'Configura Chiave AI'}</span>
+            <Cpu size={15} />
+            <span>Impostazioni Motore AI</span>
           </button>
         </div>
       </div>
@@ -769,7 +805,7 @@ export default function AiStudyAssistant({ onOpenProModal }) {
         </div>
       )}
 
-      {/* MODAL CONFIGURAZIONE CHIAVE GEMINI 100% GRATUITA */}
+      {/* MODAL CONFIGURAZIONE MOTORE AI MULTI-PROVIDER */}
       {showKeyModal && (
         <div className="modal-backdrop" onClick={() => setShowKeyModal(false)}>
           <motion.div 
@@ -780,66 +816,173 @@ export default function AiStudyAssistant({ onOpenProModal }) {
           >
             <div className="key-modal-header">
               <div className="key-icon-halo">
-                <Key size={22} />
+                <Cpu size={22} />
               </div>
               <div>
-                <h3>Attivazione Motore Google Gemini 2.0</h3>
-                <p className="key-modal-sub">100% Gratuito per Sempre • 1.500 richieste/giorno</p>
+                <h3>Configurazione Motore AI</h3>
+                <p className="key-modal-sub">Scegli tra Google Gemini (Flash / Pro) e Groq Cloud</p>
               </div>
               <button className="key-modal-close" onClick={() => setShowKeyModal(false)}>
                 <X size={18} />
               </button>
             </div>
 
-            <div className="key-guide-steps">
-              <div className="guide-step-card">
-                <span className="step-num">1</span>
-                <div>
-                  <strong>Ottieni la tua Chiave da Google AI Studio</strong>
-                  <p>È completamente gratuita e non richiede carte di credito.</p>
-                  <a 
-                    href="https://aistudio.google.com/app/apikey" 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="get-key-link"
-                  >
-                    <span>Apri Google AI Studio</span>
-                    <ExternalLink size={13} />
-                  </a>
-                </div>
-              </div>
-
-              <div className="guide-step-card">
-                <span className="step-num">2</span>
-                <div>
-                  <strong>Crea e Incolla la Chiave API</strong>
-                  <p>Clicca su <em>"Create API Key"</em> su Google e incollala qui sotto:</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="key-input-group">
-              <input 
-                type="password"
-                className="key-input-field"
-                placeholder="Incolla qui la chiave (es. AIzaSy...)"
-                value={customKey}
-                onChange={(e) => {
-                  setCustomKey(e.target.value);
+            {/* Provider Selector Tabs */}
+            <div className="provider-selector-tabs">
+              <button
+                type="button"
+                className={`provider-tab-btn ${selectedProvider === 'gemini' ? 'active' : ''}`}
+                onClick={() => {
+                  setSelectedProvider('gemini');
                   setKeyTestResult(null);
                 }}
-              />
-              <button 
-                type="button" 
-                className="test-key-btn"
-                onClick={handleTestApiKey}
-                disabled={isTestingKey || !customKey.trim()}
               >
-                {isTestingKey ? <RefreshCw size={14} className="spinner-icon" /> : <Zap size={14} />}
-                <span>Testa</span>
+                <span>Google Gemini</span>
+                <span className="provider-sub-tag">Flash & Pro</span>
+              </button>
+              <button
+                type="button"
+                className={`provider-tab-btn ${selectedProvider === 'groq' ? 'active' : ''}`}
+                onClick={() => {
+                  setSelectedProvider('groq');
+                  setKeyTestResult(null);
+                }}
+              >
+                <span>Groq Cloud</span>
+                <span className="provider-sub-tag">Llama 3.3 (1s)</span>
               </button>
             </div>
 
+            {/* GEMINI SETTINGS */}
+            {selectedProvider === 'gemini' && (
+              <div className="provider-settings-content">
+                <div className="model-variant-selector">
+                  <div 
+                    className={`model-card-option ${selectedModelType === 'flash' ? 'selected' : ''}`}
+                    onClick={() => setSelectedModelType('flash')}
+                  >
+                    <div className="model-card-header">
+                      <strong>Gemini Flash</strong>
+                      <span className="badge-tag free">Gratuito ⚡</span>
+                    </div>
+                    <p>Ideale per dispense fino a 100 pagine. Velocissimo e 100% gratis con 1.500 generazioni/giorno.</p>
+                  </div>
+
+                  <div 
+                    className={`model-card-option ${selectedModelType === 'pro' ? 'selected' : ''}`}
+                    onClick={() => setSelectedModelType('pro')}
+                  >
+                    <div className="model-card-header">
+                      <strong>Gemini Pro (Advanced)</strong>
+                      <span className="badge-tag pro">Abbonamento 🧠</span>
+                    </div>
+                    <p>Ragionamento profondo per tomi da 500 pagine e materie complesse. Per chi ha quote Pro / Google One.</p>
+                  </div>
+                </div>
+
+                <div className="key-guide-steps">
+                  <div className="guide-step-card">
+                    <span className="step-num">1</span>
+                    <div>
+                      <strong>Ottieni la tua Chiave Google AI Studio</strong>
+                      <p>Gratuita per sempre, creata in 5 secondi.</p>
+                      <a 
+                        href="https://aistudio.google.com/app/apikey" 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="get-key-link"
+                      >
+                        <span>Apri Google AI Studio</span>
+                        <ExternalLink size={13} />
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="key-input-group">
+                  <input 
+                    type="password"
+                    className="key-input-field"
+                    placeholder="Incolla qui la chiave (es. AIzaSy...)"
+                    value={geminiKey}
+                    onChange={(e) => {
+                      setGeminiKey(e.target.value);
+                      setKeyTestResult(null);
+                    }}
+                  />
+                  <button 
+                    type="button" 
+                    className="test-key-btn"
+                    onClick={handleTestApiKey}
+                    disabled={isTestingKey || !geminiKey.trim()}
+                  >
+                    {isTestingKey ? <RefreshCw size={14} className="spinner-icon" /> : <Zap size={14} />}
+                    <span>Testa</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* GROQ SETTINGS */}
+            {selectedProvider === 'groq' && (
+              <div className="provider-settings-content">
+                <div className="model-variant-selector">
+                  <div 
+                    className={`model-card-option ${selectedModelType === 'llama70b' || selectedModelType === 'flash' ? 'selected' : ''}`}
+                    onClick={() => setSelectedModelType('llama70b')}
+                  >
+                    <div className="model-card-header">
+                      <strong>Meta Llama 3.3 70B</strong>
+                      <span className="badge-tag free">Ultra-Veloce 🚀</span>
+                    </div>
+                    <p>L'AI open source più veloce al mondo: genera 20 quiz in meno di 1 secondo grazie ai chip LPU Groq.</p>
+                  </div>
+                </div>
+
+                <div className="key-guide-steps">
+                  <div className="guide-step-card">
+                    <span className="step-num">1</span>
+                    <div>
+                      <strong>Ottieni la tua Chiave Groq Cloud</strong>
+                      <p>100% gratuita con 14.400 richieste/giorno.</p>
+                      <a 
+                        href="https://console.groq.com/keys" 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="get-key-link"
+                      >
+                        <span>Apri Groq Console</span>
+                        <ExternalLink size={13} />
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="key-input-group">
+                  <input 
+                    type="password"
+                    className="key-input-field"
+                    placeholder="Incolla qui la chiave Groq (es. gsk_...)"
+                    value={groqKey}
+                    onChange={(e) => {
+                      setGroqKey(e.target.value);
+                      setKeyTestResult(null);
+                    }}
+                  />
+                  <button 
+                    type="button" 
+                    className="test-key-btn"
+                    onClick={handleTestApiKey}
+                    disabled={isTestingKey || !groqKey.trim()}
+                  >
+                    {isTestingKey ? <RefreshCw size={14} className="spinner-icon" /> : <Zap size={14} />}
+                    <span>Testa</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Test Feedback */}
             {keyTestResult && (
               <div className={`key-test-feedback ${keyTestResult.valid ? 'success' : 'error'}`}>
                 {keyTestResult.valid ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
@@ -849,34 +992,41 @@ export default function AiStudyAssistant({ onOpenProModal }) {
 
             <div className="key-privacy-notice">
               <ShieldCheck size={14} />
-              <span>La chiave viene salvata esclusivamente nel tuo browser in locale e non viene mai condivisa.</span>
+              <span>Tutte le chiavi vengono salvate esclusivamente sul tuo browser in locale in modo protetto.</span>
             </div>
 
             <div className="key-modal-actions">
-              {customKey && (
-                <button 
-                  type="button"
-                  className="secondary-btn" 
-                  onClick={() => {
+              <button 
+                type="button"
+                className="secondary-btn" 
+                onClick={() => {
+                  if (selectedProvider === 'gemini') {
                     localStorage.removeItem('uniplanner_gemini_api_key');
-                    setCustomKey('');
-                    setKeyTestResult(null);
-                  }}
-                >
-                  Rimuovi
-                </button>
-              )}
+                    setGeminiKey('');
+                  } else {
+                    localStorage.removeItem('uniplanner_groq_api_key');
+                    setGroqKey('');
+                  }
+                  setKeyTestResult(null);
+                }}
+              >
+                Rimuovi Chiave
+              </button>
               <button 
                 type="button"
                 className="primary-btn" 
                 onClick={() => {
-                  if (customKey.trim()) {
-                    localStorage.setItem('uniplanner_gemini_api_key', customKey.trim());
+                  localStorage.setItem('uniplanner_ai_provider', selectedProvider);
+                  localStorage.setItem('uniplanner_ai_model_type', selectedModelType);
+                  if (selectedProvider === 'gemini' && geminiKey.trim()) {
+                    localStorage.setItem('uniplanner_gemini_api_key', geminiKey.trim());
+                  } else if (selectedProvider === 'groq' && groqKey.trim()) {
+                    localStorage.setItem('uniplanner_groq_api_key', groqKey.trim());
                   }
                   setShowKeyModal(false);
                 }}
               >
-                Salva & Chiudi
+                Salva Preferenze
               </button>
             </div>
           </motion.div>
