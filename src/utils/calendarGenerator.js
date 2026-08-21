@@ -249,18 +249,19 @@ export function downloadIcsFile(data) {
  * Restituisce i link di iscrizione live (WebCal, Google Calendar, HTTPS)
  */
 export function getLiveCalendarUrls(friendCode) {
-  if (!friendCode) return { httpsUrl: '', webcalUrl: '', googleCalendarUrl: '' };
+  if (!friendCode) return { httpsUrl: '', webcalUrl: '', googleCalendarUrl: '', googleAddByUrl: '' };
 
   const cleanCode = encodeURIComponent(friendCode.trim().toUpperCase());
   
-  // Utilizziamo il dominio di produzione Vercel che evita qualsiasi blocco/warning di Ngrok
   const baseUrl = typeof window !== 'undefined' && window.location.origin.includes('vercel.app')
     ? window.location.origin
     : 'https://uniplanner-web-app.vercel.app';
 
-  const httpsUrl = `${baseUrl}/api/calendar?code=${cleanCode}`;
+  // URL standard che termina con .ics (riconosciuto istantaneamente da Google Calendar & Apple)
+  const httpsUrl = `${baseUrl}/api/calendar/${cleanCode}.ics`;
   const webcalUrl = httpsUrl.replace(/^https?:\/\//, 'webcal://');
-  const googleCalendarUrl = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(httpsUrl)}`;
+  const googleCalendarUrl = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcalUrl)}`;
+  const googleAddByUrl = `https://calendar.google.com/calendar/r/settings/addbyurl`;
 
-  return { httpsUrl, webcalUrl, googleCalendarUrl };
+  return { httpsUrl, webcalUrl, googleCalendarUrl, googleAddByUrl };
 }

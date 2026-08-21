@@ -8,8 +8,15 @@ export default async function handler(req, res) {
     return res.status(204).end();
   }
 
-  const queryCode = req.query.code || req.query.friendCode || req.query.id || '';
-  const code = String(queryCode).replace(/\.ics$/i, '').toUpperCase().trim();
+  // Estrai il codice da req.query o dal path /api/calendar/CODE.ics
+  let code = req.query.code || req.query.friendCode || req.query.id || '';
+  if (!code && req.url) {
+    const match = req.url.match(/\/calendar\/([^?&/]+)/i);
+    if (match && match[1]) {
+      code = match[1];
+    }
+  }
+  code = String(code).replace(/\.ics$/i, '').toUpperCase().trim();
 
   let studentData = {
     friendCode: code || 'UNIPLANNER',
@@ -175,11 +182,6 @@ function buildIcsContent(student) {
       `SUMMARY:🎯 Esame: ${escapeIcs(ex.name || 'Esame')}`,
       ex.classroom ? `LOCATION:${escapeIcs(ex.classroom)}` : '',
       'STATUS:CONFIRMED',
-      'BEGIN:VALARM',
-      'TRIGGER:-P1D',
-      'ACTION:DISPLAY',
-      `DESCRIPTION:Domani hai l'esame di ${escapeIcs(ex.name || '')}!`,
-      'END:VALARM',
       'END:VEVENT'
     );
     eventsCount++;
@@ -208,7 +210,7 @@ function buildIcsContent(student) {
     eventsCount++;
   });
 
-  // Se non ci sono ancora eventi, aggiungi un VEVENT segnaposto così Google non rifiuta il calendario vuoto!
+  // Segnaposto se non ci sono eventi
   if (eventsCount === 0) {
     const endPlaceholder = new Date(now.getTime() + 3600000);
     lines.push(

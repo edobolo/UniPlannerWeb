@@ -448,15 +448,7 @@ const Schedule = () => {
             </>
           )}
 
-          {/* Export to ICS */}
-          <button 
-            className="gcal-action-btn" 
-            onClick={() => exportScheduleToICS(lessons)}
-            title="Esporta orario in formato standard .ics per calendari e app esterne"
-          >
-            <Download size={15} />
-            <span>Esporta .ics</span>
-          </button>
+
 
           {/* Import from Excel / ICS */}
           <button 

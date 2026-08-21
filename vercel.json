@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/calendar/:code.ics",
+      "destination": "/api/calendar?code=:code"
+    },
+    {
+      "source": "/api/calendar/:code",
+      "destination": "/api/calendar?code=:code"
+    },
+    {
+      "source": "/calendar/:code.ics",
+      "destination": "/api/calendar?code=:code"
+    }
+  ]
+}
