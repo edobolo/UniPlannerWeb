@@ -67,13 +67,23 @@ export default function AiStudyAssistant({ onOpenProModal }) {
 
   // AI Settings Modal States
   const [showKeyModal, setShowKeyModal] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState(() => localStorage.getItem('uniplanner_ai_provider') || 'gemini');
+  const [selectedProvider, setSelectedProvider] = useState(() => localStorage.getItem('uniplanner_ai_provider') || 'groq');
   const [selectedModelType, setSelectedModelType] = useState(() => localStorage.getItem('uniplanner_ai_model_type') || 'flash');
   const [geminiKey, setGeminiKey] = useState(() => localStorage.getItem('uniplanner_gemini_api_key') || '');
   const [groqKey, setGroqKey] = useState(() => localStorage.getItem('uniplanner_groq_api_key') || '');
   
   const [isTestingKey, setIsTestingKey] = useState(false);
   const [keyTestResult, setKeyTestResult] = useState(null); // { valid: boolean, message: string }
+
+  // Prevent background scroll when modal is open
+  useEffect(() => {
+    if (showKeyModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [showKeyModal]);
 
   // Generated Study Kit Data
   const [studyKit, setStudyKit] = useState(() => {
@@ -133,11 +143,6 @@ export default function AiStudyAssistant({ onOpenProModal }) {
   // Test Connection Action
   const handleTestApiKey = async () => {
     const activeKey = selectedProvider === 'gemini' ? geminiKey : groqKey;
-    if (!activeKey.trim()) {
-      setKeyTestResult({ valid: false, message: 'Inserisci prima la chiave API da testare.' });
-      return;
-    }
-
     setIsTestingKey(true);
     setKeyTestResult(null);
 
@@ -145,9 +150,9 @@ export default function AiStudyAssistant({ onOpenProModal }) {
       const result = await testAiConnection(selectedProvider, activeKey, selectedModelType);
       setKeyTestResult(result);
       if (result.valid) {
-        if (selectedProvider === 'gemini') {
+        if (selectedProvider === 'gemini' && geminiKey.trim()) {
           localStorage.setItem('uniplanner_gemini_api_key', geminiKey.trim());
-        } else {
+        } else if (selectedProvider === 'groq' && groqKey.trim()) {
           localStorage.setItem('uniplanner_groq_api_key', groqKey.trim());
         }
         localStorage.setItem('uniplanner_ai_provider', selectedProvider);
@@ -171,7 +176,7 @@ export default function AiStudyAssistant({ onOpenProModal }) {
       ? (geminiKey || localStorage.getItem('uniplanner_gemini_api_key')) 
       : (groqKey || localStorage.getItem('uniplanner_groq_api_key'));
 
-    if (!currentKey) {
+    if (selectedProvider === 'gemini' && !currentKey) {
       setShowKeyModal(true);
       return;
     }

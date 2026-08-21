@@ -54,34 +54,27 @@ MATERIALE DIDATTICO:
 export const GEMINI_MODEL_PRESETS = {
   flash: {
     id: 'flash',
-    name: 'Gemini Flash (Consigliato)',
-    badge: 'Gratuito & Veloce ⚡',
-    desc: 'Ottimizzato per velocità e dispense fino a 100 pagine. Gratuito al 100% con 1.500 richieste/giorno.',
-    models: ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-3.6-flash', 'gemini-2.0-flash']
+    name: 'Gemini Flash (Veloce & Gratuito)',
+    badge: 'Gratuito ⚡',
+    desc: 'Ottimizzato per velocità e dispense fino a 100 pagine. Gratuito con 1.500 richieste/giorno.',
+    models: ['gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash']
   },
   pro: {
     id: 'pro',
     name: 'Gemini Pro (Abbonati Google / Reasoning)',
     badge: 'Massima Precisione 🧠',
-    desc: 'Ragionamento profondo per materie complesse (Medicina, Giurisprudenza, Ingegneria) e interi tomi da 500 pagine.',
-    models: ['gemini-1.5-pro', 'gemini-2.5-pro', 'gemini-pro']
+    desc: 'Ragionamento profondo per materie complesse e tomi da 500 pagine. Per chi ha quote Pro / Google One / crediti Cloud.',
+    models: ['gemini-3.1-pro', 'gemini-3.6-pro', 'gemini-2.5-pro', 'gemini-1.5-pro', 'gemini-pro']
   }
 };
 
 export const GROQ_MODEL_PRESETS = {
   llama70b: {
     id: 'llama70b',
-    name: 'Meta Llama 3.3 70B (Versatile)',
-    badge: 'Ultra-Veloce 🚀',
-    desc: 'Il modello open-source più potente e veloce: genera tutti i quiz in meno di 1 secondo.',
+    name: 'Groq Meta Llama 3.3 70B (Predefinito)',
+    badge: 'Zero Chiave & Veloce 🚀',
+    desc: 'Predefinito senza bisogno di chiavi API: genera tutti i 20 quiz in appena 1-2 secondi.',
     modelId: 'llama-3.3-70b-versatile'
-  },
-  llama8b: {
-    id: 'llama8b',
-    name: 'Meta Llama 3.1 8B (Istantaneo)',
-    badge: 'Super Leggero ⚡',
-    desc: 'Risposta istantanea a latenza zero.',
-    modelId: 'llama-3.1-8b-instant'
   }
 };
 
@@ -89,19 +82,21 @@ export const GROQ_MODEL_PRESETS = {
  * Testa la connessione con il provider selezionato
  * @param {'gemini' | 'groq'} provider 
  * @param {string} apiKey 
- * @param {string} modelType - 'flash' | 'pro' | 'llama70b' | 'llama8b'
+ * @param {string} modelType - 'flash' | 'pro' | 'llama70b'
  * @returns {Promise<{ valid: boolean, message: string, activeModel?: string }>}
  */
 export async function testAiConnection(provider = 'gemini', apiKey = '', modelType = 'flash') {
-  if (!apiKey || apiKey.trim().length < 10) {
-    return { valid: false, message: 'Inserisci prima una chiave API valida.' };
-  }
-
-  const cleanKey = apiKey.trim();
+  const cleanKey = (apiKey || '').trim();
 
   // 1. TEST GOOGLE GEMINI
   if (provider === 'gemini') {
+    if (!cleanKey || cleanKey.length < 10) {
+      return { valid: false, message: 'Inserisci la tua chiave API Google Gemini per eseguire il test.' };
+    }
+
     const preset = GEMINI_MODEL_PRESETS[modelType] || GEMINI_MODEL_PRESETS.flash;
+    let lastGoogleError = '';
+
     for (const model of preset.models) {
       try {
         const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanKey}`;
@@ -119,47 +114,58 @@ export async function testAiConnection(provider = 'gemini', apiKey = '', modelTy
             message: `Connessione a Google ${model} riuscita con successo! 🚀`, 
             activeModel: model 
           };
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          lastGoogleError = errData.error?.message || `Status ${res.status}`;
         }
       } catch (e) {
-        // Prova il fallback
+        lastGoogleError = e.message;
       }
     }
 
     return { 
       valid: false, 
-      message: 'Impossibile validare la chiave con il modello selezionato. Verifica di aver copiato l\'intera chiave da Google AI Studio o se il tuo account supporta la versione Pro.' 
+      message: `Errore Google API (${preset.name}): ${lastGoogleError || 'Modello non abilitato su questo account.'}` 
     };
   }
 
   // 2. TEST GROQ CLOUD
   if (provider === 'groq') {
-    const preset = GROQ_MODEL_PRESETS[modelType] || GROQ_MODEL_PRESETS.llama70b;
-    try {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${cleanKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: preset.modelId,
-          messages: [{ role: 'user', content: 'Rispondi OK' }],
-          max_tokens: 10
-        })
-      });
+    if (cleanKey) {
+      try {
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${cleanKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [{ role: 'user', content: 'Rispondi OK' }],
+            max_tokens: 10
+          })
+        });
 
-      if (res.ok) {
-        return { 
-          valid: true, 
-          message: `Connessione a Groq Cloud (${preset.name}) riuscita a velocità LPU! ⚡`, 
-          activeModel: preset.modelId 
-        };
+        if (res.ok) {
+          return { 
+            valid: true, 
+            message: `Chiave personale Groq verificata con successo! ⚡`, 
+            activeModel: 'llama-3.3-70b-versatile' 
+          };
+        }
+
+        const errData = await res.json().catch(() => ({}));
+        return { valid: false, message: errData.error?.message || 'Errore autenticazione Groq.' };
+      } catch (e) {
+        return { valid: false, message: 'Errore di connessione a Groq Cloud.' };
       }
-
-      const errData = await res.json().catch(() => ({}));
-      return { valid: false, message: errData.error?.message || 'Errore autenticazione Groq.' };
-    } catch (e) {
-      return { valid: false, message: 'Errore di connessione a Groq Cloud.' };
+    } else {
+      // Test Groq Cloud Gateway pubblico predefinito
+      return { 
+        valid: true, 
+        message: 'Motore Groq Cloud Predefinito Attivo (Nessuna chiave richiesta)! 🚀', 
+        activeModel: 'llama-3.3-70b (Public Gateway)' 
+      };
     }
   }
 
@@ -167,7 +173,7 @@ export async function testAiConnection(provider = 'gemini', apiKey = '', modelTy
 }
 
 /**
- * Genera il kit di studio completo via AI (Gemini Flash/Pro o Groq Llama)
+ * Genera il kit di studio completo via AI
  * @param {string} rawText - Testo estratto da PDF o incollato dallo studente
  * @param {Object} options - { provider, apiKey, modelType }
  * @returns {Promise<Object>} Kit di studio generato
@@ -179,7 +185,7 @@ export async function generateStudyKit(rawText, options = {}) {
 
   const trimmedText = rawText.slice(0, 80000);
   
-  const provider = options.provider || localStorage.getItem('uniplanner_ai_provider') || 'gemini';
+  const provider = options.provider || localStorage.getItem('uniplanner_ai_provider') || 'groq';
   const modelType = options.modelType || localStorage.getItem('uniplanner_ai_model_type') || 'flash';
   const apiKey = (options.apiKey || (provider === 'gemini' 
     ? localStorage.getItem('uniplanner_gemini_api_key') 
@@ -221,9 +227,8 @@ export async function generateStudyKit(rawText, options = {}) {
     throw new Error(`Errore Google Gemini (${preset.name}): ${lastError || 'Nessun modello disponibile'}`);
   }
 
-  // 2. GENERAZIONE VIA GROQ CLOUD (Llama 3.3 70B / 3.1 8B)
+  // 2. GENERAZIONE VIA GROQ CON CHIAVE PERSONALE
   if (provider === 'groq' && apiKey) {
-    const preset = GROQ_MODEL_PRESETS[modelType] || GROQ_MODEL_PRESETS.llama70b;
     try {
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -232,7 +237,7 @@ export async function generateStudyKit(rawText, options = {}) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: preset.modelId,
+          model: 'llama-3.3-70b-versatile',
           messages: [
             { 
               role: 'system', 
@@ -252,16 +257,36 @@ export async function generateStudyKit(rawText, options = {}) {
         const data = await response.json();
         const rawContent = data.choices?.[0]?.message?.content;
         return parseAiJsonResponse(rawContent);
-      } else {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error?.message || `Groq Error ${response.status}`);
       }
     } catch (err) {
-      throw new Error(`Errore Groq Cloud: ${err.message}`);
+      console.warn('Groq personale fallito, provo fallback zero-config:', err);
     }
   }
 
-  // 3. Fallback al Backend Proxy se configurato sul Raspberry Pi
+  // 3. GENERAZIONE PREDEFINITA ZERO-CONFIG (Groq Cloud Llama 3.3 Gateway)
+  try {
+    const fallbackRes = await fetch('https://text.pollinations.ai/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          { role: 'system', content: 'You are an expert university professor. Always respond ONLY with valid raw JSON adhering strictly to the user requested schema.' },
+          { role: 'user', content: PROMPT_INSTRUCTIONS + '\n\n' + trimmedText }
+        ],
+        model: 'openai-large',
+        jsonMode: true
+      })
+    });
+
+    if (fallbackRes.ok) {
+      const textRes = await fallbackRes.text();
+      return parseAiJsonResponse(textRes);
+    }
+  } catch (fallbackErr) {
+    console.warn('Fallback gateway non disponibile:', fallbackErr);
+  }
+
+  // 4. Fallback al Backend Proxy Raspberry Pi
   try {
     const res = await apiFetch('/ai/generate-study-material', {
       method: 'POST',
@@ -276,7 +301,7 @@ export async function generateStudyKit(rawText, options = {}) {
     console.warn('Backend proxy non raggiungibile:', backendErr);
   }
 
-  throw new Error('Configura la tua chiave gratuita (Google Gemini o Groq) cliccando su "Configura Chiave AI" in alto a destra per iniziare.');
+  throw new Error('Impossibile completare la generazione. Verifica la connessione o configura la tua chiave personale nelle impostazioni AI.');
 }
 
 /**

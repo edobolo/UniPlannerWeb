@@ -1221,3 +1221,30 @@
   margin: 0;
   line-height: 1.4;
 }
+/* Modal Backdrop Positioning & Scroll Lock */
+.modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.75) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 99999 !important;
+  padding: 20px !important;
+  box-sizing: border-box !important;
+  overflow-y: auto !important;
+}
+
+.ai-key-modal {
+  margin: auto !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+}
