@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">UniPlanner</string>
+    <string name="title_activity_main">UniPlanner</string>
+    <string name="package_name">com.edobolo.uniplanner</string>
+    <string name="custom_url_scheme">com.edobolo.uniplanner</string>
+</resources>

@@ -1,0 +1,17 @@
+{
+  "appId": "com.edobolo.uniplanner",
+  "appName": "UniPlanner",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_uniplanner",
+      "iconColor": "#3b82f6",
+      "sound": "beep.wav"
+    }
+  },
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  }
+}

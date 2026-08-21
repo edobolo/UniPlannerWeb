@@ -20,7 +20,8 @@ import {
   Bug,
   Palette,
   Crown,
-  Bot
+  Bot,
+  Smartphone
 } from 'lucide-react';
 import TitleBar from './components/TitleBar';
 import Exams from './pages/Exams'; // Pagina iniziale caricata istantaneamente
@@ -43,6 +44,7 @@ const BugReportModal = lazy(() => import('./components/BugReportModal'));
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { fetchUserProfile, publishUserProfile, connectMutualFriend } from './utils/cloudSync';
 import { safeJsonParse } from './utils/security';
+import { initNativeNotifications, syncAllNativeAlerts } from './utils/nativeNotificationService';
 import './App.css';
 
 function MainApp() {
@@ -152,6 +154,15 @@ function MainApp() {
       syncWithCloud();
     }
   }, [currentUser?.friendCode]);
+
+  // Initialize Native Android Notifications & sync all alerts on launch
+  useEffect(() => {
+    const initAppNotifications = async () => {
+      await initNativeNotifications();
+      await syncAllNativeAlerts();
+    };
+    initAppNotifications();
+  }, []);
 
   const handleOpenLegal = (tab = 'privacy') => {
     setLegalInitialTab(tab);
@@ -733,23 +744,23 @@ function MainApp() {
 
               <div className="download-actions-grid">
                 <a 
-                  href="https://github.com/edobolo/UniPlannerWeb/releases/latest" 
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="/downloads/UniPlanner-Android.apk" 
+                  download="UniPlanner-Android.apk"
                   className="primary-btn download-action-btn"
+                  style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
                 >
-                  <Download size={18} />
-                  <span>Scarica Installer Windows (.exe)</span>
+                  <Smartphone size={18} />
+                  <span>Scarica App Android (.apk)</span>
                 </a>
 
                 <a 
-                  href="https://github.com/edobolo/UniPlannerWeb/releases" 
+                  href="https://github.com/edobolo/UniPlannerWeb/releases/latest" 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="secondary-btn download-action-btn"
                 >
-                  <Download size={18} />
-                  <span>Scarica Versione Portable (.exe)</span>
+                  <Monitor size={18} />
+                  <span>Scarica Installer Windows (.exe)</span>
                 </a>
               </div>
             </div>

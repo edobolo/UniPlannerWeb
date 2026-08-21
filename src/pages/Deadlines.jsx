@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, CalendarClock, CheckCircle2, Clock, List, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isSameMonth, isSameDay, addDays, parseISO } from 'date-fns';
 import { it } from 'date-fns/locale';
+import { scheduleDeadlineAlerts } from '../utils/nativeNotificationService';
+import { safeJsonParse } from '../utils/security';
 import './Deadlines.css';
 
 const Deadlines = () => {
@@ -24,6 +26,8 @@ const Deadlines = () => {
 
   useEffect(() => {
     localStorage.setItem('uniplanner_deadlines', JSON.stringify(deadlines));
+    const savedExams = safeJsonParse(localStorage.getItem('uniplanner_exams'), []);
+    scheduleDeadlineAlerts(deadlines, savedExams);
   }, [deadlines]);
 
   const handleAdd = (e) => {

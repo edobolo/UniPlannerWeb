@@ -26,6 +26,7 @@ import { parseScheduleExcel, parseScheduleICS, exportScheduleToICS, calculateWee
 import { useAuth } from '../context/AuthContext';
 import { publishUserProfile } from '../utils/cloudSync';
 import CalendarSyncModal from '../components/CalendarSyncModal';
+import { scheduleLessonAlerts } from '../utils/nativeNotificationService';
 import './Schedule.css';
 
 const STORAGE_SCHEDULE_KEY = 'uniplanner_schedule_v1';
@@ -98,9 +99,10 @@ const Schedule = ({ onOpenProModal }) => {
     return () => clearInterval(timer);
   }, []);
 
-  // Save to local storage
+  // Save to local storage and sync native Android alarms
   useEffect(() => {
     localStorage.setItem(STORAGE_SCHEDULE_KEY, JSON.stringify(lessons));
+    scheduleLessonAlerts(lessons);
   }, [lessons]);
 
   // Auto scroll to daytime or start of morning on mount
