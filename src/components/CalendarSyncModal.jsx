@@ -16,7 +16,8 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
-  BookOpen
+  BookOpen,
+  RefreshCw
 } from 'lucide-react';
 import { getLiveCalendarUrls, downloadIcsFile } from '../utils/calendarGenerator';
 import { publishUserProfile } from '../utils/cloudSync';
@@ -53,17 +54,27 @@ export default function CalendarSyncModal({
   });
 
   // Pubblica in automatico le lezioni e gli esami sul cloud non appena si apre il modal
-  useEffect(() => {
-    if (isOpen && friendCode) {
-      setIsCloudSyncing(true);
-      const userToSync = currentUser || {
-        friendCode: friendCode,
-        username: 'Studente',
-        fullName: 'Studente UniPlanner'
-      };
+  const syncToCloud = async () => {
+    if (!friendCode) return;
+    setIsCloudSyncing(true);
+    const userToSync = currentUser || {
+      friendCode: friendCode,
+      username: 'Studente',
+      fullName: 'Studente UniPlanner'
+    };
 
-      publishUserProfile(userToSync, schedule, exams, deadlines)
-        .finally(() => setIsCloudSyncing(false));
+    try {
+      await publishUserProfile(userToSync, schedule, exams, deadlines);
+    } catch (e) {
+      console.warn('Errore sync cloud:', e);
+    } finally {
+      setIsCloudSyncing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      syncToCloud();
     }
   }, [isOpen, friendCode, schedule, exams, deadlines]);
 
@@ -71,7 +82,8 @@ export default function CalendarSyncModal({
 
   const { httpsUrl, webcalUrl, googleCalendarUrl } = getLiveCalendarUrls(friendCode);
 
-  const handleCopyLink = () => {
+  const handleCopyLink = async () => {
+    await syncToCloud();
     navigator.clipboard.writeText(httpsUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -84,6 +96,18 @@ export default function CalendarSyncModal({
       deadlines,
       options: syncOptions
     });
+  };
+
+  const handleOpenGoogleCalendar = async (e) => {
+    e.preventDefault();
+    await syncToCloud();
+    window.open(googleCalendarUrl, '_blank');
+  };
+
+  const handleOpenAppleCalendar = async (e) => {
+    e.preventDefault();
+    await syncToCloud();
+    window.location.href = webcalUrl;
   };
 
   return (
@@ -106,7 +130,7 @@ export default function CalendarSyncModal({
                 <span>Live Sync in Tempo Reale</span>
               </span>
               <span className="cal-badge-sub">
-                {isCloudSyncing ? 'Sincronizzazione orario in corso...' : `${schedule.length} lezioni collegate`}
+                {isCloudSyncing ? 'Sincronizzazione orario in corso...' : `${schedule.length} lezioni pronte per il Calendario`}
               </span>
             </div>
             <h2>Sincronizza con il tuo Calendario</h2>
@@ -122,9 +146,9 @@ export default function CalendarSyncModal({
         {/* 1-Click Platform Integrations */}
         <div className="cal-platforms-grid">
           {/* Apple Calendar */}
-          <a 
-            href={webcalUrl} 
+          <div 
             className="cal-platform-card apple-card"
+            onClick={handleOpenAppleCalendar}
             title="Iscriviti su Apple Calendar"
           >
             <div className="platform-icon-wrap apple">
@@ -135,14 +159,12 @@ export default function CalendarSyncModal({
               <span>iPhone, iPad & Mac (1-Click)</span>
             </div>
             <ExternalLink size={16} className="platform-arrow" />
-          </a>
+          </div>
 
           {/* Google Calendar */}
-          <a 
-            href={googleCalendarUrl} 
-            target="_blank" 
-            rel="noreferrer"
+          <div 
             className="cal-platform-card google-card"
+            onClick={handleOpenGoogleCalendar}
             title="Aggiungi a Google Calendar"
           >
             <div className="platform-icon-wrap google">
@@ -153,12 +175,12 @@ export default function CalendarSyncModal({
               <span>Android & Browser Web</span>
             </div>
             <ExternalLink size={16} className="platform-arrow" />
-          </a>
+          </div>
 
           {/* Outlook / Windows */}
-          <a 
-            href={webcalUrl} 
+          <div 
             className="cal-platform-card outlook-card"
+            onClick={handleOpenAppleCalendar}
             title="Iscriviti su Outlook"
           >
             <div className="platform-icon-wrap outlook">
@@ -169,21 +191,21 @@ export default function CalendarSyncModal({
               <span>Windows & Microsoft 365</span>
             </div>
             <ExternalLink size={16} className="platform-arrow" />
-          </a>
+          </div>
 
           {/* Download Offline .ics */}
           <button 
             type="button" 
             className="cal-platform-card download-card"
             onClick={handleDownloadIcs}
-            title="Scarica file .ics statico"
+            title="Scarica file .ics statico con tutte le lezioni"
           >
             <div className="platform-icon-wrap download">
               <Download size={22} />
             </div>
             <div className="platform-info">
               <strong>Scarica File .ics</strong>
-              <span>Esportazione offline singola</span>
+              <span>Importazione istantanea senza link</span>
             </div>
             <Download size={16} className="platform-arrow" />
           </button>
@@ -191,7 +213,19 @@ export default function CalendarSyncModal({
 
         {/* Live Feed URL Copy Box */}
         <div className="cal-feed-copy-section">
-          <label>Il tuo Link di Sottoscrizione Privato (.ics):</label>
+          <div className="feed-header-row">
+            <label>Il tuo Link di Sottoscrizione Privato (.ics):</label>
+            <button 
+              type="button" 
+              className="refresh-feed-btn"
+              onClick={syncToCloud}
+              disabled={isCloudSyncing}
+              title="Forza aggiornamento dati sul cloud"
+            >
+              <RefreshCw size={12} className={isCloudSyncing ? 'spinner-icon' : ''} />
+              <span>{isCloudSyncing ? 'Aggiornamento...' : 'Aggiorna Dati'}</span>
+            </button>
+          </div>
           <div className="feed-input-group">
             <input 
               type="text" 
@@ -253,9 +287,9 @@ export default function CalendarSyncModal({
           {activeGuideTab === 'ios' && (
             <div className="guide-acc-content">
               <ol>
-                <li>Clicca sul pulsante <strong>"Apple Calendar"</strong> qui sopra dal tuo iPhone, oppure:</li>
-                <li>Vai su <em>Impostazioni &gt; Calendario &gt; Account &gt; Aggiungi account &gt; Altro &gt; Aggiungi calendario con sottoscrizione</em>.</li>
-                <li>Incolla il tuo link e tocca <strong>Avanti &gt; Salva</strong>.</li>
+                <li>Clicca sul riquadro <strong>"Apple Calendar"</strong> qui sopra dal tuo iPhone (apre l'iscrizione immediata).</li>
+                <li>Oppure vai su <em>Impostazioni &gt; Calendario &gt; Account &gt; Aggiungi account &gt; Altro &gt; Aggiungi calendario con sottoscrizione</em> e incolla il link.</li>
+                <li>Tocca <strong>Salva</strong>: il calendario rimarrà sincronizzato in tempo reale!</li>
               </ol>
             </div>
           )}
@@ -270,10 +304,9 @@ export default function CalendarSyncModal({
           {activeGuideTab === 'android' && (
             <div className="guide-acc-content">
               <ol>
-                <li>Clicca sul pulsante <strong>"Copia Link"</strong> qui sopra.</li>
-                <li>Clicca sul pulsante <strong>"Google Calendar"</strong> (o apri <em>calendar.google.com</em> dal computer).</li>
-                <li>Nella barra laterale sinistra clicca su <strong>"+"</strong> accanto ad <em>Altri calendari</em> &gt; <strong>Da URL</strong>.</li>
-                <li>Incolla il link copiato e tocca <strong>Aggiungi calendario</strong>: tutte le tue lezioni settimanali compariranno in automatico!</li>
+                <li>Clicca sul riquadro <strong>"Google Calendar"</strong> qui sopra e premi <strong>"Aggiungi"</strong>.</li>
+                <li>Se preferisci farlo a mano: apri <em>calendar.google.com</em> dal computer $\rightarrow$ nella colonna sinistra clicca su <strong>"+"</strong> accanto ad <em>Altri calendari</em> $\rightarrow$ <strong>Da URL</strong> $\rightarrow$ incolla il link copiato.</li>
+                <li>In pochi secondi tutte le lezioni settimanali e gli appelli compariranno nella tua griglia e sull'app Google Calendar del tuo smartphone!</li>
               </ol>
             </div>
           )}
