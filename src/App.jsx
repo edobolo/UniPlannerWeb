@@ -290,6 +290,17 @@ function MainApp() {
             <Palette size={18} />
           </button>
 
+          {!isElectron && (
+            <button 
+              className="mobile-icon-btn" 
+              onClick={() => setIsDownloadModalOpen(true)}
+              title="Scarica App Android (.apk)"
+              style={{ color: '#10b981' }}
+            >
+              <Smartphone size={18} />
+            </button>
+          )}
+
           <div 
             className="mobile-user-avatar" 
             onClick={handleOpenAccount}

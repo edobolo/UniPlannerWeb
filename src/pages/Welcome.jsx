@@ -17,7 +17,8 @@ import {
   Layers, 
   Zap,
   GraduationCap,
-  Scale
+  Scale,
+  Smartphone
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import './Welcome.css';
@@ -85,7 +86,7 @@ const Welcome = ({ onNavigate, onOpenDownload, onOpenLegal }) => {
     { text: 'Conforme GDPR UE 2016/679', icon: ShieldCheck },
     { text: 'Funzionamento anche Offline', icon: Zap },
     { text: 'Zero Pubblicità o Tracciamento', icon: CheckCircle2 },
-    { text: 'Disponibile per Windows & Web', icon: Monitor },
+    { text: 'Disponibile per Android (.apk) & Windows', icon: Smartphone },
   ];
 
   const handleStart = () => {
@@ -157,7 +158,7 @@ const Welcome = ({ onNavigate, onOpenDownload, onOpenLegal }) => {
                 opacity: [0.5, 0.8, 0.5]
               }}
               transition={{ 
-                duration: 3, 
+                duration: 2.5, 
                 repeat: Infinity, 
                 ease: "easeInOut" 
               }}
@@ -224,7 +225,7 @@ const Welcome = ({ onNavigate, onOpenDownload, onOpenLegal }) => {
             {!isElectron && onOpenDownload && (
               <button className="ghost-btn hero-download-btn" onClick={onOpenDownload}>
                 <Download size={17} />
-                <span>Scarica per Windows (.exe)</span>
+                <span>Scarica App (Android / PC)</span>
               </button>
             )}
           </motion.div>
