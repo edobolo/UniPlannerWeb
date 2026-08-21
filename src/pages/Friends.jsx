@@ -243,10 +243,10 @@ const Friends = () => {
   };
 
   const filteredFriends = friends.filter(f => 
-    f.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    f.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    f.degreeCourse.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    f.university.toLowerCase().includes(searchQuery.toLowerCase())
+    (f.fullName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (f.username || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (f.degreeCourse || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (f.university || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Check if current user is sharing grades
@@ -365,7 +365,7 @@ const Friends = () => {
                       className="friend-avatar" 
                       style={{ background: friend.avatarColor || '#3b82f6' }}
                     >
-                      {friend.fullName.charAt(0).toUpperCase()}
+                      {(friend.fullName || friend.username || '?').charAt(0).toUpperCase()}
                     </div>
 
                     <div className="friend-info">
@@ -404,7 +404,7 @@ const Friends = () => {
                     className="avatar-detail-large"
                     style={{ background: selectedFriend.avatarColor || '#3b82f6' }}
                   >
-                    {selectedFriend.fullName.charAt(0).toUpperCase()}
+                    {(selectedFriend.fullName || selectedFriend.username || '?').charAt(0).toUpperCase()}
                   </div>
                   <div>
                     <div className="detail-name-row">
@@ -443,7 +443,7 @@ const Friends = () => {
                 <div className="friend-stat-item">
                   <span className="stat-label">Media Voti</span>
                   {canViewFriendGrades ? (
-                    <strong className="stat-value">{selectedFriend.stats.avgGrade}</strong>
+                    <strong className="stat-value">{selectedFriend.stats?.avgGrade ?? '—'}</strong>
                   ) : (
                     <strong className="stat-value privacy-locked" title="Privacy attiva">
                       <Lock size={13} /> Nascosto
@@ -452,11 +452,11 @@ const Friends = () => {
                 </div>
                 <div className="friend-stat-item">
                   <span className="stat-label">Progresso CFU</span>
-                  <strong className="stat-value">{selectedFriend.stats.cfu} / {selectedFriend.stats.totalCfu}</strong>
+                  <strong className="stat-value">{selectedFriend.stats?.cfu ?? 0} / {selectedFriend.stats?.totalCfu ?? '—'}</strong>
                 </div>
                 <div className="friend-stat-item">
                   <span className="stat-label">Esami Superati</span>
-                  <strong className="stat-value">{selectedFriend.stats.passedExams} / {selectedFriend.stats.totalExams}</strong>
+                  <strong className="stat-value">{selectedFriend.stats?.passedExams ?? 0} / {selectedFriend.stats?.totalExams ?? '—'}</strong>
                 </div>
               </div>
 
@@ -474,7 +474,7 @@ const Friends = () => {
                   onClick={() => setActiveFriendTab('deadlines')}
                 >
                   <Calendar size={16} />
-                  <span>Scadenze ({selectedFriend.deadlines.length})</span>
+                  <span>Scadenze ({(selectedFriend.deadlines || []).length})</span>
                 </button>
                 <button 
                   className={`f-tab ${activeFriendTab === 'schedule' ? 'active' : ''}`}
@@ -521,7 +521,7 @@ const Friends = () => {
                     )}
 
                     <div className="f-exam-grid">
-                      {selectedFriend.exams.map((exam, idx) => (
+                      {(selectedFriend.exams || []).map((exam, idx) => (
                         <div key={idx} className={`f-exam-card ${exam.status}`}>
                           <div className="f-exam-top">
                             <span className="exam-status-dot" />
@@ -551,9 +551,9 @@ const Friends = () => {
                 {activeFriendTab === 'deadlines' && (
                   <div className="f-deadlines-list">
                     <h3 className="section-title">Prossime Scadenze Condivise</h3>
-                    {selectedFriend.deadlines.length > 0 ? (
+                    {(selectedFriend.deadlines || []).length > 0 ? (
                       <div className="deadlines-col">
-                        {selectedFriend.deadlines.map((dl) => (
+                        {(selectedFriend.deadlines || []).map((dl) => (
                           <div key={dl.id} className="f-deadline-card" style={{ borderLeftColor: dl.color || '#8b5cf6' }}>
                             <div className="dl-main">
                               <span className="dl-tag" style={{ background: dl.color + '22', color: dl.color }}>{dl.tag}</span>

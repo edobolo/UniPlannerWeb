@@ -894,3 +894,30 @@
   width: 16px;
   height: 16px;
 }
+
+
+/* Pomodoro Mobile Fix */
+@media (max-width: 768px) {
+  .timer-wrapper {
+    width: 100% !important;
+    max-width: 300px !important;
+    margin: 0 auto !important;
+  }
+
+  .timer-display {
+    font-size: 56px !important;
+  }
+
+  .pomo-card {
+    padding: 20px 14px !important;
+  }
+
+  .zen-timer-wrapper {
+    width: 100% !important;
+    max-width: 340px !important;
+  }
+
+  .zen-timer-display {
+    font-size: 60px !important;
+  }
+}

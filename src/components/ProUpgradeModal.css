@@ -243,3 +243,31 @@
   font-size: 12px;
   color: var(--text-muted);
 }
+
+
+/* Mobile ProUpgradeModal */
+@media (max-width: 640px) {
+  .pro-upgrade-modal {
+    padding: 20px 14px !important;
+    width: 96% !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+  }
+
+  .pro-upgrade-modal h2 {
+    font-size: 18px !important;
+  }
+
+  .pro-plans-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .pro-plan-card {
+    padding: 16px !important;
+  }
+
+  .pro-features-list li {
+    font-size: 12.5px !important;
+  }
+}

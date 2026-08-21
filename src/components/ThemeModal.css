@@ -234,3 +234,27 @@
   letter-spacing: 0.5px;
   margin-left: auto;
 }
+
+
+/* Mobile ThemeModal */
+@media (max-width: 640px) {
+  .theme-modal-content {
+    padding: 18px 12px !important;
+    width: 96% !important;
+    max-height: 85vh !important;
+    overflow-y: auto !important;
+  }
+
+  .theme-palettes-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .theme-palette-card {
+    padding: 12px !important;
+  }
+
+  .theme-palette-card .palette-name {
+    font-size: 12px !important;
+  }
+}

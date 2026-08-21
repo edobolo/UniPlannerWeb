@@ -196,3 +196,21 @@
   font-size: 16px;
   background: var(--card-bg-gradient);
 }
+
+
+/* Mobile Notifications */
+@media (max-width: 640px) {
+  .notifications-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .notifications-header h1 {
+    font-size: 18px !important;
+  }
+
+  .notification-card {
+    padding: 12px !important;
+  }
+}
