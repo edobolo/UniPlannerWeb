@@ -251,33 +251,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const [isProUser, setIsProUser] = useState(() => {
-    const isUnlocked = localStorage.getItem('uniplanner_pro_unlocked') === 'true';
-    const isEdo = currentUser && (
-      currentUser.isPro === true ||
-      currentUser.username?.toLowerCase().includes('edo') ||
-      currentUser.email?.toLowerCase().includes('edo') ||
-      currentUser.email?.toLowerCase().includes('edob') ||
-      currentUser.email?.toLowerCase().includes('bolo') ||
-      currentUser.fullName?.toLowerCase().includes('edo')
-    );
-    return Boolean(isUnlocked || isEdo);
+    return Boolean(currentUser?.isPremium);
   });
 
   useEffect(() => {
-    const isUnlocked = localStorage.getItem('uniplanner_pro_unlocked') === 'true';
-    const isEdo = currentUser && (
-      currentUser.isPro === true ||
-      currentUser.username?.toLowerCase().includes('edo') ||
-      currentUser.email?.toLowerCase().includes('edo') ||
-      currentUser.email?.toLowerCase().includes('edob') ||
-      currentUser.email?.toLowerCase().includes('bolo') ||
-      currentUser.fullName?.toLowerCase().includes('edo')
-    );
-    if (isEdo && !isUnlocked) {
-      localStorage.setItem('uniplanner_pro_unlocked', 'true');
-    }
-    setIsProUser(Boolean(isUnlocked || isEdo));
-  }, [currentUser]);
+    localStorage.removeItem('uniplanner_pro_unlocked');
+    setIsProUser(Boolean(currentUser?.isPremium));
+  }, [currentUser?.isPremium]);
 
   const unlockPro = (code) => {
     const cleanCode = (code || '').trim().toUpperCase();
