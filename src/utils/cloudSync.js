@@ -53,7 +53,8 @@ export const publishUserProfile = async (user, exams = [], schedule = [], deadli
       status: e.grade ? 'passed' : 'planned',
       year: e.year || '1° Anno',
       isIdoneita: Boolean(e.isIdoneita),
-      studyTimeMin: Number(e.studyTimeMin) || 0
+      studyTimeMin: Number(e.studyTimeMin) || 0,
+      resources: Array.isArray(e.resources) ? e.resources : []
     })),
     schedule: (schedule || []).map(s => ({
       id: s.id || `les_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
