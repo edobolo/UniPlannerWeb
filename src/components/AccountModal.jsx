@@ -27,7 +27,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { generateShareLink, resetUserPassword } from '../utils/cloudSync';
+import { generateShareLink, resetUserPassword, apiFetch } from '../utils/cloudSync';
 import { safeJsonParse } from '../utils/security';
 import './AccountModal.css';
 
@@ -117,9 +117,8 @@ const AccountModal = ({ onOpenLegal }) => {
     setIsOpeningPortal(true);
     setErrorMsg('');
     try {
-      const res = await fetch('http://localhost:3001/api/stripe/create-portal-session', {
+      const res = await apiFetch('/stripe/create-portal-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ friendCode: currentUser.friendCode })
       });
       const data = await res.json();
@@ -141,11 +140,14 @@ const AccountModal = ({ onOpenLegal }) => {
     setDeleteLoading(true);
     setErrorMsg('');
     try {
-      await fetch('http://localhost:3001/api/auth/delete-account', {
+      const res = await apiFetch('/auth/delete-account', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ friendCode: currentUser.friendCode })
       });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Impossibile eliminare l\'account dal server.');
+      }
 
       // Clear local data & logout
       localStorage.clear();
@@ -552,32 +554,49 @@ const AccountModal = ({ onOpenLegal }) => {
                   </button>
                 )}
 
-                {/* Delete Account Warning Confirmation */}
-                {showDeleteConfirm ? (
-                  <div className="delete-account-confirm-box">
-                    <div className="confirm-text">
-                      <strong>⚠️ Sei sicuro di voler eliminare il tuo account?</strong>
-                      <span>Tutti i tuoi dati cloud, esami, orari e crediti verranno cancellati definitivamente senza possibilità di recupero.</span>
-                    </div>
-                    <div className="confirm-buttons">
-                      <button type="button" className="ghost-btn" onClick={() => setShowDeleteConfirm(false)}>
-                        Annulla
-                      </button>
-                      <button type="button" className="delete-confirm-btn" onClick={handleDeleteAccount} disabled={deleteLoading}>
-                        {deleteLoading ? 'Eliminazione...' : 'Sì, Elimina Definitivamente'}
-                      </button>
+                {/* Zona Pericolo / Eliminazione Account GDPR */}
+                <div className="profile-danger-zone">
+                  <div className="danger-zone-header">
+                    <div className="privacy-title-group">
+                      <Trash2 size={16} className="danger-icon" />
+                      <span className="danger-title">Eliminazione Account & Privacy GDPR</span>
                     </div>
                   </div>
-                ) : (
-                  <button 
-                    type="button" 
-                    className="delete-account-trigger-btn"
-                    onClick={() => setShowDeleteConfirm(true)}
-                  >
-                    <Trash2 size={13} />
-                    <span>Elimina Account & Dati (Diritto all'Oblio GDPR)</span>
-                  </button>
-                )}
+                  <p className="danger-desc">
+                    Richiedi l'eliminazione definitiva dell'account e di tutti i dati associati (Diritto all'Oblio).
+                    {currentUser?.isPremium && (
+                      <strong style={{ display: 'block', marginTop: 5, color: '#f59e0b' }}>
+                        💳 L'abbonamento PRO su Stripe verrà annullato automaticamente senza ulteriori addebiti.
+                      </strong>
+                    )}
+                  </p>
+                  
+                  {showDeleteConfirm ? (
+                    <div className="delete-account-confirm-box">
+                      <div className="confirm-text">
+                        <strong>⚠️ Sei assolutamente sicuro?</strong>
+                        <span>Tutti i tuoi dati cloud, esami, orari e crediti verranno eliminati. Questa azione non può essere annullata.</span>
+                      </div>
+                      <div className="confirm-buttons">
+                        <button type="button" className="ghost-btn" onClick={() => setShowDeleteConfirm(false)}>
+                          Annulla
+                        </button>
+                        <button type="button" className="delete-confirm-btn" onClick={handleDeleteAccount} disabled={deleteLoading}>
+                          {deleteLoading ? 'Eliminazione...' : 'Sì, Elimina Definitivamente'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button 
+                      type="button" 
+                      className="danger-action-btn"
+                      onClick={() => setShowDeleteConfirm(true)}
+                    >
+                      <Trash2 size={14} />
+                      <span>Elimina il mio Account</span>
+                    </button>
+                  )}
+                </div>
 
                 <div className="profile-actions">
                   <button className="secondary-btn" onClick={startEditProfile}>
