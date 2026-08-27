@@ -38,6 +38,7 @@ import {
 } from '../utils/aiStudyService';
 import { useAuth } from '../context/AuthContext';
 import { safeJsonParse } from '../utils/security';
+import { detectResourceType } from '../utils/resourceHelper';
 import './AiStudyAssistant.css';
 
 const SAMPLE_LECTURE_TEXT = `
@@ -66,6 +67,26 @@ export default function AiStudyAssistant({ onOpenProModal }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  // 📂 Smart Link Hub: Materiali e Link degli Esami
+  const [examResources, setExamResources] = useState(() => {
+    const savedExams = safeJsonParse(localStorage.getItem('uniplanner_exams'), []);
+    const list = [];
+    savedExams.forEach(exam => {
+      if (Array.isArray(exam.resources) && exam.resources.length > 0) {
+        exam.resources.forEach(res => {
+          list.push({
+            ...res,
+            examId: exam.id,
+            examName: exam.name,
+            examYear: exam.year
+          });
+        });
+      }
+    });
+    return list;
+  });
+  const [selectedResource, setSelectedResource] = useState(null);
   
   // Google Gemini Configuration States (Salvate per sempre in localStorage)
   const [showKeyModal, setShowKeyModal] = useState(false);
@@ -535,7 +556,74 @@ export default function AiStudyAssistant({ onOpenProModal }) {
               </div>
             )}
 
-            <div className="divider-text">oppure incolla direttamente gli appunti</div>
+            {/* 📂 Smart Link Hub: Appunti & Dispense collegate ai tuoi Esami */}
+            {examResources.length > 0 && (
+              <div className="ai-linked-resources-section">
+                <div className="linked-resources-header">
+                  <div className="linked-title-group">
+                    <BookOpen size={16} style={{ color: 'var(--accent-primary)' }} />
+                    <h4>Scegli dagli Appunti collegati ai tuoi Esami</h4>
+                  </div>
+                  <span className="linked-count-badge">{examResources.length} link salvati</span>
+                </div>
+                
+                <div className="linked-resources-pills">
+                  {examResources.map(res => {
+                    const typeInfo = detectResourceType(res.url);
+                    const isSel = selectedResource?.id === res.id && selectedResource?.examId === res.examId;
+                    return (
+                      <button
+                        key={`${res.examId}_${res.id}`}
+                        type="button"
+                        className={`ai-resource-chip ${isSel ? 'active' : ''}`}
+                        style={{
+                          '--res-color': typeInfo.color,
+                          '--res-bg': typeInfo.bgColor,
+                          '--res-border': typeInfo.borderColor
+                        }}
+                        onClick={() => {
+                          setSelectedResource(res);
+                          const headerPrefix = `[Esame: ${res.examName} | Materiale: ${res.title || typeInfo.label}]\n`;
+                          if (!rawText.includes(res.examName)) {
+                            setRawText(prev => `${headerPrefix}${prev}`);
+                          }
+                        }}
+                        title={`Collega ${res.title || typeInfo.label} (${res.examName})`}
+                      >
+                        <span className="chip-exam-tag">{res.examName}</span>
+                        <span className="chip-title">{res.title || typeInfo.label}</span>
+                        <a 
+                          href={res.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="chip-open-link" 
+                          onClick={e => e.stopPropagation()}
+                          title={`Apri ${res.title || typeInfo.label} in una nuova scheda`}
+                        >
+                          <ExternalLink size={11} />
+                        </a>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {selectedResource && (
+                  <div className="selected-resource-banner">
+                    <div className="selected-res-left">
+                      <span>🎯 Esame selezionato: <strong>{selectedResource.examName}</strong> ({selectedResource.title || 'Appunti'})</span>
+                      <a href={selectedResource.url} target="_blank" rel="noopener noreferrer" className="open-material-link">
+                        Apri materiale in nuova scheda <ExternalLink size={12} />
+                      </a>
+                    </div>
+                    <button type="button" className="clear-res-btn" onClick={() => setSelectedResource(null)}>
+                      Deseleziona
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="divider-text">oppure incolla direttamente il testo degli appunti</div>
 
             <div className="textarea-wrapper">
               <textarea 
