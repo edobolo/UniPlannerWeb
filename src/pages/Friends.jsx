@@ -52,13 +52,27 @@ const Friends = () => {
     localStorage.removeItem('uniplanner_friends_db_v1');
 
     const saved = safeJsonParse(localStorage.getItem(STORAGE_FRIENDS_KEY), []);
-    return saved.filter(f => f.id !== 'fr_marco' && !f.fullName?.includes('(UP-'));
+    return saved.filter(f => 
+      f.id !== 'fr_marco' && 
+      !f.fullName?.includes('(UP-') &&
+      !f.fullName?.toLowerCase().includes('mario rossi') &&
+      !f.fullName?.toLowerCase().includes('studente uniplanner') &&
+      !f.username?.toLowerCase().includes('mario') &&
+      !f.username?.toLowerCase().includes('studente_test')
+    );
   });
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFriend, setSelectedFriend] = useState(() => {
     const saved = safeJsonParse(localStorage.getItem(STORAGE_FRIENDS_KEY), []);
-    const clean = saved.filter(f => f.id !== 'fr_marco' && !f.fullName?.includes('(UP-'));
+    const clean = saved.filter(f => 
+      f.id !== 'fr_marco' && 
+      !f.fullName?.includes('(UP-') &&
+      !f.fullName?.toLowerCase().includes('mario rossi') &&
+      !f.fullName?.toLowerCase().includes('studente uniplanner') &&
+      !f.username?.toLowerCase().includes('mario') &&
+      !f.username?.toLowerCase().includes('studente_test')
+    );
     return clean.length > 0 ? clean[0] : null;
   });
   const [activeFriendTab, setActiveFriendTab] = useState('exams'); // 'exams' | 'deadlines' | 'schedule' | 'common'
