@@ -473,54 +473,65 @@
   box-shadow: 0 8px 20px -6px rgba(139, 92, 246, 0.4);
 }
 /* ============================================================
-   MOBILE & SMARTPHONE NAVIGATION (Chrome Android & iOS Safari)
+   MOBILE & SMARTPHONE NAVIGATION — Professional App Layout
    ============================================================ */
 
 .mobile-header {
   display: none;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
+  padding: 12px 16px;
   background: var(--glass-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border-bottom: 1px solid var(--glass-border);
   border-radius: 0;
   z-index: 100;
   flex-shrink: 0;
+  min-height: 52px;
 }
 
 .mobile-logo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   cursor: pointer;
 }
 
+.mobile-logo .logo-icon {
+  width: 32px;
+  height: 32px;
+  font-size: 13px;
+}
+
 .mobile-logo h2 {
-  font-size: 17px;
-  font-weight: 800;
+  font-size: 16px;
+  font-weight: 700;
   color: var(--text-primary);
   margin: 0;
   letter-spacing: -0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
 }
 
 .mobile-header-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .mobile-icon-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--input-bg);
   border: 1px solid var(--glass-border);
-  color: var(--text-primary);
+  color: var(--text-secondary);
   cursor: pointer;
   position: relative;
   transition: all 0.2s ease;
@@ -533,32 +544,34 @@
 }
 
 .mobile-user-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
-  border: 1.5px solid var(--glass-border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  border: 2px solid var(--glass-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* Bottom Nav Bar for Mobile Touch Phones */
+/* ============================================================
+   BOTTOM NAV BAR — 5 Tabs Professional Layout
+   ============================================================ */
 .mobile-bottom-nav {
   display: none;
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 60px;
-  padding: 4px 4px calc(env(safe-area-inset-bottom, 0px) + 4px) 4px;
+  height: 64px;
+  padding: 6px 8px calc(env(safe-area-inset-bottom, 0px) + 6px) 8px;
   background: var(--glass-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border-top: 1px solid var(--glass-border);
   border-radius: 0;
   z-index: 1000;
@@ -571,16 +584,17 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  padding: 6px 2px;
+  padding: 6px 4px;
   flex: 1;
   cursor: pointer;
   position: relative;
   transition: color 0.2s ease;
   min-width: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mobile-nav-item.active {
@@ -590,8 +604,8 @@
 
 .mobile-nav-icon-wrap {
   position: relative;
-  width: 28px;
-  height: 24px;
+  width: 32px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -599,21 +613,144 @@
 
 .mobile-nav-glow {
   position: absolute;
-  inset: -2px -6px;
-  background: rgba(59, 130, 246, 0.2);
-  border-radius: 12px;
+  inset: -4px -8px;
+  background: rgba(59, 130, 246, 0.15);
+  border-radius: 14px;
   z-index: -1;
 }
 
 .mobile-nav-label {
-  font-size: 10px;
+  font-size: 11px;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+  letter-spacing: -0.2px;
 }
 
-/* Media Queries for Phone Screens */
+/* ============================================================
+   "ALTRO" BOTTOM SHEET — Slide-Up Panel
+   ============================================================ */
+.more-sheet-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 999;
+}
+
+.more-sheet {
+  display: none;
+  position: fixed;
+  bottom: 70px;
+  left: 8px;
+  right: 8px;
+  padding: 8px 16px 16px 16px;
+  border-radius: 20px 20px 16px 16px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  z-index: 1001;
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.25);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.more-sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--text-secondary);
+  opacity: 0.3;
+  border-radius: 2px;
+  margin: 4px auto 12px auto;
+}
+
+.more-sheet-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.more-sheet-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 12px;
+  border-radius: 14px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.more-sheet-item:active {
+  background: var(--bg-hover);
+  transform: scale(0.98);
+}
+
+.more-sheet-item.active {
+  background: var(--bg-hover);
+}
+
+.more-sheet-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.more-sheet-arrow {
+  margin-left: auto;
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+
+.more-sheet-extras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.more-sheet-extra-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.more-sheet-extra-btn:active {
+  background: var(--bg-hover);
+  transform: scale(0.96);
+}
+
+/* ============================================================
+   MEDIA QUERIES — Phone Screens
+   ============================================================ */
 @media (max-width: 768px) {
   .app-root {
     height: 100vh;
@@ -633,21 +770,30 @@
     display: flex;
   }
 
+  .more-sheet-backdrop {
+    display: block;
+  }
+
+  .more-sheet {
+    display: flex;
+    flex-direction: column;
+  }
+
   .app-container {
     flex-direction: column;
     height: calc(100% - 52px);
-    overflow: hidden !important; /* CRITICAL: No scroll here */
+    overflow: hidden !important;
     display: flex;
     flex: 1;
     min-height: 0;
   }
 
   .main-content {
-    padding: 12px 10px 96px 10px !important;
+    padding: 14px 12px 90px 12px !important;
     width: 100%;
-    overflow-y: auto !important; /* CRITICAL: Single scroll container */
+    overflow-y: auto !important;
     overflow-x: hidden !important;
-    -webkit-overflow-scrolling: touch !important; /* Fast iOS/Android momentum */
+    -webkit-overflow-scrolling: touch !important;
     scroll-behavior: smooth;
     flex: 1;
     min-height: 0;
@@ -696,3 +842,4 @@
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
 }
+

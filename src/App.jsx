@@ -21,7 +21,9 @@ import {
   Palette,
   Crown,
   Bot,
-  Smartphone
+  Smartphone,
+  MoreHorizontal,
+  ChevronRight
 } from 'lucide-react';
 import TitleBar from './components/TitleBar';
 import Exams from './pages/Exams'; // Pagina iniziale caricata istantaneamente
@@ -66,6 +68,7 @@ function MainApp() {
   const [updateDownloaded, setUpdateDownloaded] = useState(false);
   const [updateInfo, setUpdateInfo] = useState(null);
   const [importedFriendToast, setImportedFriendToast] = useState(null);
+  const [isMoreSheetOpen, setIsMoreSheetOpen] = useState(false);
 
   const { currentUser, setIsAuthModalOpen, setAuthModalTab } = useAuth();
   const isElectron = typeof window !== 'undefined' && window.electronAPI?.isElectron;
@@ -221,15 +224,28 @@ function MainApp() {
   };
 
   const navItems = [
-    { id: 'esami', label: 'Piano di Studi', icon: BookOpen },
-    { id: 'ai-assistant', label: 'Assistente AI', icon: Bot },
-    { id: 'voti', label: 'Statistiche', icon: TrendingUp },
-    { id: 'orario', label: 'Orario Lezioni', icon: CalendarDays },
-    { id: 'scadenze', label: 'Scadenze', icon: Calendar },
-    { id: 'pomodoro', label: 'Timer', icon: Clock },
-    { id: 'amici', label: 'Amici & Social', icon: Users },
-    { id: 'notifiche', label: 'Notifiche', icon: Bell },
+    { id: 'esami', label: 'Piano di Studi', mobileLabel: 'Studi', icon: BookOpen },
+    { id: 'ai-assistant', label: 'Assistente AI', mobileLabel: 'AI', icon: Bot },
+    { id: 'voti', label: 'Statistiche', mobileLabel: 'Voti', icon: TrendingUp },
+    { id: 'orario', label: 'Orario Lezioni', mobileLabel: 'Orario', icon: CalendarDays },
+    { id: 'scadenze', label: 'Scadenze', mobileLabel: 'Scadenze', icon: Calendar },
+    { id: 'pomodoro', label: 'Timer', mobileLabel: 'Timer', icon: Clock },
+    { id: 'amici', label: 'Amici & Social', mobileLabel: 'Amici', icon: Users },
+    { id: 'notifiche', label: 'Notifiche', mobileLabel: 'Notifiche', icon: Bell },
   ];
+
+  // 5 tab principali per la bottom nav mobile
+  const mobileMainTabs = ['esami', 'voti', 'orario', 'pomodoro'];
+  // Voci nel pannello "Altro" mobile
+  const mobileMoreItems = [
+    { id: 'ai-assistant', label: 'Assistente AI', icon: Bot, color: '#8b5cf6' },
+    { id: 'scadenze', label: 'Scadenze & Appelli', icon: Calendar, color: '#f59e0b' },
+    { id: 'amici', label: 'Amici & Social', icon: Users, color: '#ec4899' },
+    { id: 'notifiche', label: 'Notifiche', icon: Bell, color: '#3b82f6' },
+  ];
+
+  // Titolo pagina corrente per l'header mobile
+  const currentPageTitle = navItems.find(n => n.id === activeTab)?.label || 'UniPlanner';
 
   const handleOpenAccount = () => {
     setAuthModalTab('profile');
@@ -246,60 +262,25 @@ function MainApp() {
     <div className="app-root">
       <TitleBar />
 
-      {/* Mobile Top Header */}
+      {/* Mobile Top Header — Clean & Compact */}
       <header className="mobile-header glass-panel">
         <div 
           className="mobile-logo" 
-          onClick={() => setActiveTab('benvenuto')}
-          title="Guida UniPlanner"
+          onClick={() => setActiveTab('esami')}
+          title="Home"
         >
           <div className="logo-icon">UP</div>
-          <h2>UniPlanner</h2>
+          <h2>{currentPageTitle}</h2>
         </div>
 
         <div className="mobile-header-actions">
-          <button 
-            className={`mobile-icon-btn ${activeTab === 'benvenuto' ? 'active' : ''}`}
-            onClick={() => setActiveTab('benvenuto')}
-            title="Guida"
-          >
-            <Sparkles size={18} className="guide-sparkle-icon" />
-          </button>
-
           <button 
             className={`mobile-icon-btn ${activeTab === 'notifiche' ? 'active' : ''}`}
             onClick={() => setActiveTab('notifiche')}
             title="Notifiche"
           >
-            <Bell size={18} />
+            <Bell size={20} />
           </button>
-
-          <button 
-            className="mobile-icon-btn" 
-            onClick={toggleTheme}
-            title={theme === 'dark' ? 'Modalità Chiara' : 'Modalità Scura'}
-          >
-            {theme === 'dark' ? <Sun size={18} className="sun-icon" /> : <Moon size={18} className="moon-icon" />}
-          </button>
-
-          <button 
-            className="mobile-icon-btn" 
-            onClick={() => setIsThemeModalOpen(true)}
-            title="Temi Facoltà"
-          >
-            <Palette size={18} />
-          </button>
-
-          {!isElectron && (
-            <button 
-              className="mobile-icon-btn" 
-              onClick={() => setIsDownloadModalOpen(true)}
-              title="Scarica App Android (.apk)"
-              style={{ color: '#10b981' }}
-            >
-              <Smartphone size={18} />
-            </button>
-          )}
 
           <div 
             className="mobile-user-avatar" 
@@ -620,19 +601,19 @@ function MainApp() {
       </main>
       </div>
 
-      {/* Mobile Bottom Navigation Bar */}
+      {/* Mobile Bottom Navigation Bar — 5 Tab Pro Layout */}
       <nav className="mobile-bottom-nav glass-panel gpu-accelerated">
-        {navItems.filter(item => item.id !== 'notifiche').map((item) => {
+        {navItems.filter(item => mobileMainTabs.includes(item.id)).map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
           return (
             <button
               key={item.id}
               className={`mobile-nav-item ${isActive ? 'active' : ''}`}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => { setActiveTab(item.id); setIsMoreSheetOpen(false); }}
             >
               <div className="mobile-nav-icon-wrap">
-                <Icon size={20} />
+                <Icon size={22} />
                 {isActive && (
                   <motion.div 
                     layoutId="mobile-nav-glow"
@@ -642,11 +623,96 @@ function MainApp() {
                   />
                 )}
               </div>
-              <span className="mobile-nav-label">{item.label}</span>
+              <span className="mobile-nav-label">{item.mobileLabel}</span>
             </button>
           );
         })}
+        {/* Tab "Altro" */}
+        <button
+          className={`mobile-nav-item ${isMoreSheetOpen || !mobileMainTabs.includes(activeTab) ? 'active' : ''}`}
+          onClick={() => setIsMoreSheetOpen(prev => !prev)}
+        >
+          <div className="mobile-nav-icon-wrap">
+            <MoreHorizontal size={22} />
+            {(isMoreSheetOpen || !mobileMainTabs.includes(activeTab)) && (
+              <motion.div 
+                layoutId="mobile-nav-glow"
+                className="mobile-nav-glow"
+                initial={false}
+                transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+              />
+            )}
+          </div>
+          <span className="mobile-nav-label">Altro</span>
+        </button>
       </nav>
+
+      {/* Mobile "Altro" Bottom Sheet */}
+      <AnimatePresence>
+        {isMoreSheetOpen && (
+          <>
+            <motion.div 
+              className="more-sheet-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setIsMoreSheetOpen(false)}
+            />
+            <motion.div 
+              className="more-sheet glass-panel"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 400, damping: 40 }}
+            >
+              <div className="more-sheet-handle" />
+              <div className="more-sheet-grid">
+                {mobileMoreItems.map(item => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      className={`more-sheet-item ${activeTab === item.id ? 'active' : ''}`}
+                      onClick={() => { setActiveTab(item.id); setIsMoreSheetOpen(false); }}
+                    >
+                      <div className="more-sheet-icon" style={{ background: `${item.color}20`, color: item.color }}>
+                        <Icon size={22} />
+                      </div>
+                      <span>{item.label}</span>
+                      <ChevronRight size={16} className="more-sheet-arrow" />
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="more-sheet-extras">
+                <button className="more-sheet-extra-btn" onClick={() => { setActiveTab('benvenuto'); setIsMoreSheetOpen(false); }}>
+                  <Sparkles size={18} />
+                  <span>Guida</span>
+                </button>
+                <button className="more-sheet-extra-btn" onClick={() => { setIsThemeModalOpen(true); setIsMoreSheetOpen(false); }}>
+                  <Palette size={18} />
+                  <span>Temi</span>
+                </button>
+                <button className="more-sheet-extra-btn" onClick={() => { toggleTheme(); setIsMoreSheetOpen(false); }}>
+                  {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                  <span>{theme === 'dark' ? 'Chiaro' : 'Scuro'}</span>
+                </button>
+                {!isElectron && (
+                  <button className="more-sheet-extra-btn" onClick={() => { setIsDownloadModalOpen(true); setIsMoreSheetOpen(false); }}>
+                    <Download size={18} />
+                    <span>Scarica</span>
+                  </button>
+                )}
+                <button className="more-sheet-extra-btn" onClick={() => { setIsBugModalOpen(true); setIsMoreSheetOpen(false); }}>
+                  <Bug size={18} />
+                  <span>Bug</span>
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
     {/* Account Management Modal */}
     <AccountModal onOpenLegal={handleOpenLegal} />
