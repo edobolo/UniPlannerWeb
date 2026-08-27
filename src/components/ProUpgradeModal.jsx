@@ -8,10 +8,10 @@ export default function ProUpgradeModal({ isOpen, onClose, friendCode }) {
   const [loadingPriceId, setLoadingPriceId] = useState(null);
   const [error, setError] = useState('');
 
-  // Questi verranno sostituiti con i veri price_...
+  // Stripe Live Price IDs
   const plans = [
     {
-      id: 'price_1U6ZCCGgjWDI5KlvrFZykyxQ',
+      id: 'price_1U9AixGfd5kpnWkPoYGqB8p2',
       name: 'Mensile',
       icon: <Sparkles className="plan-icon" />,
       price: '1,99 €',
@@ -20,7 +20,7 @@ export default function ProUpgradeModal({ isOpen, onClose, friendCode }) {
       color: '#38bdf8'
     },
     {
-      id: 'price_1U6Z9rGgjWDI5KlvAhilRbOy',
+      id: 'price_1U9AixGfd5kpnWkPleI7MBq9',
       name: 'Annuale',
       icon: <Crown className="plan-icon" />,
       price: '9,99 €',
@@ -30,7 +30,7 @@ export default function ProUpgradeModal({ isOpen, onClose, friendCode }) {
       badge: 'PIÙ SCELTO'
     },
     {
-      id: 'price_1U6Z9AGgjWDI5KlvFxLCbUT5',
+      id: 'price_1U9Aj2Gfd5kpnWkPU7bgOY6o',
       name: "Founder's Edition",
       icon: <Rocket className="plan-icon" />,
       price: '19,99 €',

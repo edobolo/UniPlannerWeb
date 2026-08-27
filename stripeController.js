@@ -1,4 +1,4 @@
-﻿const Stripe = require('stripe');
+const Stripe = require('stripe');
 const express = require('express');
 const fs = require('fs');
 
@@ -63,7 +63,7 @@ function setupStripeRoutes(app, dbFilePath) {
         return res.status(400).json({ error: 'friendCode e priceId obbligatori' });
       }
 
-      const mode = priceId === 'price_1U6Z9AGgjWDI5KlvFxLCbUT5' ? 'payment' : 'subscription';
+      const mode = (priceId === 'price_1U9Aj2Gfd5kpnWkPU7bgOY6o' || priceId === 'price_1U6Z9AGgjWDI5KlvFxLCbUT5') ? 'payment' : 'subscription';
 
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
