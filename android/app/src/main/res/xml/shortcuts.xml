@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="shortcut_schedule"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_schedule_short"
+        android:shortcutLongLabel="@string/shortcut_schedule_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.edobolo.uniplanner"
+            android:targetClass="com.edobolo.uniplanner.MainActivity"
+            android:data="uniplanner://open?tab=orario" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="shortcut_timer"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_timer_short"
+        android:shortcutLongLabel="@string/shortcut_timer_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.edobolo.uniplanner"
+            android:targetClass="com.edobolo.uniplanner.MainActivity"
+            android:data="uniplanner://open?tab=pomodoro" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="shortcut_exams"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_exams_short"
+        android:shortcutLongLabel="@string/shortcut_exams_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.edobolo.uniplanner"
+            android:targetClass="com.edobolo.uniplanner.MainActivity"
+            android:data="uniplanner://open?tab=esami" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="shortcut_ai"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_ai_short"
+        android:shortcutLongLabel="@string/shortcut_ai_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.edobolo.uniplanner"
+            android:targetClass="com.edobolo.uniplanner.MainActivity"
+            android:data="uniplanner://open?tab=ai-assistant" />
+    </shortcut>
+</shortcuts>

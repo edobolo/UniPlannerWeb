@@ -4,4 +4,16 @@
     <string name="title_activity_main">UniPlanner</string>
     <string name="package_name">com.edobolo.uniplanner</string>
     <string name="custom_url_scheme">com.edobolo.uniplanner</string>
+    
+    <string name="shortcut_schedule_short">Orario</string>
+    <string name="shortcut_schedule_long">Orario Lezioni</string>
+    <string name="shortcut_timer_short">Timer</string>
+    <string name="shortcut_timer_long">Timer Studio Pomodoro</string>
+    <string name="shortcut_exams_short">Esami</string>
+    <string name="shortcut_exams_long">Piano di Studi</string>
+    <string name="shortcut_ai_short">AI Study</string>
+    <string name="shortcut_ai_long">Assistente AI Studio</string>
+    
+    <string name="widget_name">UniPlanner Rapido</string>
+    <string name="widget_desc">Accesso rapido a Orario, Timer, Esami e Assistente AI</string>
 </resources>

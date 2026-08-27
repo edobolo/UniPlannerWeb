@@ -78,6 +78,36 @@ function MainApp() {
   const { currentUser, setIsAuthModalOpen, setAuthModalTab } = useAuth();
   const isElectron = typeof window !== 'undefined' && window.electronAPI?.isElectron;
 
+  // Handle Capacitor Native Deep Links & Widget Actions (uniplanner://open?tab=...)
+  useEffect(() => {
+    let removeListener = null;
+    import('@capacitor/app').then(({ App: CapApp }) => {
+      CapApp.addListener('appUrlOpen', (event) => {
+        try {
+          if (event?.url) {
+            const urlStr = event.url;
+            if (urlStr.includes('tab=')) {
+              const tab = urlStr.split('tab=')[1]?.split('&')[0];
+              if (tab) {
+                setActiveTab(tab);
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Errore gestione deep link:', e);
+        }
+      }).then(handle => {
+        removeListener = handle;
+      }).catch(() => {});
+    }).catch(() => {});
+
+    return () => {
+      if (removeListener && typeof removeListener.remove === 'function') {
+        removeListener.remove();
+      }
+    };
+  }, []);
+
   // Handle Friend Import from URL Query (?u=UP-XXXX)
   useEffect(() => {
     // Purge legacy pro test flag if present
