@@ -24,10 +24,13 @@ import {
   Download,
   CreditCard,
   Trash2,
-  ExternalLink
+  ExternalLink,
+  Upload,
+  FolderUp,
+  RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { generateShareLink, resetUserPassword, apiFetch } from '../utils/cloudSync';
+import { generateShareLink, resetUserPassword, apiFetch, publishUserProfile } from '../utils/cloudSync';
 import { safeJsonParse } from '../utils/security';
 import './AccountModal.css';
 
@@ -80,6 +83,8 @@ const AccountModal = ({ onOpenLegal }) => {
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [restoreSuccess, setRestoreSuccess] = useState('');
+  const jsonFileInputRef = React.useRef(null);
 
   // 1. Export Complete Student Backup (JSON)
   const handleExportData = () => {
@@ -109,6 +114,81 @@ const AccountModal = ({ onOpenLegal }) => {
     } catch (err) {
       console.error('Errore export dati:', err);
     }
+  };
+
+  // 1.1 Restore Complete Student Backup (JSON)
+  const handleRestoreBackup = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setErrorMsg('');
+    setRestoreSuccess('');
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const text = event.target?.result;
+        const backup = JSON.parse(text);
+
+        if (!backup || typeof backup !== 'object') {
+          throw new Error('Il file caricato non contiene un backup valido.');
+        }
+
+        // Restore Exams
+        if (Array.isArray(backup.exams)) {
+          localStorage.setItem('uniplanner_exams', JSON.stringify(backup.exams));
+        }
+
+        // Restore Schedule
+        if (Array.isArray(backup.schedule)) {
+          localStorage.setItem('uniplanner_schedule_v1', JSON.stringify(backup.schedule));
+        }
+
+        // Restore Deadlines
+        if (Array.isArray(backup.deadlines)) {
+          localStorage.setItem('uniplanner_deadlines', JSON.stringify(backup.deadlines));
+        }
+
+        // Restore Friends
+        if (Array.isArray(backup.friends)) {
+          localStorage.setItem('uniplanner_friends_db_v2', JSON.stringify(backup.friends));
+        }
+
+        // Restore Stats & Themes
+        if (backup.stats?.palette) {
+          localStorage.setItem('uniplanner_palette', backup.stats.palette);
+        }
+        if (backup.stats?.totalStudyHours) {
+          localStorage.setItem('uniplanner_total_study_time', String(backup.stats.totalStudyHours));
+        }
+
+        // Restore User Profile & Session
+        if (backup.user && (backup.user.username || backup.user.friendCode)) {
+          localStorage.setItem('uniplanner_active_session_v2', JSON.stringify(backup.user));
+          const currentUsers = safeJsonParse(localStorage.getItem('uniplanner_users_db_v2'), []);
+          const updatedUsers = [backup.user, ...currentUsers.filter(u => u.friendCode !== backup.user.friendCode)];
+          localStorage.setItem('uniplanner_users_db_v2', JSON.stringify(updatedUsers));
+
+          // Sync with cloud backend
+          try {
+            await publishUserProfile(backup.user, backup.exams || [], backup.schedule || [], backup.deadlines || []);
+          } catch (syncErr) {
+            console.warn('Cloud sync warning during restore:', syncErr);
+          }
+        }
+
+        setRestoreSuccess('🎉 Backup ripristinato con successo! Ricaricamento...');
+        setTimeout(() => {
+          window.location.reload();
+        }, 1200);
+      } catch (err) {
+        console.error('Errore parsing backup JSON:', err);
+        setErrorMsg('Errore nel ripristino: ' + (err.message || 'File JSON non valido.'));
+      }
+    };
+
+    reader.readAsText(file);
+    if (jsonFileInputRef.current) jsonFileInputRef.current.value = '';
   };
 
   // 2. Open Stripe Customer Portal
@@ -335,12 +415,27 @@ const AccountModal = ({ onOpenLegal }) => {
           </button>
         </div>
 
-        {errorMsg && (
-          <div className="account-alert error">
-            <AlertCircle size={16} />
-            <span>{errorMsg}</span>
-          </div>
-        )}
+          {restoreSuccess && (
+            <div className="account-success-banner" style={{ marginBottom: '14px', padding: '10px 14px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '10px', color: '#10b981', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Check size={16} />
+              <span>{restoreSuccess}</span>
+            </div>
+          )}
+
+          <input 
+            type="file" 
+            ref={jsonFileInputRef} 
+            accept=".json,application/json" 
+            onChange={handleRestoreBackup} 
+            style={{ display: 'none' }} 
+          />
+
+          {errorMsg && (
+            <div className="auth-error-banner">
+              <AlertCircle size={16} />
+              <span>{errorMsg}</span>
+            </div>
+          )}
 
         {resetSuccess && (
           <div className="account-alert success" style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
@@ -532,19 +627,33 @@ const AccountModal = ({ onOpenLegal }) => {
                   <div className="privacy-box-header">
                     <div className="privacy-title-group">
                       <Download size={15} className="privacy-icon" style={{ color: '#38bdf8' }} />
-                      <span className="privacy-title">Backup & Esportazione Dati</span>
+                      <span className="privacy-title">Backup & Ripristino Dati</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleExportData}
-                      className="privacy-toggle-btn"
-                      style={{ borderColor: 'rgba(56, 189, 248, 0.4)', color: '#38bdf8' }}
-                    >
-                      Scarica Backup JSON
-                    </button>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={handleExportData}
+                        className="privacy-toggle-btn"
+                        style={{ borderColor: 'rgba(56, 189, 248, 0.4)', color: '#38bdf8' }}
+                        title="Scarica un file .json con tutti i tuoi dati"
+                      >
+                        <Download size={12} style={{ marginRight: 4 }} />
+                        Scarica JSON
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => jsonFileInputRef.current?.click()}
+                        className="privacy-toggle-btn"
+                        style={{ borderColor: 'rgba(168, 85, 247, 0.4)', color: '#c084fc' }}
+                        title="Carica un file .json per ripristinare il tuo percorso"
+                      >
+                        <Upload size={12} style={{ marginRight: 4 }} />
+                        Carica Backup
+                      </button>
+                    </div>
                   </div>
                   <p className="privacy-desc">
-                    Esporta istantaneamente tutti i tuoi esami, voti, orari, note e statistiche in un unico file di backup personale sicuro.
+                    Esporta o ripristina in qualsiasi momento tutti i tuoi esami, voti, orari, appunti e statistiche tramite file di backup JSON.
                   </p>
                 </div>
 
@@ -761,6 +870,17 @@ const AccountModal = ({ onOpenLegal }) => {
               <LogIn size={18} />
               <span>{loading ? 'Accesso in corso...' : 'Accedi a UniPlanner'}</span>
             </button>
+
+            <div className="restore-backup-login-row">
+              <button 
+                type="button" 
+                className="restore-backup-login-btn"
+                onClick={() => jsonFileInputRef.current?.click()}
+              >
+                <FolderUp size={14} />
+                <span>Hai un file di backup? <strong>Ripristina da JSON</strong></span>
+              </button>
+            </div>
           </form>
         )}
 
@@ -932,6 +1052,17 @@ const AccountModal = ({ onOpenLegal }) => {
               <Sparkles size={18} />
               <span>{loading ? 'Creazione in corso...' : 'Crea Account Studente'}</span>
             </button>
+
+            <div className="restore-backup-login-row">
+              <button 
+                type="button" 
+                className="restore-backup-login-btn"
+                onClick={() => jsonFileInputRef.current?.click()}
+              >
+                <FolderUp size={14} />
+                <span>Hai un file di backup? <strong>Ripristina da JSON</strong></span>
+              </button>
+            </div>
           </form>
         )}
       </motion.div>
