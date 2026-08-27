@@ -20,7 +20,11 @@ import {
   Bell,
   BellOff,
   Crown,
-  Smartphone
+  Smartphone,
+  Download,
+  CreditCard,
+  Trash2,
+  ExternalLink
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { generateShareLink, resetUserPassword } from '../utils/cloudSync';
@@ -72,6 +76,88 @@ const AccountModal = ({ onOpenLegal }) => {
     const saved = localStorage.getItem('uniplanner_notif_enabled');
     return saved !== null ? JSON.parse(saved) : true;
   });
+
+  const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // 1. Export Complete Student Backup (JSON)
+  const handleExportData = () => {
+    try {
+      const backupData = {
+        exportDate: new Date().toISOString(),
+        version: 'UniPlanner v2.0',
+        user: currentUser,
+        exams: safeJsonParse(localStorage.getItem('uniplanner_exams'), []),
+        schedule: safeJsonParse(localStorage.getItem('uniplanner_schedule_v1'), []),
+        deadlines: safeJsonParse(localStorage.getItem('uniplanner_deadlines'), []),
+        friends: safeJsonParse(localStorage.getItem('uniplanner_friends_db_v2'), []),
+        stats: {
+          totalStudyHours: localStorage.getItem('uniplanner_total_study_time') || 0,
+          palette: localStorage.getItem('uniplanner_palette') || 'default'
+        }
+      };
+
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(backupData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute('href', dataStr);
+      const safeName = (currentUser?.username || 'studente').replace(/[^a-z0-9]/gi, '_');
+      downloadAnchor.setAttribute('download', `UniPlanner_Backup_${safeName}_${new Date().toISOString().slice(0, 10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    } catch (err) {
+      console.error('Errore export dati:', err);
+    }
+  };
+
+  // 2. Open Stripe Customer Portal
+  const handleOpenStripePortal = async () => {
+    if (!currentUser?.friendCode) return;
+    setIsOpeningPortal(true);
+    setErrorMsg('');
+    try {
+      const res = await fetch('http://localhost:3001/api/stripe/create-portal-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ friendCode: currentUser.friendCode })
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error(data.error || 'Impossibile aprire il portale abbonamento Stripe.');
+      }
+    } catch (err) {
+      setErrorMsg(err.message || 'Errore connessione Stripe Portal.');
+    } finally {
+      setIsOpeningPortal(false);
+    }
+  };
+
+  // 3. Delete Account Definitively (GDPR)
+  const handleDeleteAccount = async () => {
+    if (!currentUser?.friendCode) return;
+    setDeleteLoading(true);
+    setErrorMsg('');
+    try {
+      await fetch('http://localhost:3001/api/auth/delete-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ friendCode: currentUser.friendCode })
+      });
+
+      // Clear local data & logout
+      localStorage.clear();
+      logout();
+      setIsAuthModalOpen(false);
+      window.location.reload();
+    } catch (err) {
+      setErrorMsg(err.message || 'Errore durante l\'eliminazione dell\'account.');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   const toggleNotifSetting = () => {
     const nextVal = !notificationsEnabled;
@@ -409,6 +495,52 @@ const AccountModal = ({ onOpenLegal }) => {
                   </div>
                 )}
 
+                {/* Stripe Customer Portal for PRO members */}
+                {currentUser?.isPremium && (
+                  <div className="profile-privacy-box" style={{ marginTop: '12px', border: '1px solid rgba(245, 158, 11, 0.35)', background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(217, 119, 6, 0.05))' }}>
+                    <div className="privacy-box-header">
+                      <div className="privacy-title-group">
+                        <CreditCard size={15} style={{ color: '#f59e0b' }} />
+                        <span className="privacy-title" style={{ color: '#f59e0b', fontWeight: 700 }}>Gestione Abbonamento PRO</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleOpenStripePortal}
+                        disabled={isOpeningPortal}
+                        className="privacy-toggle-btn"
+                        style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff', borderColor: 'transparent' }}
+                      >
+                        {isOpeningPortal ? 'Apertura...' : 'Apri Portale Stripe'}
+                        <ExternalLink size={12} style={{ marginLeft: 4 }} />
+                      </button>
+                    </div>
+                    <p className="privacy-desc">
+                      Accedi al portale ufficiale di Stripe per aggiornare il metodo di pagamento, visualizzare le fatture o gestire la tua sottoscrizione in self-service.
+                    </p>
+                  </div>
+                )}
+
+                {/* Data Backup & Privacy Export (GDPR) */}
+                <div className="profile-privacy-box" style={{ marginTop: '12px' }}>
+                  <div className="privacy-box-header">
+                    <div className="privacy-title-group">
+                      <Download size={15} className="privacy-icon" style={{ color: '#38bdf8' }} />
+                      <span className="privacy-title">Backup & Esportazione Dati</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleExportData}
+                      className="privacy-toggle-btn"
+                      style={{ borderColor: 'rgba(56, 189, 248, 0.4)', color: '#38bdf8' }}
+                    >
+                      Scarica Backup JSON
+                    </button>
+                  </div>
+                  <p className="privacy-desc">
+                    Esporta istantaneamente tutti i tuoi esami, voti, orari, note e statistiche in un unico file di backup personale sicuro.
+                  </p>
+                </div>
+
                 {onOpenLegal && (
                   <button 
                     type="button" 
@@ -417,6 +549,33 @@ const AccountModal = ({ onOpenLegal }) => {
                   >
                     <Scale size={14} />
                     <span>Informativa Privacy & Termini d'Uso (GDPR)</span>
+                  </button>
+                )}
+
+                {/* Delete Account Warning Confirmation */}
+                {showDeleteConfirm ? (
+                  <div className="delete-account-confirm-box">
+                    <div className="confirm-text">
+                      <strong>⚠️ Sei sicuro di voler eliminare il tuo account?</strong>
+                      <span>Tutti i tuoi dati cloud, esami, orari e crediti verranno cancellati definitivamente senza possibilità di recupero.</span>
+                    </div>
+                    <div className="confirm-buttons">
+                      <button type="button" className="ghost-btn" onClick={() => setShowDeleteConfirm(false)}>
+                        Annulla
+                      </button>
+                      <button type="button" className="delete-confirm-btn" onClick={handleDeleteAccount} disabled={deleteLoading}>
+                        {deleteLoading ? 'Eliminazione...' : 'Sì, Elimina Definitivamente'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button 
+                    type="button" 
+                    className="delete-account-trigger-btn"
+                    onClick={() => setShowDeleteConfirm(true)}
+                  >
+                    <Trash2 size={13} />
+                    <span>Elimina Account & Dati (Diritto all'Oblio GDPR)</span>
                   </button>
                 )}
 
