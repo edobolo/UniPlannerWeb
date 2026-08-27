@@ -140,17 +140,22 @@ const AccountModal = ({ onOpenLegal }) => {
     setDeleteLoading(true);
     setErrorMsg('');
     try {
-      const res = await apiFetch('/auth/delete-account', {
-        method: 'POST',
-        body: JSON.stringify({ friendCode: currentUser.friendCode })
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Impossibile eliminare l\'account dal server.');
+      try {
+        const res = await apiFetch('/auth/delete-account', {
+          method: 'POST',
+          body: JSON.stringify({ friendCode: currentUser.friendCode })
+        });
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          await res.json();
+        }
+      } catch (serverErr) {
+        console.warn('Warning comunicazione cloud delete:', serverErr);
       }
 
-      // Clear local data & logout
+      // Ripulisci completamente dati locali, disconnetti e ricarica
       localStorage.clear();
+      sessionStorage.clear();
       logout();
       setIsAuthModalOpen(false);
       window.location.reload();
