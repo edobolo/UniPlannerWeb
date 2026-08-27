@@ -54,6 +54,25 @@ const ThemeModal = ({ isOpen, onClose, currentPalette, onSelectPalette, theme, o
             </button>
           </div>
 
+          {/* Luxury PRO Status Banner */}
+          {isPro ? (
+            <div className="theme-pro-unlocked-banner">
+              <Crown size={16} style={{ color: '#f59e0b', flexShrink: 0 }} />
+              <div>
+                <strong>Membro PRO 👑 — Tutti i 17 Temi di Facoltà Sbloccati</strong>
+                <p>Include l'effetto esclusivo Ambient Glow coordinato al colore del tuo ateneo.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="theme-pro-locked-banner" onClick={onOpenProModal}>
+              <Crown size={16} style={{ color: '#f59e0b', flexShrink: 0 }} />
+              <div>
+                <strong>Sblocca tutti i Temi con UniPlanner PRO ⚡</strong>
+                <p>Tocca per attivare tutti i colori di facoltà e le funzioni esclusive.</p>
+              </div>
+            </div>
+          )}
+
           {/* Quick Dark/Light Toggle */}
           <div className="theme-mode-row">
             <span className="theme-mode-label">
@@ -97,7 +116,11 @@ const ThemeModal = ({ isOpen, onClose, currentPalette, onSelectPalette, theme, o
                 <button
                   key={pal.id}
                   type="button"
-                  className={`faculty-theme-card ${isSelected ? 'selected' : ''} ${isLocked ? 'locked-theme' : ''}`}
+                  className={`faculty-theme-card ${isSelected ? 'selected' : ''} ${isLocked ? 'locked-theme' : 'unlocked-theme'}`}
+                  style={{
+                    '--pal-color': pal.color,
+                    '--pal-glow': `${pal.color}40`
+                  }}
                   onClick={() => {
                     if (isLocked) {
                       if (onOpenProModal) onOpenProModal();
@@ -111,7 +134,8 @@ const ThemeModal = ({ isOpen, onClose, currentPalette, onSelectPalette, theme, o
                     className="faculty-color-circle" 
                     style={{ 
                       backgroundColor: pal.color,
-                      border: pal.id === 'humanities_white' ? '1.5px solid rgba(255,255,255,0.4)' : pal.id === 'amoled' ? '1.5px solid rgba(255,255,255,0.2)' : 'none'
+                      border: pal.id === 'humanities_white' ? '1.5px solid rgba(255,255,255,0.4)' : pal.id === 'amoled' ? '1.5px solid rgba(255,255,255,0.2)' : 'none',
+                      boxShadow: isSelected ? `0 0 14px ${pal.color}` : 'none'
                     }}
                   >
                     <span>{pal.icon}</span>
@@ -120,12 +144,16 @@ const ThemeModal = ({ isOpen, onClose, currentPalette, onSelectPalette, theme, o
                     <strong className="faculty-name">{pal.name}</strong>
                     <span className="faculty-desc">{pal.desc}</span>
                   </div>
-                  {isLocked && (
+                  {isLocked ? (
                     <div className="faculty-pro-lock-badge">
                       <Crown size={12} />
                       <span>PRO</span>
                     </div>
-                  )}
+                  ) : !pal.isFree && isPro ? (
+                    <div className="faculty-pro-active-badge" title="Sbloccato con PRO">
+                      <Crown size={11} />
+                    </div>
+                  ) : null}
                   {isSelected && !isLocked && (
                     <div className="faculty-check-badge">
                       <Check size={14} />

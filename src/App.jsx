@@ -51,8 +51,13 @@ import './App.css';
 
 function MainApp() {
   const [activeTab, setActiveTab] = useState(() => {
-    if (typeof window !== 'undefined' && (window.location.search.includes('u=') || window.location.search.includes('importFriend='))) {
-      return 'amici';
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam) return tabParam;
+      if (window.location.search.includes('u=') || window.location.search.includes('importFriend=')) {
+        return 'amici';
+      }
     }
     return 'esami';
   });
@@ -283,12 +288,17 @@ function MainApp() {
           </button>
 
           <div 
-            className="mobile-user-avatar" 
+            className={`mobile-user-avatar ${currentUser?.isPremium ? 'is-pro-avatar' : ''}`}
             onClick={handleOpenAccount}
             style={{ background: currentUser?.avatarColor || 'rgba(255, 255, 255, 0.1)' }}
-            title={currentUser ? currentUser.fullName : "Accedi o registrati"}
+            title={currentUser ? (currentUser.isPremium ? `${currentUser.fullName} 👑 PRO` : currentUser.fullName) : "Accedi o registrati"}
           >
             {currentUser?.fullName ? currentUser.fullName.charAt(0).toUpperCase() : (currentUser?.username?.charAt(0).toUpperCase() || <User size={17} />)}
+            {currentUser?.isPremium && (
+              <span className="avatar-crown-badge" title="Membro PRO 👑">
+                <Crown size={10} />
+              </span>
+            )}
           </div>
         </div>
       </header>
@@ -338,14 +348,23 @@ function MainApp() {
             {/* User Account Badge */}
             <div className="user-profile-badge" onClick={handleOpenAccount} title={currentUser ? "Gestisci account e impostazioni" : "Accedi o crea un account"}>
               <div 
-                className="user-badge-avatar" 
+                className={`user-badge-avatar ${currentUser?.isPremium ? 'is-pro-avatar' : ''}`}
                 style={{ background: currentUser?.avatarColor || 'rgba(255, 255, 255, 0.1)' }}
               >
                 {currentUser?.fullName ? currentUser.fullName.charAt(0).toUpperCase() : (currentUser?.username?.charAt(0).toUpperCase() || <User size={16} />)}
-                {currentUser && <span className="online-indicator" />}
+                {currentUser?.isPremium ? (
+                  <span className="avatar-crown-badge" title="Membro PRO 👑">
+                    <Crown size={9} />
+                  </span>
+                ) : (
+                  currentUser && <span className="online-indicator" />
+                )}
               </div>
               <div className="user-badge-info">
-                <span className="badge-name">{currentUser?.fullName || (currentUser?.username ? `@${currentUser.username}` : 'Accedi')}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <span className="badge-name">{currentUser?.fullName || (currentUser?.username ? `@${currentUser.username}` : 'Accedi')}</span>
+                  {currentUser?.isPremium && <span className="gold-pro-tag">PRO</span>}
+                </div>
                 <span className="badge-code">{currentUser?.university || (currentUser?.username ? `@${currentUser.username}` : 'Crea Account')}</span>
               </div>
             </div>

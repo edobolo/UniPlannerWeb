@@ -18,7 +18,9 @@ import {
   AlertCircle,
   Scale,
   Bell,
-  BellOff
+  BellOff,
+  Crown,
+  Smartphone
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { generateShareLink, resetUserPassword } from '../utils/cloudSync';
@@ -261,13 +263,25 @@ const AccountModal = ({ onOpenLegal }) => {
               <div className="profile-view">
                 <div className="profile-card-top">
                   <div 
-                    className="profile-avatar-large" 
+                    className={`profile-avatar-large ${currentUser.isPremium ? 'is-pro-avatar' : ''}`} 
                     style={{ background: currentUser.avatarColor || '#8b5cf6' }}
                   >
                     {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : currentUser.username.charAt(0).toUpperCase()}
+                    {currentUser.isPremium && (
+                      <span className="avatar-crown-badge large-crown" title="Membro PRO 👑">
+                        <Crown size={13} />
+                      </span>
+                    )}
                   </div>
                   <div className="profile-info-main">
-                    <h4>{currentUser.fullName}</h4>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <h4>{currentUser.fullName}</h4>
+                      {currentUser.isPremium && (
+                        <span className="account-pro-pill" title="Membro PRO 👑">
+                          <Crown size={12} /> Membro PRO
+                        </span>
+                      )}
+                    </div>
                     <span className="profile-username">@{currentUser.username}</span>
                     <span className="profile-status-pill">{currentUser.status || 'Libero ☕'}</span>
                   </div>
@@ -371,6 +385,22 @@ const AccountModal = ({ onOpenLegal }) => {
                   >
                     {notificationsEnabled ? 'Disattiva Notifiche' : 'Attiva Notifiche'}
                   </button>
+                </div>
+
+                {/* Smartphone Shortcuts & Widget Info Card */}
+                <div className="profile-privacy-box" style={{ marginTop: '12px' }}>
+                  <div className="privacy-box-header">
+                    <div className="privacy-title-group">
+                      <Smartphone size={15} className="privacy-icon" style={{ color: '#10b981' }} />
+                      <span className="privacy-title">Widget & Scorciatoie Schermata Home</span>
+                    </div>
+                    <span className="privacy-badge shared" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
+                      ⚡ Rapido 1-Tap
+                    </span>
+                  </div>
+                  <p className="privacy-desc">
+                    Tieni premuta l'icona di UniPlanner sullo schermo del telefono per accedere subito a: <strong>Orario Lezioni</strong>, <strong>Timer Pomodoro</strong>, <strong>Piano Esami</strong> o <strong>Assistente AI</strong>.
+                  </p>
                 </div>
 
                 {currentUser.bio && (

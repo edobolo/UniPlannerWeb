@@ -1,0 +1,48 @@
+{
+  "name": "UniPlanner",
+  "short_name": "UniPlanner",
+  "description": "La piattaforma all-in-one per universitari: esami, media, orario lezioni e timer studio.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/u.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Orario Lezioni",
+      "short_name": "Orario",
+      "description": "Consulta le lezioni e aule di oggi",
+      "url": "/?tab=orario",
+      "icons": [{ "src": "/u.svg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Timer Studio",
+      "short_name": "Timer",
+      "description": "Avvia una sessione Pomodoro",
+      "url": "/?tab=pomodoro",
+      "icons": [{ "src": "/u.svg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Piano di Studi",
+      "short_name": "Esami",
+      "description": "Consulta e organizza i tuoi esami",
+      "url": "/?tab=esami",
+      "icons": [{ "src": "/u.svg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Assistente AI",
+      "short_name": "AI Studio",
+      "description": "Genera quiz e flashcard dalle dispense",
+      "url": "/?tab=ai-assistant",
+      "icons": [{ "src": "/u.svg", "sizes": "96x96" }]
+    }
+  ]
+}

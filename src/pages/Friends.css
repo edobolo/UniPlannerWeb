@@ -207,6 +207,23 @@
   box-shadow: 0 4px 14px rgba(139, 92, 246, 0.2);
 }
 
+.friend-item-card.is-pro-friend-card {
+  border-color: rgba(245, 158, 11, 0.25);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(245, 158, 11, 0.04));
+}
+
+.friend-item-card.is-pro-friend-card:hover {
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 4px 18px rgba(245, 158, 11, 0.15);
+}
+
+.avatar-crown-badge.large-crown {
+  width: 20px;
+  height: 20px;
+  top: -6px;
+  right: -6px;
+}
+
 .friend-avatar {
   width: 44px;
   height: 44px;

@@ -25,7 +25,8 @@ import {
   ExternalLink,
   MessageCircle,
   Link as LinkIcon,
-  RotateCw
+  RotateCw,
+  Crown
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { safeJsonParse } from '../utils/security';
@@ -296,6 +297,11 @@ const Friends = () => {
             <span className="code-label">Il tuo Codice Amico:</span>
             <div className="code-pill">
               <strong>{currentUser?.friendCode || 'Accedi o Registrati'}</strong>
+              {currentUser?.isPremium && (
+                <span className="pro-gold-badge" title="Account PRO Attivo 👑">
+                  <Crown size={11} /> PRO
+                </span>
+              )}
               {currentUser ? (
                 <button 
                   className="code-copy-btn" 
@@ -352,25 +358,36 @@ const Friends = () => {
             {filteredFriends.length > 0 ? (
               filteredFriends.map((friend) => {
                 const isSelected = selectedFriend?.id === friend.id;
+                const isFriendPro = Boolean(friend.isPremium);
                 return (
                   <motion.div
                     key={friend.id}
-                    className={`friend-item-card ${isSelected ? 'selected' : ''}`}
+                    className={`friend-item-card ${isSelected ? 'selected' : ''} ${isFriendPro ? 'is-pro-friend-card' : ''}`}
                     onClick={() => {
                       setSelectedFriend(friend);
                     }}
                     whileHover={{ scale: 1.01 }}
                   >
                     <div 
-                      className="friend-avatar" 
+                      className={`friend-avatar ${isFriendPro ? 'is-pro-avatar' : ''}`} 
                       style={{ background: friend.avatarColor || '#3b82f6' }}
                     >
                       {(friend.fullName || friend.username || '?').charAt(0).toUpperCase()}
+                      {isFriendPro && (
+                        <span className="avatar-crown-badge" title="Membro PRO 👑">
+                          <Crown size={9} />
+                        </span>
+                      )}
                     </div>
 
                     <div className="friend-info">
                       <div className="friend-name-row">
                         <h4>{friend.fullName}</h4>
+                        {isFriendPro && (
+                          <span className="pro-gold-badge" title="Membro PRO 👑">
+                            <Crown size={10} /> PRO
+                          </span>
+                        )}
                         <span className="friend-status-badge">{friend.status}</span>
                       </div>
                       <span className="friend-course">{friend.degreeCourse}</span>
@@ -401,14 +418,24 @@ const Friends = () => {
               <div className="friend-detail-header">
                 <div className="detail-header-left">
                   <div 
-                    className="avatar-detail-large"
+                    className={`avatar-detail-large ${selectedFriend.isPremium ? 'is-pro-avatar' : ''}`}
                     style={{ background: selectedFriend.avatarColor || '#3b82f6' }}
                   >
                     {(selectedFriend.fullName || selectedFriend.username || '?').charAt(0).toUpperCase()}
+                    {selectedFriend.isPremium && (
+                      <span className="avatar-crown-badge large-crown" title="Membro PRO 👑">
+                        <Crown size={12} />
+                      </span>
+                    )}
                   </div>
                   <div>
                     <div className="detail-name-row">
                       <h2>{selectedFriend.fullName}</h2>
+                      {selectedFriend.isPremium && (
+                        <span className="pro-gold-badge" title="Membro PRO 👑">
+                          <Crown size={12} /> PRO
+                        </span>
+                      )}
                       <span className="friend-code-tag">{selectedFriend.university}</span>
                     </div>
                     <span className="detail-sub">@{selectedFriend.username} • {selectedFriend.status}</span>
