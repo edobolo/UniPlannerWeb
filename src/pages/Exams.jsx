@@ -46,6 +46,7 @@ import { useAuth } from '../context/AuthContext';
 import { publishUserProfile } from '../utils/cloudSync';
 import { safeJsonParse } from '../utils/security';
 import { detectResourceType, sanitizeResourceUrl } from '../utils/resourceHelper';
+import { syncWidgetStats } from '../utils/widgetBridge';
 import './Exams.css';
 
 const YEAR_OPTIONS = ["1° Anno", "2° Anno", "3° Anno", "4° Anno", "5° Anno", "Opzionale", "N/D"];
@@ -325,6 +326,7 @@ const Exams = () => {
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('uniplanner_exams', JSON.stringify(exams));
+      syncWidgetStats();
       if (currentUser.friendCode) {
         const savedSchedule = safeJsonParse(localStorage.getItem('uniplanner_schedule_v1'), []);
         const savedDeadlines = safeJsonParse(localStorage.getItem('uniplanner_deadlines'), []);

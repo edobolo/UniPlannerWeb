@@ -16,4 +16,7 @@
     
     <string name="widget_name">UniPlanner Rapido</string>
     <string name="widget_desc">Accesso rapido a Orario, Timer, Esami e Assistente AI</string>
+
+    <string name="stats_widget_name">UniPlanner Progresso Esami</string>
+    <string name="stats_widget_desc">Mostra esami superati, percentuale completamento, media voti e CFU</string>
 </resources>

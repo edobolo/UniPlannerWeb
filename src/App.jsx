@@ -47,6 +47,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { fetchUserProfile, publishUserProfile, connectMutualFriend } from './utils/cloudSync';
 import { safeJsonParse } from './utils/security';
 import { initNativeNotifications, syncAllNativeAlerts } from './utils/nativeNotificationService';
+import { syncWidgetStats } from './utils/widgetBridge';
 import './App.css';
 
 function MainApp() {
@@ -106,6 +107,11 @@ function MainApp() {
         removeListener.remove();
       }
     };
+  }, []);
+
+  // Sync Live Widget Stats on mount
+  useEffect(() => {
+    syncWidgetStats();
   }, []);
 
   // Handle Friend Import from URL Query (?u=UP-XXXX)
