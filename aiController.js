@@ -1,6 +1,6 @@
-﻿const express = require('express');
+const express = require('express');
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY || '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';
+const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 
 const PROMPT_INSTRUCTIONS = `
