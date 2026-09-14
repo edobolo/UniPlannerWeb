@@ -68,8 +68,10 @@
 }
 
 .gcal-month-title {
-  font-size: 18px;
-  font-weight: 700;
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
   margin: 0 0 0 8px;
 }
@@ -192,8 +194,10 @@
 }
 
 .gcal-time-label {
+  font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
   transform: translateY(-8px);
 }

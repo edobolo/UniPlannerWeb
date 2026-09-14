@@ -37,8 +37,10 @@ import {
   testGeminiApiKey 
 } from '../utils/aiStudyService';
 import { useAuth } from '../context/AuthContext';
-import { safeJsonParse } from '../utils/security';
+import { safeJsonParse, sanitizeText } from '../utils/security';
 import { detectResourceType } from '../utils/resourceHelper';
+import { validateIncomingFile } from '../utils/fileSecurity';
+import logger from '../utils/logger';
 import './AiStudyAssistant.css';
 
 const SAMPLE_LECTURE_TEXT = `
@@ -139,15 +141,29 @@ export default function AiStudyAssistant({ onOpenProModal }) {
     if (!file) return;
 
     setErrorMsg('');
-    const ext = file.name.split('.').pop().toLowerCase();
+
+    // 0. CONTROLLO DI SICUREZZA PREVENTIVO (Blocco malware, estensioni pericolose, magic bytes e size limit)
+    const securityCheck = await validateIncomingFile(file, 'STUDY_ASSISTANT');
+    if (!securityCheck.ok) {
+      logger.security('File malevolo o non consentito respinto dal Drag & Drop', {
+        name: file.name,
+        size: file.size,
+        reason: securityCheck.error
+      });
+      setErrorMsg(securityCheck.error || 'File non sicuro. Caricamento bloccato.');
+      return;
+    }
+
+    const ext = securityCheck.ext;
 
     // 1. GESTIONE FILE DI TESTO (.TXT / .MD)
     if (ext === 'txt' || ext === 'md' || file.type === 'text/plain' || file.type === 'text/markdown') {
       try {
         setIsExtractingFile(true);
-        const text = await file.text();
+        const rawText = await file.text();
+        const text = sanitizeText(rawText, 100000);
         if (!text || text.trim().length < 20) {
-          throw new Error('Il file di testo sembra vuoto.');
+          throw new Error('Il file di testo sembra vuoto o non valido.');
         }
         setRawText(text);
         setUploadedImage(null);

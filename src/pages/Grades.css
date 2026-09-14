@@ -10,8 +10,25 @@
   justify-content: space-between;
   align-items: flex-end;
   flex-shrink: 0;
+  gap: 16px;
 }
 
+.grades-header .page-title {
+  font-family: var(--font-serif);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.grades-header .page-subtitle {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Grids */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -26,50 +43,45 @@
   flex-shrink: 0;
 }
 
+/* Stat Cards */
 .stat-card {
-  padding: 24px;
+  padding: 22px 24px;
   display: flex;
   align-items: center;
-  gap: 20px;
-  border-radius: 16px;
+  gap: 18px;
+  border-radius: 12px;
   border: 1px solid var(--glass-border);
   background: var(--card-bg-gradient);
   box-shadow: var(--glass-shadow);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .main-stat {
   background: var(--card-bg-gradient);
 }
 
-.goal-card {
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background: var(--card-bg-gradient);
-}
-
-.goal-card:hover {
-  background: var(--bg-hover);
-  border-color: var(--accent-primary);
-  transform: translateY(-2px);
-}
-
-.goal-card .edit-icon {
-  opacity: 0;
-  transition: opacity 0.2s;
-  color: var(--text-secondary);
-}
-
-.goal-card:hover .edit-icon {
-  opacity: 1;
-}
-
 .stat-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid var(--glass-border);
+  transition: all 0.2s ease;
+}
+
+.stat-icon.stat-icon-primary {
+  background: var(--accent-soft);
+  color: var(--accent-primary);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.stat-icon.stat-icon-degree {
+  background: var(--accent-soft);
+  color: var(--accent-primary);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .stat-info {
@@ -77,6 +89,73 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
+}
+
+.stat-info h3 {
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.stat-value {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.stat-value.highlight {
+  color: var(--accent-primary);
+}
+
+.stat-value.highlight-degree {
+  color: var(--text-primary);
+}
+
+.text-sm {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.stat-sub {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Goal Cards */
+.goal-card {
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--card-bg-gradient);
+}
+
+.goal-card:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+.goal-card .edit-icon {
+  opacity: 0.3;
+  transition: opacity 0.2s;
+  color: var(--text-secondary);
+}
+
+.goal-card:hover .edit-icon {
+  opacity: 1;
+  color: var(--accent-primary);
 }
 
 .goal-header {
@@ -85,39 +164,9 @@
   align-items: center;
 }
 
-.stat-info h3 {
-  font-size: 14px;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.stat-value {
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.stat-value.highlight {
-  color: var(--accent-primary);
-}
-
-.stat-value.highlight-purple {
-  color: #a855f7;
-}
-
-.text-sm {
-  font-size: 16px;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.stat-sub {
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
 .goal-diff {
-  font-size: 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
   font-weight: 600;
   margin-top: 4px;
 }
@@ -126,25 +175,27 @@
 .goal-diff.negative { color: var(--danger); }
 
 .progress-bar-bg {
-  height: 8px;
+  height: 6px;
   background: var(--input-bg);
   border: 1px solid var(--glass-border);
-  border-radius: 4px;
+  border-radius: 999px;
   margin-top: 8px;
   overflow: hidden;
 }
 
 .progress-bar-fill {
   height: 100%;
-  background: var(--success);
-  border-radius: 4px;
-  transition: width 0.5s ease-out;
+  background: var(--accent-primary);
+  border-radius: 999px;
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* 🎓 ADVANCED DEGREE CALCULATOR STYLES */
+/* ==========================================================================
+   🎓 ADVANCED DEGREE CALCULATOR
+   ========================================================================== */
 .advanced-calc-container {
   padding: 24px;
-  border-radius: 20px;
+  border-radius: 14px;
   background: var(--card-bg-gradient);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
@@ -163,30 +214,34 @@
 }
 
 .calc-title-group h2 {
-  font-size: 20px;
-  font-weight: 700;
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
-  margin-top: 6px;
+  margin: 6px 0 2px 0;
 }
 
 .calc-subtitle {
   font-size: 13px;
   color: var(--text-secondary);
-  margin-top: 2px;
+  line-height: 1.5;
+  margin: 2px 0 0 0;
 }
 
 .calc-badge-official {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: white;
-  padding: 3px 10px;
-  border-radius: 20px;
+  background: var(--accent-soft);
+  color: var(--accent-primary);
+  border: 1px solid var(--glass-border);
+  padding: 4px 10px;
+  border-radius: 6px;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.35);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .calc-body {
@@ -205,15 +260,17 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--text-secondary);
 }
 
 .calc-presets-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .preset-btn {
@@ -221,13 +278,14 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 4px;
-  padding: 12px 16px;
-  border-radius: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
   background: var(--input-bg);
   border: 1px solid var(--glass-border);
   color: var(--text-primary);
   text-align: left;
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .preset-btn strong {
@@ -237,16 +295,17 @@
 
 .preset-btn span {
   font-size: 11px;
-  color: var(--text-secondary);
+  color: var(--text-muted);
+  line-height: 1.35;
 }
 
 .preset-btn:hover {
   background: var(--bg-hover);
-  border-color: var(--accent-primary);
+  border-color: var(--text-muted);
 }
 
 .preset-btn.active {
-  background: rgba(59, 130, 246, 0.12);
+  background: var(--accent-soft);
   border-color: var(--accent-primary);
   box-shadow: 0 0 0 1px var(--accent-primary);
 }
@@ -259,7 +318,7 @@
 
 .calc-control-box {
   padding: 16px;
-  border-radius: 14px;
+  border-radius: 10px;
   background: var(--input-bg);
   border: 1px solid var(--glass-border);
   display: flex;
@@ -275,15 +334,17 @@
 
 .control-header label,
 .control-title-box {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .control-value {
+  font-family: var(--font-mono);
   font-size: 14px;
   font-weight: 700;
   color: var(--accent-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 .calc-slider {
@@ -295,6 +356,7 @@
 .slider-limits {
   display: flex;
   justify-content: space-between;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-muted);
 }
@@ -309,7 +371,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--text-secondary);
   cursor: pointer;
 }
@@ -323,12 +385,12 @@
 .calc-results-board {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 14px;
+  gap: 12px;
 }
 
 .result-metric {
   padding: 16px;
-  border-radius: 14px;
+  border-radius: 10px;
   background: var(--input-bg);
   border: 1px solid var(--glass-border);
   display: flex;
@@ -337,20 +399,26 @@
 }
 
 .result-metric.highlight-box {
-  background: rgba(59, 130, 246, 0.1);
+  background: var(--accent-soft);
   border-color: var(--accent-primary);
+  box-shadow: 0 0 0 1px var(--accent-primary);
 }
 
 .metric-label {
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--text-secondary);
-  font-weight: 500;
 }
 
 .metric-number {
-  font-size: 26px;
-  font-weight: 800;
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 700;
   color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
 }
 
 .metric-number.primary {
@@ -358,10 +426,11 @@
 }
 
 .metric-number.ects {
-  color: #10b981;
+  color: var(--success);
 }
 
 .metric-sub {
+  font-family: var(--font-mono);
   font-size: 14px;
   font-weight: 500;
   color: var(--text-secondary);
@@ -375,7 +444,7 @@
 /* Target Solver */
 .calc-target-solver {
   padding: 18px;
-  border-radius: 14px;
+  border-radius: 10px;
   background: var(--input-bg);
   border: 1px solid var(--glass-border);
   display: flex;
@@ -390,9 +459,10 @@
 }
 
 .solver-header h3 {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--text-primary);
+  margin: 0;
 }
 
 .solver-inputs {
@@ -411,150 +481,165 @@
 
 .target-pill {
   padding: 6px 12px;
-  border-radius: 20px;
-  background: var(--bg-primary);
+  border-radius: 8px;
+  background: var(--bg-card);
   border: 1px solid var(--glass-border);
-  color: var(--text-primary);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 600;
+  cursor: pointer;
   transition: all 0.15s ease;
+}
+
+.target-pill:hover {
+  border-color: var(--text-muted);
+  color: var(--text-primary);
 }
 
 .target-pill.active {
   background: var(--accent-primary);
-  color: white;
+  color: #ffffff;
   border-color: var(--accent-primary);
 }
 
 .solver-verdict {
   padding: 12px 14px;
-  border-radius: 10px;
+  border-radius: 8px;
   font-size: 13px;
 }
 
 .solver-verdict.achievable {
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.25);
   color: var(--text-primary);
 }
 
 .solver-verdict.unachievable {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
   color: var(--text-primary);
 }
 
-/* 🔒 PRO LOCKED SHOWCASE */
-.sim-locked-overlay {
-  padding: 30px 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 16px;
+.solver-verdict p {
+  margin: 4px 0 0 0;
+  font-size: 12.5px;
+  color: var(--text-secondary);
 }
 
-.locked-badge-circle {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
+/* PRO Lock Overlay */
+.advanced-calc-container.calc-is-locked {
+  position: relative;
+  overflow: hidden;
+}
+
+.advanced-calc-container.calc-is-locked .calc-body,
+.advanced-calc-container.calc-is-locked .calc-header {
+  filter: blur(5px);
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.55;
+}
+
+.calc-locked-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.25);
+  z-index: 10;
+  background: rgba(15, 17, 23, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 24px;
 }
 
-.sim-locked-overlay h3 {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.locked-desc {
-  max-width: 520px;
-  font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-}
-
-.pro-features-preview {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 10px;
-  max-width: 650px;
-  width: 100%;
-  margin: 10px 0;
-  text-align: left;
-}
-
-.pro-feat-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.pro-feat-item svg {
-  color: #10b981;
-  flex-shrink: 0;
-}
-
-.unlock-pro-form {
+.calc-locked-content {
+  text-align: center;
+  max-width: 440px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  width: 100%;
-  max-width: 400px;
+  gap: 14px;
+  background: var(--modal-bg);
+  border: 1px solid var(--glass-border);
+  padding: 30px 24px;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
 }
 
-.unlock-input-wrap {
+.calc-locked-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.25);
   display: flex;
-  gap: 8px;
-  width: 100%;
+  align-items: center;
+  justify-content: center;
 }
 
-.unlock-input {
-  flex: 1;
-  font-size: 13px;
-}
-
-.unlock-btn {
-  padding: 8px 16px;
-  font-size: 13px;
-}
-
-.pro-err-msg {
-  color: var(--danger);
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.pro-ok-msg {
-  color: var(--success);
-  font-size: 12px;
+.calc-locked-content h3 {
+  font-family: var(--font-serif);
+  font-size: 20px;
   font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
 }
 
+.calc-locked-content p {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.calc-unlock-pro-btn {
+  margin-top: 6px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
+  transition: all 0.2s ease;
+}
+
+.calc-unlock-pro-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45);
+}
+
+/* High Contrast Chart Container */
 .chart-container {
   flex: 1 1 300px;
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  min-height: 300px;
+  min-height: 320px;
   background: var(--card-bg-gradient);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
+  border-radius: 14px;
 }
 
 .chart-title {
+  font-family: var(--font-serif);
   font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
+  letter-spacing: -0.01em;
+  margin: 0;
 }
 
 .chart-wrapper {
@@ -571,13 +656,17 @@
   height: 100%;
   color: var(--text-secondary);
   font-style: italic;
+  font-size: 13.5px;
 }
 
-/* Mobile & Smartphone Responsive Rules */
+/* ==========================================================================
+   📱 MOBILE & SMARTPHONE RESPONSIVE RULES
+   ========================================================================== */
 @media (max-width: 768px) {
   .grades-container {
     width: 100%;
     gap: 16px;
+    padding-bottom: 80px !important;
   }
 
   .grades-header {
@@ -591,7 +680,7 @@
   .goals-grid,
   .calc-presets-grid,
   .calc-controls-grid,
-  .projection-cards-row {
+  .calc-results-board {
     grid-template-columns: 1fr !important;
     gap: 12px;
     width: 100%;
@@ -610,129 +699,6 @@
     overflow-x: hidden;
   }
 
-  .unlock-input-wrap {
-    flex-direction: column;
-  }
-}
-/* ?? PRO Lock Overlay for Degree Simulator */
-.advanced-calc-container.calc-is-locked {
-  position: relative;
-  overflow: hidden;
-}
-
-.advanced-calc-container.calc-is-locked .calc-body,
-.advanced-calc-container.calc-is-locked .calc-header {
-  filter: blur(5px);
-  pointer-events: none;
-  user-select: none;
-  opacity: 0.6;
-}
-
-.calc-locked-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-  background: rgba(11, 15, 25, 0.65);
-  backdrop-filter: blur(8px);
-  padding: 24px;
-}
-
-.calc-locked-content {
-  text-align: center;
-  max-width: 440px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  background: var(--bg-card);
-  border: 1.5px solid var(--glass-border);
-  padding: 32px 24px;
-  border-radius: 20px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-}
-
-.calc-locked-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 16px;
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.calc-locked-content h3 {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.calc-locked-content p {
-  font-size: 13.5px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-  margin: 0;
-}
-
-.calc-unlock-pro-btn {
-  margin-top: 6px;
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: white;
-  border: none;
-  padding: 12px 22px;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
-  transition: all 0.2s ease;
-}
-
-.calc-unlock-pro-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45);
-}
-
-
-/* ==========================================================================
-   📱 GRADES & DEGREE SIMULATOR MOBILE FIT
-   ========================================================================== */
-@media (max-width: 768px) {
-  .grades-container {
-    padding-bottom: 80px !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow-x: hidden !important;
-  }
-
-  .chart-container {
-    width: 100% !important;
-    max-width: 100% !important;
-    height: 250px !important;
-    padding: 12px 6px 20px 6px !important;
-    box-sizing: border-box !important;
-    overflow: hidden !important;
-  }
-
-  .advanced-calc-container {
-    padding: 16px 12px !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-    overflow-x: hidden !important;
-  }
-
   .calc-header {
     flex-direction: column !important;
     align-items: flex-start !important;
@@ -740,53 +706,14 @@
   }
 
   .calc-header h2 {
-    font-size: 17px !important;
+    font-size: 18px !important;
     line-height: 1.3 !important;
-  }
-
-  .calc-presets-grid {
-    grid-template-columns: 1fr !important;
-    gap: 8px !important;
-  }
-
-  .preset-card {
-    padding: 10px 12px !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-  }
-
-  .calc-controls-grid {
-    grid-template-columns: 1fr !important;
-    gap: 12px !important;
-    width: 100% !important;
-  }
-
-  .calc-control-group {
-    width: 100% !important;
-    box-sizing: border-box !important;
-  }
-
-  .calc-range-slider {
-    width: 100% !important;
-  }
-
-  .projection-dashboard {
-    padding: 14px 12px !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-  }
-
-  .projection-cards-row,
-  .calc-results-board {
-    grid-template-columns: 1fr !important;
-    gap: 10px !important;
-    width: 100% !important;
   }
 
   .target-pills {
     flex-wrap: wrap !important;
     gap: 6px !important;
-    width: 100% !important;
+    width: 100%;
   }
 
   .target-pill {
@@ -800,12 +727,6 @@
     flex-direction: column !important;
     align-items: flex-start !important;
     gap: 8px !important;
-    width: 100% !important;
-  }
-
-  .proj-stat-card {
-    padding: 12px !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
+    width: 100%;
   }
 }

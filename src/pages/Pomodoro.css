@@ -223,13 +223,13 @@
 }
 
 .time-text {
+  font-family: var(--font-mono);
   font-size: 64px;
-  font-weight: 800;
-  letter-spacing: -2px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
   line-height: 1;
   color: var(--text-primary);
-  text-shadow: 0 4px 16px rgba(0,0,0,0.15);
 }
 
 .selected-exam-tag {

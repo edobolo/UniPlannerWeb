@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bug, Send, X, CheckCircle2, AlertCircle, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { sendBugReport } from '../utils/cloudSync';
+import { sanitizeText } from '../utils/security';
 import './BugReportModal.css';
 
 const BugReportModal = ({ isOpen, onClose }) => {
@@ -17,20 +18,21 @@ const BugReportModal = ({ isOpen, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!message.trim()) return;
+    const cleanMessage = sanitizeText(message, 3000);
+    if (!cleanMessage) return;
 
     setIsSending(true);
     setErrorMsg('');
 
     try {
       const errorLog = includeLogs 
-        ? `UserAgent: ${navigator.userAgent} | Screen: ${window.innerWidth}x${window.innerHeight}` 
+        ? sanitizeText(`UserAgent: ${navigator.userAgent} | Screen: ${window.innerWidth}x${window.innerHeight}`, 500)
         : '';
 
       const ok = await sendBugReport({
         friendCode: currentUser?.friendCode || 'GUEST',
-        username: currentUser?.fullName || currentUser?.username || 'Ospite',
-        message: message.trim(),
+        username: sanitizeText(currentUser?.fullName || currentUser?.username || 'Ospite', 50),
+        message: cleanMessage,
         errorLog
       });
 

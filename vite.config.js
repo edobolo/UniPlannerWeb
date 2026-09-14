@@ -84,19 +84,40 @@ export default defineConfig({
   build: {
     target: 'es2020',
     cssCodeSplit: true,
-    minify: 'esbuild',
+    // Terser: minificazione più aggressiva di esbuild (rimuove console.log in prod, comprime meglio)
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,    // Rimuove tutti i console.log/warn in produzione
+        drop_debugger: true,
+        passes: 2,             // Due passaggi di compressione
+        pure_funcs: ['console.info', 'console.debug'],
+      },
+      mangle: {
+        safari10: true,
+      },
+      format: {
+        comments: false,       // Rimuove tutti i commenti
+      },
+    },
+    // Non inline le immagini piccole — meglio lasciarle come asset separati con cache headers
+    assetsInlineLimit: 0,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-charts': ['chart.js', 'react-chartjs-2'],
-          'vendor-pdf': ['jspdf', 'jspdf-autotable', 'html2canvas'],
-          'vendor-xlsx': ['xlsx'],
-          'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
-          'vendor-framer': ['framer-motion'],
-          'vendor-icons': ['lucide-react']
+        manualChunks(id) {
+          // pdfjs-dist usa eval internamente — va in chunk separato con minificazione disabilitata
+          if (id.includes('pdfjs-dist')) return 'vendor-pdfjs';
+          if (id.includes('date-fns')) return 'vendor-datefns';
+          if (id.includes('framer-motion')) return 'vendor-framer';
+          if (id.includes('lucide-react')) return 'vendor-icons';
+          if (id.includes('chart.js') || id.includes('react-chartjs-2')) return 'vendor-charts';
+          if (id.includes('jspdf') || id.includes('html2canvas')) return 'vendor-pdf';
+          if (id.includes('xlsx')) return 'vendor-xlsx';
+          if (id.includes('@dnd-kit')) return 'vendor-dnd';
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) return 'vendor-react';
         }
       }
     },
-    chunkSizeWarningLimit: 600
+    chunkSizeWarningLimit: 650
   }
 })

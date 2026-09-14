@@ -4,7 +4,7 @@ import { Plus, Trash2, CalendarClock, CheckCircle2, Clock, List, Calendar as Cal
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isSameMonth, isSameDay, addDays, parseISO } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { scheduleDeadlineAlerts } from '../utils/nativeNotificationService';
-import { safeJsonParse } from '../utils/security';
+import { safeJsonParse, sanitizeText } from '../utils/security';
 import './Deadlines.css';
 
 const Deadlines = () => {
@@ -32,8 +32,16 @@ const Deadlines = () => {
 
   const handleAdd = (e) => {
     e.preventDefault();
-    if (newDeadline.title.trim() && newDeadline.date) {
-      setDeadlines([...deadlines, { ...newDeadline, id: Date.now() }]);
+    const cleanTitle = sanitizeText(newDeadline.title, 100);
+    const cleanSubject = sanitizeText(newDeadline.subject, 60);
+
+    if (cleanTitle && newDeadline.date) {
+      setDeadlines([...deadlines, { 
+        ...newDeadline, 
+        title: cleanTitle,
+        subject: cleanSubject,
+        id: Date.now() 
+      }]);
       setIsModalOpen(false);
       setNewDeadline({ title: '', subject: '', date: new Date().toISOString().split('T')[0], completed: false });
     }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, 
@@ -31,6 +31,9 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { safeJsonParse } from '../utils/security';
 import { generateShareLink, fetchUserProfile, publishUserProfile, connectMutualFriend, fetchMyFriendsList } from '../utils/cloudSync';
+import { cacheInvalidate, profileKey } from '../utils/apiCache';
+import { useDebounce } from '../hooks/useDebounce';
+import { FriendsListSkeleton, FriendDetailSkeleton, MiniSpinner } from '../components/SkeletonLoader';
 import './Friends.css';
 
 const STORAGE_FRIENDS_KEY = 'uniplanner_friends_db_v2';
@@ -63,6 +66,7 @@ const Friends = () => {
   });
 
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [selectedFriend, setSelectedFriend] = useState(() => {
     const saved = safeJsonParse(localStorage.getItem(STORAGE_FRIENDS_KEY), []);
     const clean = saved.filter(f => 
@@ -76,6 +80,7 @@ const Friends = () => {
     return clean.length > 0 ? clean[0] : null;
   });
   const [activeFriendTab, setActiveFriendTab] = useState('exams'); // 'exams' | 'deadlines' | 'schedule' | 'common'
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   
   // Add Friend Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -107,10 +112,16 @@ const Friends = () => {
   }, [currentUser]);
 
   // Live Refresh specific friend data from Raspberry Pi
-  const handleRefreshFriendData = async (friendCode) => {
+  // useCallback evita di ricreare la funzione ad ogni render
+  const handleRefreshFriendData = useCallback(async (friendCode, forceInvalidate = false) => {
     if (!friendCode) return;
     setIsRefreshingFriend(true);
     try {
+      // Se è un refresh manuale (utente preme il bottone), invalida la cache
+      // così otteniamo dati freschi ignorando la cache scaduta
+      if (forceInvalidate) {
+        cacheInvalidate(profileKey(friendCode));
+      }
       const fresh = await fetchUserProfile(friendCode);
       if (fresh) {
         setSelectedFriend(fresh);
@@ -125,15 +136,18 @@ const Friends = () => {
       console.warn('Refresh friend err:', e);
     } finally {
       setIsRefreshingFriend(false);
+      setIsInitialLoad(false);
     }
-  };
+  }, []);
 
-  // Auto-refresh selected friend when opening tab or selecting friend
+  // Auto-refresh selected friend when opening tab or selecting friend (usa cache)
   useEffect(() => {
     if (selectedFriend?.friendCode) {
-      handleRefreshFriendData(selectedFriend.friendCode);
+      handleRefreshFriendData(selectedFriend.friendCode, false);
+    } else {
+      setIsInitialLoad(false);
     }
-  }, [activeFriendTab, selectedFriend?.friendCode]);
+  }, [activeFriendTab, selectedFriend?.friendCode, handleRefreshFriendData]);
 
   // Download mutual friends list automatically from Raspberry Pi
   useEffect(() => {
@@ -249,50 +263,57 @@ const Friends = () => {
     }
   };
 
-  const handleRemoveFriend = (friendId) => {
-    const updated = friends.filter(f => f.id !== friendId);
-    setFriends(updated);
-    if (selectedFriend?.id === friendId) {
-      setSelectedFriend(updated[0] || null);
-    }
-  };
+  const handleRemoveFriend = useCallback((friendId) => {
+    setFriends(prev => {
+      const updated = prev.filter(f => f.id !== friendId);
+      if (selectedFriend?.id === friendId) {
+        setSelectedFriend(updated[0] || null);
+      }
+      return updated;
+    });
+  }, [selectedFriend?.id]);
 
-  const filteredFriends = friends.filter(f => 
-    (f.fullName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (f.username || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (f.degreeCourse || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (f.university || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // useMemo: evita di ricalcolare il filtro ad ogni render — usa il valore debounced
+  const filteredFriends = useMemo(() =>
+    friends.filter(f => 
+      (f.fullName || '').toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      (f.username || '').toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      (f.degreeCourse || '').toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      (f.university || '').toLowerCase().includes(debouncedSearch.toLowerCase())
+    ),
+  [friends, debouncedSearch]);
 
   // Check if current user is sharing grades
   const userSharesGrades = currentUser?.shareGrades !== false;
   // Reciprocity rule: can only view friend's grades if current user is sharing AND friend is sharing
   const canViewFriendGrades = userSharesGrades && (selectedFriend?.shareGrades !== false);
 
-  // Mini schedule helper calculation
-  const miniHours = Array.from({ length: MINI_END_HOUR - MINI_START_HOUR + 1 }, (_, i) => MINI_START_HOUR + i);
-  const weekDayHeaders = [
+  // Mini schedule helper calculation — memoizzato perché non cambia mai
+  const miniHours = useMemo(() => 
+    Array.from({ length: MINI_END_HOUR - MINI_START_HOUR + 1 }, (_, i) => MINI_START_HOUR + i)
+  , []);
+  const weekDayHeaders = useMemo(() => [
     { name: 'LUN', index: 0 },
     { name: 'MAR', index: 1 },
     { name: 'MER', index: 2 },
     { name: 'GIO', index: 3 },
     { name: 'VEN', index: 4 }
-  ];
+  ], []);
 
-  const timeToMiniTop = (timeStr) => {
+  const timeToMiniTop = useCallback((timeStr) => {
     if (!timeStr) return 0;
     const [h, m] = timeStr.split(':').map(Number);
     const mins = (h * 60 + m) - (MINI_START_HOUR * 60);
     return Math.max(0, (mins / 60) * MINI_HOUR_HEIGHT);
-  };
+  }, []);
 
-  const timeToMiniHeight = (startTime, endTime) => {
+  const timeToMiniHeight = useCallback((startTime, endTime) => {
     if (!startTime || !endTime) return MINI_HOUR_HEIGHT;
     const [startH, startM] = startTime.split(':').map(Number);
     const [endH, endM] = endTime.split(':').map(Number);
     const durationMinutes = (endH * 60 + endM) - (startH * 60 + startM);
     return Math.max(26, (durationMinutes / 60) * MINI_HOUR_HEIGHT);
-  };
+  }, []);
 
   return (
     <div className="friends-page-container">
@@ -369,7 +390,9 @@ const Friends = () => {
           </div>
 
           <div className="friends-list-container">
-            {filteredFriends.length > 0 ? (
+            {isInitialLoad && friends.length === 0 ? (
+              <FriendsListSkeleton count={4} />
+            ) : filteredFriends.length > 0 ? (
               filteredFriends.map((friend) => {
                 const isSelected = selectedFriend?.id === friend.id;
                 const isFriendPro = Boolean(friend.isPremium);
@@ -460,11 +483,14 @@ const Friends = () => {
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <button 
                     className="ghost-btn refresh-friend-btn"
-                    onClick={() => handleRefreshFriendData(selectedFriend.friendCode)}
+                    onClick={() => handleRefreshFriendData(selectedFriend.friendCode, true)}
                     disabled={isRefreshingFriend}
                     title="Aggiorna orario ed esami dell'amico in tempo reale dal Raspberry Pi"
                   >
-                    <RotateCw size={15} className={isRefreshingFriend ? 'spin-animation' : ''} />
+                    {isRefreshingFriend
+                      ? <MiniSpinner size={15} />
+                      : <RotateCw size={15} />
+                    }
                     <span>{isRefreshingFriend ? 'Aggiornamento...' : 'Aggiorna'}</span>
                   </button>
 

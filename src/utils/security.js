@@ -1,23 +1,83 @@
 import DOMPurify from 'dompurify';
 
 /**
- * Security & Data Sanitization Utilities
- * Protects UniPlanner against XSS, Injection, and Tampering attacks.
+ * security.js — Comprehensive Security & Data Sanitization Utilities
+ * Protects UniPlanner against XSS, Prototype Pollution, Injection, and Tampering.
  */
 
 // Salt used in combination with SHA-256 for local credential hashing
 const AUTH_SALT = 'uniplanner_secure_salt_v1_';
 
 /**
- * Sanitize plain string input to prevent stored/reflected XSS attacks
+ * Sanitize plain string input to prevent stored/reflected XSS attacks.
+ * Strips all HTML/script tags and trims excessive length.
  */
 export function sanitizeText(input, maxLength = 255) {
   if (typeof input !== 'string') return '';
   const trimmed = input.trim().slice(0, maxLength);
   return DOMPurify.sanitize(trimmed, {
     ALLOWED_TAGS: [], // Disallow all HTML tags in pure text fields
-    ALLOWED_ATTR: []
+    ALLOWED_ATTR: [],
+    FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover']
   });
+}
+
+/**
+ * Deep recursive object & array sanitization.
+ * Traverses an object, cleans strings with DOMPurify, and strips dangerous
+ * prototype pollution keys (__proto__, constructor, prototype).
+ */
+export function sanitizeObject(obj, maxDepth = 5) {
+  if (obj === null || obj === undefined || maxDepth < 0) return obj;
+
+  if (typeof obj === 'string') {
+    return sanitizeText(obj, 10000);
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(item => sanitizeObject(item, maxDepth - 1));
+  }
+
+  if (typeof obj === 'object') {
+    const cleanObj = {};
+    for (const [key, value] of Object.entries(obj)) {
+      // Anti-Prototype Pollution: Drop dangerous keys
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+        continue;
+      }
+      const cleanKey = sanitizeText(key, 50);
+      cleanObj[cleanKey] = sanitizeObject(value, maxDepth - 1);
+    }
+    return cleanObj;
+  }
+
+  return obj;
+}
+
+/**
+ * Anti-Prototype Pollution protection for external data (e.g. SheetJS / JSON payloads)
+ */
+export function cleanPrototypePollution(data) {
+  if (!data || typeof data !== 'object') return data;
+
+  if (Array.isArray(data)) {
+    return data.map(item => cleanPrototypePollution(item));
+  }
+
+  const sanitized = {};
+  for (const prop of Object.keys(data)) {
+    if (prop === '__proto__' || prop === 'constructor' || prop === 'prototype') {
+      continue;
+    }
+    const val = data[prop];
+    if (val !== null && typeof val === 'object') {
+      sanitized[prop] = cleanPrototypePollution(val);
+    } else {
+      sanitized[prop] = val;
+    }
+  }
+  return sanitized;
 }
 
 /**
@@ -39,10 +99,19 @@ export function validateUsername(username) {
 }
 
 /**
- * Validate password strength (minimum 6 chars)
+ * Validate friend code format (e.g. UP-XXXXX or alphanumeric 3-30 chars)
+ */
+export function isValidFriendCode(code) {
+  if (!code || typeof code !== 'string') return false;
+  const friendCodeRegex = /^(UP-)?[A-Z0-9]{3,20}$/i;
+  return friendCodeRegex.test(code.trim());
+}
+
+/**
+ * Validate password strength (minimum 6 chars, max 128 chars)
  */
 export function validatePassword(password) {
-  return typeof password === 'string' && password.length >= 6;
+  return typeof password === 'string' && password.length >= 6 && password.length <= 128;
 }
 
 /**
@@ -71,14 +140,38 @@ export function generateFriendCode() {
 }
 
 /**
- * Safe JSON parse with error catching to prevent crashes from tampered localStorage
+ * Safe JSON parse with error catching and anti-prototype pollution
  */
 export function safeJsonParse(jsonString, fallback = null) {
   if (!jsonString) return fallback;
   try {
-    return JSON.parse(jsonString);
+    const parsed = JSON.parse(jsonString);
+    return cleanPrototypePollution(parsed);
   } catch (err) {
     console.error('SafeJsonParse error:', err);
     return fallback;
   }
+}
+
+/**
+ * Masks sensitive user fields (passwords, emails, tokens) before logging or printing
+ */
+export function maskSensitiveData(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  const masked = { ...obj };
+  const sensitiveKeys = ['password', 'passwordHash', 'token', 'secret', 'apiKey', 'stripeCustomerId', 'email'];
+
+  for (const key of Object.keys(masked)) {
+    if (sensitiveKeys.includes(key) && typeof masked[key] === 'string') {
+      if (key === 'email') {
+        const [user, domain] = masked[key].split('@');
+        masked[key] = `${user ? user.slice(0, 2) : ''}***@${domain || '***'}`;
+      } else {
+        masked[key] = '***REDACTED***';
+      }
+    } else if (typeof masked[key] === 'object' && masked[key] !== null) {
+      masked[key] = maskSensitiveData(masked[key]);
+    }
+  }
+  return masked;
 }

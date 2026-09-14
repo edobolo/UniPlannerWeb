@@ -22,6 +22,8 @@ import {
   Sparkles
 } from 'lucide-react';
 import { sanitizeText, safeJsonParse } from '../utils/security';
+import { validateIncomingFile } from '../utils/fileSecurity';
+import logger from '../utils/logger';
 import { parseScheduleExcel, parseScheduleICS, exportScheduleToICS, calculateWeekOffset } from '../utils/scheduleImport';
 import { useAuth } from '../context/AuthContext';
 import { publishUserProfile } from '../utils/cloudSync';
@@ -74,6 +76,7 @@ const Schedule = ({ onOpenProModal }) => {
   const [importPreview, setImportPreview] = useState(null);
   const [importError, setImportError] = useState('');
   const [isParsing, setIsParsing] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   const fileInputRef = useRef(null);
 
   // Form State
@@ -315,16 +318,28 @@ const Schedule = ({ onOpenProModal }) => {
     }
   };
 
-  // --- Import Handlers ---
-  const handleFileSelect = async (e) => {
-    const file = e.target.files?.[0];
+  // --- Import Handlers con Ispezione di Sicurezza ---
+  const processScheduleFile = async (file) => {
     if (!file) return;
 
     setImportError('');
+
+    // 0. CONTROLLO DI SICUREZZA (Blocco malware, estensioni pericolose, magic bytes e size limit)
+    const securityCheck = await validateIncomingFile(file, 'SCHEDULE');
+    if (!securityCheck.ok) {
+      logger.security('File malevolo o non consentito respinto in Orario Lezioni', {
+        name: file.name,
+        size: file.size,
+        reason: securityCheck.error
+      });
+      setImportError(securityCheck.error || 'File non sicuro. Caricamento bloccato.');
+      return;
+    }
+
     setIsParsing(true);
 
     try {
-      const ext = file.name.split('.').pop()?.toLowerCase();
+      const ext = securityCheck.ext;
       let parsed = null;
 
       if (ext === 'ics') {
@@ -336,7 +351,7 @@ const Schedule = ({ onOpenProModal }) => {
       }
 
       setImportPreview({
-        fileName: file.name,
+        fileName: securityCheck.sanitizedName,
         lessons: parsed.lessons,
         firstDate: parsed.firstDate,
         lastDate: parsed.lastDate,
@@ -348,6 +363,14 @@ const Schedule = ({ onOpenProModal }) => {
       setImportPreview(null);
     } finally {
       setIsParsing(false);
+    }
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processScheduleFile(file);
+      e.target.value = ''; // Reset input per consentire nuovo caricamento dello stesso file
     }
   };
 
@@ -920,11 +943,27 @@ const Schedule = ({ onOpenProModal }) => {
               </div>
 
               <div className="import-modal-body">
-                {/* File Dropzone */}
+                {/* File Dropzone con protezione Drag & Drop */}
                 {!importPreview && (
                   <div 
-                    className="import-dropzone"
+                    className={`import-dropzone ${isDraggingOver ? 'drag-over-active' : ''}`}
                     onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDraggingOver(true);
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      setIsDraggingOver(false);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDraggingOver(false);
+                      const file = e.dataTransfer.files?.[0];
+                      if (file) {
+                        processScheduleFile(file);
+                      }
+                    }}
                   >
                     <input 
                       type="file" 

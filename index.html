@@ -9,11 +9,25 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="color-scheme" content="light dark" />
-    <title>UniPlanner</title>
+    <title>UniPlanner — Il Tuo Percorso Accademico</title>
+
+    <!-- Tipografia Accademica d'Autore: Newsreader (Serif Editoriale) + Plus Jakarta Sans + JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- Preconnect Backend Ngrok -->
+    <link rel="preconnect" href="https://shabby-myself-gleeful.ngrok-free.dev" crossorigin />
+    <link rel="dns-prefetch" href="https://shabby-myself-gleeful.ngrok-free.dev" />
+    <link rel="dns-prefetch" href="https://vercel.com" />
+
+    <!-- Anti-FOUC: applica il tema e palette salvati prima che React si monti -->
     <script>
       (function() {
         const savedTheme = localStorage.getItem('uniplanner_theme') || 'dark';
+        const savedPalette = localStorage.getItem('uniplanner_palette') || 'default';
         document.documentElement.setAttribute('data-theme', savedTheme);
+        document.documentElement.setAttribute('data-palette', savedPalette);
         document.documentElement.style.colorScheme = savedTheme;
       })();
     </script>

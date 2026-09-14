@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, 
@@ -44,7 +44,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { useAuth } from '../context/AuthContext';
 import { publishUserProfile } from '../utils/cloudSync';
-import { safeJsonParse } from '../utils/security';
+import { safeJsonParse, sanitizeText } from '../utils/security';
 import { detectResourceType, sanitizeResourceUrl } from '../utils/resourceHelper';
 import { syncWidgetStats } from '../utils/widgetBridge';
 import './Exams.css';
@@ -337,12 +337,13 @@ const Exams = () => {
 
   const handleAdd = (e) => {
     e.preventDefault();
-    if (newName.trim()) {
+    const cleanName = sanitizeText(newName, 80);
+    if (cleanName) {
       const newExam = {
         id: Date.now(),
-        name: newName.trim(),
-        year: newYear,
-        isIdoneita: newIsIdoneita,
+        name: cleanName,
+        year: sanitizeText(newYear, 20) || '1° Anno',
+        isIdoneita: Boolean(newIsIdoneita),
         grade: null,
         credits: null,
         studyTimeMin: 0
@@ -359,12 +360,15 @@ const Exams = () => {
 
   const handleRecordGradeSubmit = (e) => {
     e.preventDefault();
+    const cleanGrade = sanitizeText(recordGrade, 10).toUpperCase();
+    const cleanCreditsNum = Math.min(Math.max(Number(recordCredits) || 6, 1), 60);
+
     setExams(exams.map(ex => {
       if (ex.id === recordingId) {
         if (ex.isIdoneita) {
-          return { ...ex, grade: 'IDONEO', credits: Number(recordCredits) };
+          return { ...ex, grade: 'IDONEO', credits: cleanCreditsNum };
         } else {
-          return { ...ex, grade: recordGrade.toUpperCase(), credits: Number(recordCredits) };
+          return { ...ex, grade: cleanGrade, credits: cleanCreditsNum };
         }
       }
       return ex;
@@ -411,13 +415,17 @@ const Exams = () => {
     setActiveId(null);
   };
 
-  const sortedExams = [...exams].sort((a, b) => {
-    if (sortMethod === 'MANUAL') return 0;
-    if (sortMethod === 'NAME') return a.name.localeCompare(b.name);
+  // useMemo: il sort viene ricalcolato solo quando exams o sortMethod cambiano
+  const sortedExams = useMemo(() => {
+    const arr = [...exams];
+    if (sortMethod === 'MANUAL') return arr;
+    if (sortMethod === 'NAME') return arr.sort((a, b) => a.name.localeCompare(b.name));
     if (sortMethod === 'YEAR_ASC') {
-      if (a.year === 'N/D') return 1;
-      if (b.year === 'N/D') return -1;
-      return a.year.localeCompare(b.year);
+      return arr.sort((a, b) => {
+        if (a.year === 'N/D') return 1;
+        if (b.year === 'N/D') return -1;
+        return a.year.localeCompare(b.year);
+      });
     }
     const getGradeVal = (grade) => {
       if (grade === null) return -1;
@@ -425,9 +433,22 @@ const Exams = () => {
       if (grade === '30L') return 31;
       return Number(grade);
     };
-    if (sortMethod === 'GRADE_DESC') return getGradeVal(b.grade) - getGradeVal(a.grade);
-    return 0;
-  });
+    if (sortMethod === 'GRADE_DESC') return arr.sort((a, b) => getGradeVal(b.grade) - getGradeVal(a.grade));
+    if (sortMethod === 'RECENT') return arr.sort((a, b) => b.id - a.id);
+    return arr;
+  }, [exams, sortMethod]);
+
+  // Paginazione: 20 esami per pagina
+  const PAGE_SIZE = 20;
+  const [currentPage, setCurrentPage] = useState(0);
+  const totalPages = Math.ceil(sortedExams.length / PAGE_SIZE);
+
+  // Quando cambia il sort o esami, torna alla prima pagina
+  useEffect(() => { setCurrentPage(0); }, [sortMethod, exams.length]);
+
+  const pagedExams = useMemo(() =>
+    sortedExams.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE),
+  [sortedExams, currentPage]);
 
   const handleAddResourceSubmit = (e) => {
     e.preventDefault();
@@ -643,7 +664,7 @@ const Exams = () => {
           </DndContext>
         ) : (
           <div className={`exams-layout ${viewMode === 'grid' ? 'layout-grid' : 'layout-list'}`}>
-            {sortedExams.map(exam => (
+            {pagedExams.map(exam => (
               <ExamCardContent 
                 key={exam.id}
                 exam={exam}
@@ -656,6 +677,34 @@ const Exams = () => {
                 handleRemoveResource={handleRemoveResource}
               />
             ))}
+          </div>
+        )}
+
+        {/* Paginazione — mostrata solo quando ci sono più di 20 esami e non in drag mode */}
+        {totalPages > 1 && sortMethod !== 'MANUAL' && (
+          <div className="pagination-controls" style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            gap: '12px', marginTop: '24px', marginBottom: '8px'
+          }}>
+            <button
+              className="ghost-btn"
+              onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+              disabled={currentPage === 0}
+              style={{ padding: '6px 16px' }}
+            >
+              ← Precedente
+            </button>
+            <span style={{ fontSize: '13px', opacity: 0.7 }}>
+              Pagina {currentPage + 1} / {totalPages} ({sortedExams.length} esami)
+            </span>
+            <button
+              className="ghost-btn"
+              onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={currentPage === totalPages - 1}
+              style={{ padding: '6px 16px' }}
+            >
+              Successiva →
+            </button>
           </div>
         )}
       </div>
