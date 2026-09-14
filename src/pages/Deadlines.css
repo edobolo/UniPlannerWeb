@@ -18,10 +18,11 @@
 }
 
 .deadlines-header .page-title {
-  font-size: 24px;
-  font-weight: 800;
+  font-family: var(--font-serif);
+  font-size: 28px;
+  font-weight: 600;
   color: var(--text-primary);
-  letter-spacing: -0.5px;
+  letter-spacing: -0.02em;
   margin-bottom: 4px;
 }
 
@@ -119,8 +120,10 @@
 }
 
 .stat-value-deadline {
+  font-family: var(--font-mono);
   font-size: 26px;
-  font-weight: 800;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
   color: var(--text-primary);
   margin-top: 2px;
   line-height: 1.1;

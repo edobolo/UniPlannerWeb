@@ -1,379 +1,396 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+/* =====================================================================
+ * UniPlanner — Design Accademico Contemporaneo & Editoriale
+ * Tipografia: Newsreader (Serif) + Plus Jakarta Sans + JetBrains Mono
+ * ===================================================================== */
 
 :root {
   color-scheme: dark;
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --bg-card: rgba(30, 41, 59, 0.7);
-  --bg-card-solid: #1e293b;
-  --bg-hover: rgba(255, 255, 255, 0.08);
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+
+  /* Font Families Accademiche */
+  --font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+  /* Nuova Dark Palette Materica: Ossidiana, Inchiostro & Grafite Calda */
+  --bg-primary: #111215;
+  --bg-secondary: #17191f;
+  --bg-card: #1c1e26;
+  --bg-card-solid: #1c1e26;
+  --bg-hover: rgba(255, 255, 255, 0.05);
+  
+  --text-primary: #f4f3ee;
+  --text-secondary: #a1a099;
+  --text-muted: #6e6d66;
+
+  /* Accento Default: Blu Oxford Accademico */
   --accent-primary: #3b82f6;
   --accent-hover: #2563eb;
+  --accent-soft: rgba(59, 130, 246, 0.12);
   --danger: #ef4444;
-  --success: #22c55e;
+  --success: #10b981;
   
-  --glass-bg: rgba(30, 41, 59, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  /* Superfici Tattili Nobili (Sostituiscono il glassmorphism plastico) */
+  --glass-bg: #1c1e26;
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.3);
   
-  --input-bg: rgba(255, 255, 255, 0.06);
-  --input-border: rgba(255, 255, 255, 0.12);
-  --dropdown-bg: #1e293b;
-  --dropdown-text: #f8fafc;
-  --modal-bg: linear-gradient(180deg, #1e293b, #0f172a);
-  --card-bg-gradient: linear-gradient(180deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
+  --input-bg: #15171d;
+  --input-border: rgba(255, 255, 255, 0.1);
+  --dropdown-bg: #1c1e26;
+  --dropdown-text: #f4f3ee;
+  --dropdown-border: rgba(255, 255, 255, 0.12);
+  --modal-bg: #17191f;
+  --card-bg-gradient: #1c1e26;
+  --glow-1: rgba(59, 130, 246, 0.15);
+  --glow-2: rgba(0, 0, 0, 0);
+  --btn-gradient: #3b82f6;
 }
 
 [data-theme="light"] {
   color-scheme: light;
-  --bg-primary: #f1f5f9;
+
+  /* Nuova Light Palette Materica: Carta Vergata, Avorio d'Archivio & Inchiostro Gutenberg */
+  --bg-primary: #f7f6f2;
   --bg-secondary: #ffffff;
-  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-card: #ffffff;
   --bg-card-solid: #ffffff;
-  --bg-hover: rgba(0, 0, 0, 0.05);
-  --text-primary: #0f172a;
-  --text-secondary: #64748b;
-  --text-muted: #94a3b8;
-  --accent-primary: #2563eb;
-  --accent-hover: #1d4ed8;
+  --bg-hover: rgba(0, 0, 0, 0.04);
+
+  --text-primary: #171716;
+  --text-secondary: #57564f;
+  --text-muted: #8c8a81;
+
+  --accent-primary: #1e3a8a;
+  --accent-hover: #172554;
+  --accent-soft: rgba(30, 58, 138, 0.08);
   --danger: #dc2626;
-  --success: #16a34a;
+  --success: #059669;
   
-  --glass-bg: rgba(255, 255, 255, 0.85);
-  --glass-border: rgba(0, 0, 0, 0.08);
-  --glass-shadow: 0 8px 30px 0 rgba(15, 23, 42, 0.06);
+  --glass-bg: #ffffff;
+  --glass-border: #e6e5df;
+  --glass-shadow: 0 2px 12px -2px rgba(23, 23, 22, 0.06), 0 1px 3px rgba(23, 23, 22, 0.04);
   
-  --input-bg: rgba(0, 0, 0, 0.04);
-  --input-border: rgba(0, 0, 0, 0.12);
+  --input-bg: #f2f1ec;
+  --input-border: #dcd9d0;
   --dropdown-bg: #ffffff;
-  --dropdown-text: #0f172a;
-  --dropdown-border: rgba(0, 0, 0, 0.15);
-  --modal-bg: linear-gradient(180deg, #ffffff, #f8fafc);
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #f8fafc);
+  --dropdown-text: #171716;
+  --dropdown-border: #dcd9d0;
+  --modal-bg: #ffffff;
+  --card-bg-gradient: #ffffff;
+  --glow-1: rgba(30, 58, 138, 0.08);
+  --glow-2: rgba(0, 0, 0, 0);
+  --btn-gradient: #1e3a8a;
 }
 
-/* --- OFFICIAL ITALIAN ACADEMIC FACULTY THEMES --- */
+/* =====================================================================
+ * COLORI E TEMI UFFICIALI FACOLTÀ ACCADEMICHE (16 PALETTE)
+ * Adattati sia in Dark che in Light Mode con finiture istituzionali
+ * ===================================================================== */
 
-/* 1. Lettere e Filosofia / Teologia / Magistero (Bianco Accademico & Perla) */
+/* 1. Lettere e Filosofia / Teologia (Marmo Accademico & Perla) */
 [data-palette="humanities_white"] {
-  --accent-primary: #e2e8f0;
+  --accent-primary: #f5f5f0;
   --accent-hover: #ffffff;
-  --glow-1: rgba(226, 232, 240, 0.16);
-  --glow-2: rgba(148, 163, 184, 0.12);
-  --btn-gradient: linear-gradient(135deg, #f8fafc, #94a3b8);
-  --glass-border: rgba(248, 250, 252, 0.25);
+  --accent-soft: rgba(245, 245, 240, 0.12);
+  --glass-border: rgba(245, 245, 240, 0.2);
+  --btn-gradient: #40403b;
 }
 [data-theme="light"][data-palette="humanities_white"],
 [data-theme="light"] [data-palette="humanities_white"] {
-  --bg-primary: #f8fafc;
-  --bg-secondary: #ffffff;
-  --accent-primary: #334155;
-  --accent-hover: #0f172a;
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #f1f5f9);
-  --glass-border: rgba(51, 65, 85, 0.18);
-  --btn-gradient: linear-gradient(135deg, #475569, #0f172a);
+  --bg-primary: #f9f9f6;
+  --accent-primary: #292823;
+  --accent-hover: #000000;
+  --accent-soft: rgba(41, 40, 35, 0.08);
+  --glass-border: #dedcd4;
+  --btn-gradient: #292823;
 }
 
-/* 2. Giurisprudenza / Diritto (Blu Notte) */
+/* 2. Giurisprudenza / Diritto (Blu Notte Istituzionale & Sigillo Reale) */
 [data-palette="law_blue"], [data-palette="law"] {
-  --accent-primary: #2563eb;
-  --accent-hover: #1d4ed8;
-  --glow-1: rgba(37, 99, 235, 0.2);
-  --glow-2: rgba(30, 58, 138, 0.15);
-  --btn-gradient: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  --glass-border: rgba(37, 99, 235, 0.25);
+  --accent-primary: #3b82f6;
+  --accent-hover: #2563eb;
+  --accent-soft: rgba(59, 130, 246, 0.15);
+  --glass-border: rgba(59, 130, 246, 0.22);
+  --btn-gradient: #2563eb;
 }
 [data-theme="light"][data-palette="law_blue"],
 [data-theme="light"][data-palette="law"] {
-  --bg-primary: #eff6ff;
-  --bg-secondary: #ffffff;
-  --accent-primary: #1d4ed8;
-  --accent-hover: #1e40af;
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #eff6ff);
-  --glass-border: rgba(29, 78, 216, 0.18);
+  --bg-primary: #f4f6fa;
+  --accent-primary: #1e3a8a;
+  --accent-hover: #172554;
+  --accent-soft: rgba(30, 58, 138, 0.08);
+  --glass-border: #cbd5e1;
+  --btn-gradient: #1e3a8a;
 }
 
-/* 3. Ingegneria e Architettura (Nero & Grafite Titanio) */
+/* 3. Ingegneria e Architettura (Grafite Tecnica & Titanio Satinato) */
 [data-palette="engineering_black"], [data-palette="engineering"] {
-  --accent-primary: #a1a1aa;
-  --accent-hover: #f4f4f5;
-  --glow-1: rgba(113, 113, 122, 0.2);
-  --glow-2: rgba(24, 24, 27, 0.3);
-  --btn-gradient: linear-gradient(135deg, #52525b, #27272a);
-  --glass-border: rgba(161, 161, 170, 0.25);
+  --accent-primary: #94a3b8;
+  --accent-hover: #cbd5e1;
+  --accent-soft: rgba(148, 163, 184, 0.12);
+  --glass-border: rgba(148, 163, 184, 0.2);
+  --btn-gradient: #334155;
 }
 [data-theme="light"][data-palette="engineering_black"],
 [data-theme="light"][data-palette="engineering"] {
   --bg-primary: #f4f4f5;
-  --bg-secondary: #ffffff;
   --accent-primary: #18181b;
   --accent-hover: #09090b;
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #f4f4f5);
-  --glass-border: rgba(24, 24, 27, 0.2);
-  --btn-gradient: linear-gradient(135deg, #27272a, #09090b);
+  --accent-soft: rgba(24, 24, 27, 0.08);
+  --glass-border: #e4e4e7;
+  --btn-gradient: #18181b;
 }
 
-/* 4. Medicina e Chirurgia (Rosso Scarlatto) */
+/* 4. Medicina e Chirurgia (Rosso Scarlatto & Bologna Storica) */
 [data-palette="medicine_red"], [data-palette="medicine"] {
-  --accent-primary: #ef4444;
-  --accent-hover: #dc2626;
-  --glow-1: rgba(239, 68, 68, 0.2);
-  --glow-2: rgba(185, 28, 28, 0.15);
-  --btn-gradient: linear-gradient(135deg, #f87171, #dc2626);
-  --glass-border: rgba(239, 68, 68, 0.25);
+  --accent-primary: #f43f5e;
+  --accent-hover: #e11d48;
+  --accent-soft: rgba(244, 63, 94, 0.15);
+  --glass-border: rgba(244, 63, 94, 0.22);
+  --btn-gradient: #e11d48;
 }
 [data-theme="light"][data-palette="medicine_red"],
 [data-theme="light"][data-palette="medicine"] {
-  --bg-primary: #fef2f2;
-  --bg-secondary: #ffffff;
-  --accent-primary: #dc2626;
-  --accent-hover: #b91c1c;
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #fef2f2);
-  --glass-border: rgba(220, 38, 38, 0.18);
+  --bg-primary: #fff5f5;
+  --accent-primary: #be123c;
+  --accent-hover: #9f1239;
+  --accent-soft: rgba(190, 18, 60, 0.08);
+  --glass-border: #fecdd3;
+  --btn-gradient: #be123c;
 }
 
-/* 5. Farmacia e Veterinaria (Rosso Granata & Amaranto) */
+/* 5. Farmacia e Veterinaria (Rosso Granata & Ambra) */
 [data-palette="pharmacy_garnet"] {
-  --accent-primary: #b91c1c;
-  --accent-hover: #991b1b;
-  --glow-1: rgba(185, 28, 28, 0.2);
-  --glow-2: rgba(127, 29, 29, 0.15);
-  --btn-gradient: linear-gradient(135deg, #dc2626, #881337);
-  --glass-border: rgba(185, 28, 28, 0.25);
+  --accent-primary: #e11d48;
+  --accent-hover: #be123c;
+  --accent-soft: rgba(225, 29, 72, 0.15);
+  --glass-border: rgba(225, 29, 72, 0.22);
+  --btn-gradient: #9f1239;
 }
 [data-theme="light"][data-palette="pharmacy_garnet"] {
   --bg-primary: #fff1f2;
-  --bg-secondary: #ffffff;
-  --accent-primary: #991b1b;
-  --accent-hover: #7f1d1d;
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #fff1f2);
-  --glass-border: rgba(153, 27, 27, 0.18);
+  --accent-primary: #9f1239;
+  --accent-hover: #881337;
+  --accent-soft: rgba(159, 18, 57, 0.08);
+  --glass-border: #fecdd3;
+  --btn-gradient: #9f1239;
 }
 
-/* 6. Scienze MM.FF.NN. e Matematica (Verde Smeraldo) */
+/* 6. Scienze MM.FF.NN. e Matematica (Verde Smeraldo Biblioteca) */
 [data-palette="science_green"], [data-palette="science"] {
-  --accent-primary: #16a34a;
-  --accent-hover: #15803d;
-  --glow-1: rgba(22, 163, 74, 0.2);
-  --glow-2: rgba(21, 128, 61, 0.15);
-  --btn-gradient: linear-gradient(135deg, #22c55e, #15803d);
-  --glass-border: rgba(22, 163, 74, 0.25);
+  --accent-primary: #10b981;
+  --accent-hover: #059669;
+  --accent-soft: rgba(16, 185, 129, 0.15);
+  --glass-border: rgba(16, 185, 129, 0.22);
+  --btn-gradient: #059669;
 }
 [data-theme="light"][data-palette="science_green"],
 [data-theme="light"][data-palette="science"] {
-  --bg-primary: #f0fdf4;
-  --bg-secondary: #ffffff;
-  --accent-primary: #15803d;
-  --accent-hover: #166534;
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #f0fdf4);
-  --glass-border: rgba(21, 128, 61, 0.18);
+  --bg-primary: #f2fbf6;
+  --accent-primary: #047857;
+  --accent-hover: #065f46;
+  --accent-soft: rgba(4, 120, 87, 0.08);
+  --glass-border: #a7f3d0;
+  --btn-gradient: #047857;
 }
 
-/* 7. Agraria (Verde Cupo Foresta) */
+/* 7. Agraria (Verde Cupo Foresta & Alloro) */
 [data-palette="agriculture_darkgreen"] {
-  --accent-primary: #15803d;
-  --accent-hover: #14532d;
-  --glow-1: rgba(20, 83, 45, 0.25);
-  --glow-2: rgba(5, 46, 22, 0.2);
-  --btn-gradient: linear-gradient(135deg, #166534, #14532d);
-  --glass-border: rgba(22, 101, 52, 0.3);
+  --accent-primary: #22c55e;
+  --accent-hover: #16a34a;
+  --accent-soft: rgba(34, 197, 94, 0.15);
+  --glass-border: rgba(34, 197, 94, 0.22);
+  --btn-gradient: #15803d;
 }
 [data-theme="light"][data-palette="agriculture_darkgreen"] {
-  --bg-primary: #f2fbf4;
-  --bg-secondary: #ffffff;
-  --accent-primary: #14532d;
-  --accent-hover: #052e16;
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #f2fbf4);
-  --glass-border: rgba(20, 83, 45, 0.2);
+  --bg-primary: #f2fcf5;
+  --accent-primary: #15803d;
+  --accent-hover: #166534;
+  --accent-soft: rgba(21, 128, 61, 0.08);
+  --glass-border: #bbf7d0;
+  --btn-gradient: #15803d;
 }
 
-/* 8. Economia e Commercio (Giallo Oro) */
+/* 8. Economia e Commercio (Oro Veneziano & Terra d'Ombra) */
 [data-palette="economics_yellow"], [data-palette="economics"] {
   --accent-primary: #eab308;
   --accent-hover: #ca8a04;
-  --glow-1: rgba(234, 179, 8, 0.2);
-  --glow-2: rgba(161, 98, 7, 0.15);
-  --btn-gradient: linear-gradient(135deg, #facc15, #ca8a04);
-  --glass-border: rgba(234, 179, 8, 0.25);
+  --accent-soft: rgba(234, 179, 8, 0.15);
+  --glass-border: rgba(234, 179, 8, 0.22);
+  --btn-gradient: #ca8a04;
 }
 [data-theme="light"][data-palette="economics_yellow"],
 [data-theme="light"][data-palette="economics"] {
   --bg-primary: #fefce8;
-  --bg-secondary: #ffffff;
-  --accent-primary: #ca8a04;
-  --accent-hover: #a16207;
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #fefce8);
-  --glass-border: rgba(202, 138, 4, 0.18);
+  --accent-primary: #a16207;
+  --accent-hover: #854d0e;
+  --accent-soft: rgba(161, 98, 7, 0.08);
+  --glass-border: #fef08a;
+  --btn-gradient: #a16207;
 }
 
-/* 9. Psicologia e Pedagogia (Grigio & Rosa) */
+/* 9. Psicologia e Pedagogia (Grigio Lavagna & Rosa Cipria) */
 [data-palette="psychology_grey"], [data-palette="psychology"] {
-  --accent-primary: #ec4899;
-  --accent-hover: #db2777;
-  --glow-1: rgba(236, 72, 153, 0.18);
-  --glow-2: rgba(100, 116, 139, 0.15);
-  --btn-gradient: linear-gradient(135deg, #f472b6, #64748b);
-  --glass-border: rgba(236, 72, 153, 0.25);
+  --accent-primary: #f472b6;
+  --accent-hover: #ec4899;
+  --accent-soft: rgba(244, 114, 182, 0.15);
+  --glass-border: rgba(244, 114, 182, 0.22);
+  --btn-gradient: #db2777;
 }
 [data-theme="light"][data-palette="psychology_grey"],
 [data-theme="light"][data-palette="psychology"] {
   --bg-primary: #fdf2f8;
-  --bg-secondary: #ffffff;
-  --accent-primary: #db2777;
-  --accent-hover: #be185d;
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #fdf2f8);
-  --glass-border: rgba(219, 39, 119, 0.18);
+  --accent-primary: #be185d;
+  --accent-hover: #9d174d;
+  --accent-soft: rgba(190, 24, 93, 0.08);
+  --glass-border: #fbcfe8;
+  --btn-gradient: #be185d;
 }
 
-/* 10. Scienze Politiche (Viola Tradizionale) */
+/* 10. Scienze Politiche (Porpora Imperiale & Viola Dogale) */
 [data-palette="politics_purple"], [data-palette="politics"] {
-  --accent-primary: #9333ea;
-  --accent-hover: #7e22ce;
-  --glow-1: rgba(147, 51, 234, 0.2);
-  --glow-2: rgba(107, 33, 168, 0.15);
-  --btn-gradient: linear-gradient(135deg, #a855f7, #6b21a8);
-  --glass-border: rgba(147, 51, 234, 0.25);
+  --accent-primary: #a855f7;
+  --accent-hover: #9333ea;
+  --accent-soft: rgba(168, 85, 247, 0.15);
+  --glass-border: rgba(168, 85, 247, 0.22);
+  --btn-gradient: #7e22ce;
 }
 [data-theme="light"][data-palette="politics_purple"],
 [data-theme="light"][data-palette="politics"] {
   --bg-primary: #faf5ff;
-  --bg-secondary: #ffffff;
-  --accent-primary: #7e22ce;
-  --accent-hover: #6b21a8;
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #faf5ff);
-  --glass-border: rgba(126, 34, 206, 0.18);
+  --accent-primary: #6b21a8;
+  --accent-hover: #581c87;
+  --accent-soft: rgba(107, 33, 168, 0.08);
+  --glass-border: #e9d5ff;
+  --btn-gradient: #6b21a8;
 }
 
-/* 11. Statistica & Scienze Bancarie (Bluette & Azzurro) */
+/* 11. Statistica & Scienze Bancarie (Bluette di Precisione & Zaffiro) */
 [data-palette="statistics_bluette"] {
-  --accent-primary: #3b82f6;
-  --accent-hover: #2563eb;
-  --glow-1: rgba(59, 130, 246, 0.2);
-  --glow-2: rgba(30, 64, 175, 0.15);
-  --btn-gradient: linear-gradient(135deg, #60a5fa, #2563eb);
-  --glass-border: rgba(59, 130, 246, 0.25);
+  --accent-primary: #0ea5e9;
+  --accent-hover: #0284c7;
+  --accent-soft: rgba(14, 165, 233, 0.15);
+  --glass-border: rgba(14, 165, 233, 0.22);
+  --btn-gradient: #0284c7;
 }
 [data-theme="light"][data-palette="statistics_bluette"] {
-  --bg-primary: #f0f7ff;
-  --bg-secondary: #ffffff;
-  --accent-primary: #2563eb;
-  --accent-hover: #1d4ed8;
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #f0f7ff);
-  --glass-border: rgba(37, 99, 235, 0.18);
+  --bg-primary: #f0f9ff;
+  --accent-primary: #0369a1;
+  --accent-hover: #075985;
+  --accent-soft: rgba(3, 105, 161, 0.08);
+  --glass-border: #bae6fd;
+  --btn-gradient: #0369a1;
 }
 
-/* 12. Scienze della Comunicazione (Vinaccia) */
+/* 12. Scienze della Comunicazione (Vinaccia & Terracotta) */
 [data-palette="communication_vinaccia"] {
-  --accent-primary: #be185d;
-  --accent-hover: #9d174d;
-  --glow-1: rgba(190, 24, 93, 0.2);
-  --glow-2: rgba(131, 24, 67, 0.15);
-  --btn-gradient: linear-gradient(135deg, #db2777, #831843);
-  --glass-border: rgba(190, 24, 93, 0.25);
+  --accent-primary: #db2777;
+  --accent-hover: #be185d;
+  --accent-soft: rgba(219, 39, 119, 0.15);
+  --glass-border: rgba(219, 39, 119, 0.22);
+  --btn-gradient: #9d174d;
 }
 [data-theme="light"][data-palette="communication_vinaccia"] {
-  --bg-primary: #fff1f5;
-  --bg-secondary: #ffffff;
+  --bg-primary: #fdf2f8;
   --accent-primary: #9d174d;
   --accent-hover: #831843;
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #fff1f5);
-  --glass-border: rgba(157, 23, 77, 0.18);
+  --accent-soft: rgba(157, 23, 77, 0.08);
+  --glass-border: #fbcfe8;
+  --btn-gradient: #9d174d;
 }
 
-/* 13. Lingue e Letterature Straniere (Rosso Bordeaux) */
+/* 13. Lingue e Letterature (Bordeaux Tela d'Archivio) */
 [data-palette="languages_bordeaux"] {
-  --accent-primary: #9f1239;
-  --accent-hover: #881337;
-  --glow-1: rgba(159, 18, 57, 0.2);
-  --glow-2: rgba(76, 5, 25, 0.15);
-  --btn-gradient: linear-gradient(135deg, #be123c, #4c0519);
-  --glass-border: rgba(159, 18, 57, 0.25);
+  --accent-primary: #f43f5e;
+  --accent-hover: #e11d48;
+  --accent-soft: rgba(244, 63, 94, 0.15);
+  --glass-border: rgba(244, 63, 94, 0.22);
+  --btn-gradient: #881337;
 }
 [data-theme="light"][data-palette="languages_bordeaux"] {
-  --bg-primary: #fff0f3;
-  --bg-secondary: #ffffff;
+  --bg-primary: #fff1f2;
   --accent-primary: #881337;
   --accent-hover: #4c0519;
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #fff0f3);
-  --glass-border: rgba(136, 19, 55, 0.18);
+  --accent-soft: rgba(136, 19, 55, 0.08);
+  --glass-border: #fecdd3;
+  --btn-gradient: #881337;
 }
 
-/* 14. Sociologia (Arancione) */
+/* 14. Sociologia (Ambra & Mattone Caldo) */
 [data-palette="sociology_orange"] {
   --accent-primary: #f97316;
   --accent-hover: #ea580c;
-  --glow-1: rgba(249, 115, 22, 0.2);
-  --glow-2: rgba(194, 65, 12, 0.15);
-  --btn-gradient: linear-gradient(135deg, #fb923c, #c2410c);
-  --glass-border: rgba(249, 115, 22, 0.25);
+  --accent-soft: rgba(249, 115, 22, 0.15);
+  --glass-border: rgba(249, 115, 22, 0.22);
+  --btn-gradient: #c2410c;
 }
 [data-theme="light"][data-palette="sociology_orange"] {
   --bg-primary: #fff7ed;
-  --bg-secondary: #ffffff;
-  --accent-primary: #ea580c;
-  --accent-hover: #c2410c;
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #fff7ed);
-  --glass-border: rgba(234, 88, 12, 0.18);
+  --accent-primary: #c2410c;
+  --accent-hover: #9a3412;
+  --accent-soft: rgba(194, 65, 12, 0.08);
+  --glass-border: #fed7aa;
+  --btn-gradient: #c2410c;
 }
 
-/* 15. Accademia delle Belle Arti (Celeste & Carta da Zucchero) */
+/* 15. Belle Arti (Carta da Zucchero Rinascimentale) */
 [data-palette="arts_celeste"] {
   --accent-primary: #38bdf8;
   --accent-hover: #0284c7;
-  --glow-1: rgba(56, 189, 248, 0.2);
-  --glow-2: rgba(3, 105, 161, 0.15);
-  --btn-gradient: linear-gradient(135deg, #7dd3fc, #0284c7);
-  --glass-border: rgba(56, 189, 248, 0.25);
+  --accent-soft: rgba(56, 189, 248, 0.15);
+  --glass-border: rgba(56, 189, 248, 0.22);
+  --btn-gradient: #0284c7;
 }
 [data-theme="light"][data-palette="arts_celeste"] {
   --bg-primary: #f0f9ff;
-  --bg-secondary: #ffffff;
   --accent-primary: #0284c7;
   --accent-hover: #0369a1;
-  --card-bg-gradient: linear-gradient(180deg, #ffffff, #f0f9ff);
-  --glass-border: rgba(2, 132, 199, 0.18);
+  --accent-soft: rgba(2, 132, 199, 0.08);
+  --glass-border: #bae6fd;
+  --btn-gradient: #0284c7;
 }
 
-/* 16. Modalità AMOLED Pure Black (Nero Assoluto - RIGOROSAMENTE SOLO SCURA) */
+/* 16. AMOLED Pure Black (Nero Assoluto OLED) */
 [data-palette="amoled"],
 [data-theme="light"][data-palette="amoled"],
 [data-theme="light"] [data-palette="amoled"] {
   color-scheme: dark !important;
   --bg-primary: #000000 !important;
-  --bg-secondary: #08080a !important;
-  --bg-card: rgba(12, 12, 14, 0.95) !important;
-  --bg-card-solid: #0a0a0c !important;
-  --bg-hover: rgba(255, 255, 255, 0.1) !important;
-  --text-primary: #f8fafc !important;
-  --text-secondary: #94a3b8 !important;
-  --text-muted: #64748b !important;
-  --glass-bg: rgba(8, 8, 10, 0.95) !important;
-  --glass-border: rgba(255, 255, 255, 0.15) !important;
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.9) !important;
-  --input-bg: rgba(255, 255, 255, 0.08) !important;
-  --accent-primary: #38bdf8 !important;
-  --accent-hover: #0284c7 !important;
-  --glow-1: rgba(56, 189, 248, 0.15) !important;
-  --glow-2: rgba(0, 0, 0, 0) !important;
-  --btn-gradient: linear-gradient(135deg, #38bdf8, #0284c7) !important;
-  --modal-bg: linear-gradient(180deg, #0a0a0c, #000000) !important;
-  --card-bg-gradient: linear-gradient(180deg, #0a0a0c, #000000) !important;
+  --bg-secondary: #080808 !important;
+  --bg-card: #0e0e0e !important;
+  --bg-card-solid: #0e0e0e !important;
+  --bg-hover: rgba(255, 255, 255, 0.08) !important;
+  --text-primary: #f5f5f5 !important;
+  --text-secondary: #999999 !important;
+  --text-muted: #666666 !important;
+  --glass-bg: #0e0e0e !important;
+  --glass-border: #222222 !important;
+  --glass-shadow: none !important;
+  --input-bg: #141414 !important;
+  --input-border: #2a2a2a !important;
+  --accent-primary: #e5e5e5 !important;
+  --accent-hover: #ffffff !important;
+  --accent-soft: rgba(255, 255, 255, 0.1) !important;
+  --btn-gradient: #262626 !important;
+  --modal-bg: #0a0a0a !important;
+  --card-bg-gradient: #0e0e0e !important;
 }
+
+/* =====================================================================
+ * STILI DI BASE E TIPOGRAFIA GLOBALE
+ * ===================================================================== */
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
   scrollbar-width: thin;
-  scrollbar-color: rgba(150, 150, 150, 0.25) transparent;
+  scrollbar-color: rgba(140, 140, 140, 0.25) transparent;
 }
 
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -381,20 +398,18 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(150, 150, 150, 0.25);
-  border-radius: 10px;
+  background: rgba(140, 140, 140, 0.25);
+  border-radius: 6px;
   transition: background 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(150, 150, 150, 0.45);
+  background: rgba(140, 140, 140, 0.45);
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sans);
   background-color: var(--bg-primary);
-  background-image: radial-gradient(at 10% 10%, var(--glow-1, rgba(59, 130, 246, 0.14)) 0px, transparent 60%), radial-gradient(at 90% 90%, var(--glow-2, rgba(139, 92, 246, 0.1)) 0px, transparent 60%);
-  background-attachment: fixed;
   color: var(--text-primary);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -403,34 +418,42 @@ body {
   overflow-x: hidden;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  transition: background-color 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* 🚀 60 FPS Hardware Acceleration & GPU Promotion */
-.gpu-accelerated,
-.modern-exam-card,
-.gcal-day-column,
-.gcal-lesson-card,
-.glass-panel,
-.sidebar,
-.tab-content-wrapper {
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+/* Tipografia Editoriale Accademica */
+h1, h2, h3, .academic-title, .page-title, .brand-title {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  font-feature-settings: "kern" 1, "liga" 1;
 }
 
-/* Utilities */
+h4, h5, h6 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Numeri e Dati Tabellari Monospace */
+.num-mono, .cfu-pill, .grade-pill, .time-pill, .badge-code, .friend-code-tag, .stat-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* =====================================================================
+ * SUPERFICI TATTILI EDITORIALI (.glass-panel)
+ * ===================================================================== */
+
 .glass-panel {
   background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
-  border-radius: 16px;
+  border-radius: 12px;
   box-shadow: var(--glass-shadow);
-  transition: background-color 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* Pulsanti Accademici Sobri & Tattili */
 button {
   font-family: inherit;
   cursor: pointer;
@@ -440,83 +463,62 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 
-input, select, textarea {
-  font-family: inherit;
-  background: var(--input-bg);
-  border: 1px solid var(--input-border);
-  color: var(--text-primary);
-  padding: 10px 16px;
-  border-radius: 8px;
-  outline: none;
-  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
-  color-scheme: inherit;
-}
-
-select {
-  cursor: pointer;
-}
-
-/* Fix for native dropdown menus having white background with white text */
-select option {
-  background-color: var(--dropdown-bg) !important;
-  color: var(--dropdown-text) !important;
-  padding: 8px 12px;
-}
-
-input:focus, select:focus, textarea:focus {
-  border-color: var(--accent-primary);
-}
-
 .primary-btn {
   background: var(--btn-gradient, var(--accent-primary));
   color: white;
-  padding: 10px 20px;
-  border-radius: 8px;
+  padding: 9px 18px;
+  border-radius: 7px;
+  font-family: var(--font-sans);
   font-weight: 600;
+  font-size: 13.5px;
   display: flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 4px 14px -2px var(--glow-1, rgba(59, 130, 246, 0.4));
-  transition: background 0.15s ease, transform 0.1s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
-  will-change: transform;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.08);
+  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
 }
 
 .primary-btn:hover {
-  background: var(--accent-hover);
-  box-shadow: 0 6px 20px -2px var(--glow-1, rgba(59, 130, 246, 0.6));
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .primary-btn:active {
-  transform: scale(0.97) translateZ(0);
+  transform: translateY(0);
 }
 
 .secondary-btn {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   color: var(--text-primary);
-  padding: 10px 20px;
-  border-radius: 8px;
+  padding: 9px 18px;
+  border-radius: 7px;
+  font-size: 13.5px;
   font-weight: 500;
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
 }
 
 .secondary-btn:hover {
   background: var(--bg-hover);
+  border-color: var(--accent-primary);
 }
 
 .ghost-btn {
   background: transparent;
   color: var(--text-secondary);
-  padding: 10px 16px;
-  border-radius: 8px;
+  padding: 8px 14px;
+  border-radius: 7px;
+  font-size: 13px;
   font-weight: 500;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
 }
 
 .ghost-btn:hover {
@@ -527,13 +529,13 @@ input:focus, select:focus, textarea:focus {
 .icon-btn {
   background: transparent;
   color: var(--text-secondary);
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
 }
 
 .icon-btn:hover {
@@ -541,13 +543,42 @@ input:focus, select:focus, textarea:focus {
   color: var(--text-primary);
 }
 
-/* Modals */
+/* Campi Input e Form Editoriali */
+input, select, textarea {
+  font-family: var(--font-sans);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-primary);
+  padding: 9px 14px;
+  border-radius: 7px;
+  outline: none;
+  font-size: 13.5px;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+  color-scheme: inherit;
+}
+
+select {
+  cursor: pointer;
+}
+
+select option {
+  background-color: var(--dropdown-bg) !important;
+  color: var(--dropdown-text) !important;
+  padding: 8px 12px;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 1px var(--accent-primary);
+}
+
+/* Modali Istituzionali */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -557,45 +588,47 @@ input:focus, select:focus, textarea:focus {
 
 .modal-content {
   width: 100%;
-  max-width: 460px;
-  padding: 32px;
+  max-width: 480px;
+  padding: 30px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
   background: var(--modal-bg);
   border: 1px solid var(--glass-border);
-  border-radius: 24px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  border-radius: 14px;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
 }
 
 .modal-content h2 {
-  font-size: 20px;
-  font-weight: 700;
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 600;
   color: var(--text-primary);
   margin: 0;
 }
 
 .modal-subtitle {
   color: var(--text-secondary);
-  font-size: 14px;
-  margin-top: -12px;
+  font-size: 13.5px;
+  margin-top: -10px;
+  line-height: 1.5;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .form-group label {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-secondary);
   font-weight: 500;
 }
 
 .form-row {
   display: flex;
-  gap: 16px;
+  gap: 14px;
 }
 
 .form-row > * {
@@ -605,18 +638,20 @@ input:focus, select:focus, textarea:focus {
 .modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 12px;
+  gap: 10px;
+  margin-top: 8px;
 }
 
 .page-title {
+  font-family: var(--font-serif);
   font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text-primary);
 }
 
 .page-subtitle {
   font-size: 14px;
   color: var(--text-secondary);
+  line-height: 1.5;
 }

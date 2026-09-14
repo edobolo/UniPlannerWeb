@@ -1,22 +1,86 @@
 // api/calendar.js - Vercel Serverless Function per Live iCalendar Feed (RFC 5545)
+// Dotato di Rate Limiting, Input Validation/Sanitization, Zero Stack-Trace Leak e Logging.
+
+// Semplice rate limiter sliding-window in-memory per istanza serverless
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minuto
+const MAX_REQUESTS_PER_WINDOW = 30; // Max 30 richieste al minuto per IP
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  const clientData = rateLimitMap.get(ip) || [];
+  
+  // Rimuovi timestamp più vecchi della finestra di 60s
+  const recent = clientData.filter(time => now - time < RATE_LIMIT_WINDOW_MS);
+  
+  if (recent.length >= MAX_REQUESTS_PER_WINDOW) {
+    rateLimitMap.set(ip, recent);
+    return true;
+  }
+  
+  recent.push(now);
+  rateLimitMap.set(ip, recent);
+
+  // Pulizia periodica per evitare accumulo di memoria
+  if (rateLimitMap.size > 2000) {
+    for (const [key, times] of rateLimitMap.entries()) {
+      if (times.length === 0 || now - times[times.length - 1] > RATE_LIMIT_WINDOW_MS) {
+        rateLimitMap.delete(key);
+      }
+    }
+  }
+
+  return false;
+}
+
 export default async function handler(req, res) {
+  const startTime = Date.now();
+  const rawIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1';
+  const clientIp = String(rawIp).split(',')[0].trim();
+
+  // Security Headers di base
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, ngrok-skip-browser-warning');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
 
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
   }
 
-  // Estrai il codice da req.query o dal path /api/calendar/CODE.ics
-  let code = req.query.code || req.query.friendCode || req.query.id || '';
-  if (!code && req.url) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Metodo non consentito.' });
+  }
+
+  // 1. RATE LIMITING ENFORCEMENT
+  if (isRateLimited(clientIp)) {
+    console.warn(`[UP SECURITY] Rate limit superato per IP: ${clientIp.slice(0, 7)}***`);
+    res.setHeader('Retry-After', '60');
+    return res.status(429).json({
+      error: 'Troppe richieste. Riprova tra 60 secondi.'
+    });
+  }
+
+  // 2. INPUT VALIDATION & SANITIZATION
+  let rawCode = req.query.code || req.query.friendCode || req.query.id || '';
+  if (!rawCode && req.url) {
     const match = req.url.match(/\/calendar\/([^?&/]+)/i);
     if (match && match[1]) {
-      code = match[1];
+      rawCode = match[1];
     }
   }
-  code = String(code).replace(/\.ics$/i, '').toUpperCase().trim();
+
+  // Sanitizzazione preliminare
+  let code = String(rawCode).replace(/\.ics$/i, '').toUpperCase().trim();
+
+  // Rigida validazione regex: solo caratteri alfanumerici, trattino o underscore, max 32 caratteri
+  const validCodeRegex = /^[A-Z0-9_-]{1,32}$/i;
+  if (code && !validCodeRegex.test(code)) {
+    return res.status(400).json({
+      error: 'Codice studente non valido. Sono ammessi solo caratteri alfanumerici.'
+    });
+  }
 
   let studentData = {
     friendCode: code || 'UNIPLANNER',
@@ -28,8 +92,8 @@ export default async function handler(req, res) {
 
   if (code) {
     try {
-      // Interroga l'endpoint /api/friends/:code attivo sul backend Raspberry Pi
-      const searchRes = await fetch(`https://shabby-myself-gleeful.ngrok-free.dev/api/friends/${encodeURIComponent(code)}`, {
+      const backendBaseUrl = process.env.BACKEND_API_URL || 'https://shabby-myself-gleeful.ngrok-free.dev/api';
+      const searchRes = await fetch(`${backendBaseUrl}/friends/${encodeURIComponent(code)}`, {
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
 
@@ -46,17 +110,27 @@ export default async function handler(req, res) {
         }
       }
     } catch (err) {
-      console.warn('Errore lettura dati studente da Raspberry Pi:', err);
+      // Non esporre mai stack trace nei log o nella risposta
+      console.warn('[UP CALENDAR WARN] Impossibile contattare backend per codice:', code.slice(0, 4) + '***');
     }
   }
 
-  // Genera il file .ics conforme a RFC 5545
-  const icsString = buildIcsContent(studentData);
+  try {
+    // 3. GENERAZIONE CALENDARIO SICURO
+    const icsString = buildIcsContent(studentData);
 
-  res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
-  res.setHeader('Content-Disposition', 'inline; filename="uniplanner.ics"');
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  return res.status(200).send(icsString);
+    const duration = Date.now() - startTime;
+    console.info(`[UP CALENDAR OK] Code: ${code.slice(0, 4)}*** | Status: 200 | Time: ${duration}ms`);
+
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    res.setHeader('Content-Disposition', 'inline; filename="uniplanner.ics"');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return res.status(200).send(icsString);
+  } catch (err) {
+    // 4. ZERO STACK TRACE LEAK
+    console.error('[UP CALENDAR ERROR] Errore interno durante la generazione ICS');
+    return res.status(500).json({ error: 'Errore interno del server durante la generazione del calendario.' });
+  }
 }
 
 function buildIcsContent(student) {
@@ -93,8 +167,6 @@ function buildIcsContent(student) {
   const exams = Array.isArray(student.exams) ? student.exams : [];
   const deadlines = Array.isArray(student.deadlines) ? student.deadlines : [];
 
-  let eventsCount = 0;
-
   // 1. LEZIONI SETTIMANALI & A DATA SPECIFICA
   schedule.forEach((l, idx) => {
     const subject = l.subject || 'Lezione Universitaria';
@@ -123,7 +195,6 @@ function buildIcsContent(student) {
         'STATUS:CONFIRMED',
         'END:VEVENT'
       );
-      eventsCount++;
     } else {
       const dayIdx = typeof l.dayIndex === 'number' ? l.dayIndex : 0;
       const currentDay = (now.getDay() + 6) % 7;
@@ -154,7 +225,6 @@ function buildIcsContent(student) {
         'END:VALARM',
         'END:VEVENT'
       );
-      eventsCount++;
     }
   });
 
@@ -184,7 +254,6 @@ function buildIcsContent(student) {
       'STATUS:CONFIRMED',
       'END:VEVENT'
     );
-    eventsCount++;
   });
 
   // 3. SCADENZE & CONSEGNE
@@ -207,7 +276,6 @@ function buildIcsContent(student) {
       'STATUS:CONFIRMED',
       'END:VEVENT'
     );
-    eventsCount++;
   });
 
   lines.push('END:VCALENDAR');

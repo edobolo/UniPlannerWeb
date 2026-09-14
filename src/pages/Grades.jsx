@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   TrendingUp, 
   Award, 
@@ -106,7 +106,7 @@ const Grades = ({ exams: propExams, onOpenProModal }) => {
     return () => observer.disconnect();
   }, []);
 
-  const handlePresetChange = (presetId) => {
+  const handlePresetChange = useCallback((presetId) => {
     setSelectedPresetId(presetId);
     const found = UNIVERSITY_DEGREE_PRESETS.find(p => p.id === presetId);
     if (found) {
@@ -115,56 +115,72 @@ const Grades = ({ exams: propExams, onOpenProModal }) => {
         setThesisPoints(found.thesisPointsMax);
       }
     }
-  };
+  }, [thesisPoints]);
 
-  // Calculations
-  const completedExams = exams.filter(e => e.grade !== null && e.grade !== undefined && e.grade !== '');
-  const gradedExams = completedExams.filter(e => e.grade !== 'IDONEO');
+  // Calculations — useMemo: ricalcolati solo quando cambiano le dipendenze
+  const completedExams = useMemo(() => 
+    exams.filter(e => e.grade !== null && e.grade !== undefined && e.grade !== ''),
+  [exams]);
 
-  const totalCfu = completedExams.reduce((acc, curr) => acc + (Number(curr.credits || curr.cfu) || 0), 0);
-  const gradedCfu = gradedExams.reduce((acc, curr) => acc + (Number(curr.credits || curr.cfu) || 0), 0);
+  const gradedExams = useMemo(() =>
+    completedExams.filter(e => e.grade !== 'IDONEO'),
+  [completedExams]);
+
+  const totalCfu = useMemo(() =>
+    completedExams.reduce((acc, curr) => acc + (Number(curr.credits || curr.cfu) || 0), 0),
+  [completedExams]);
+
+  const gradedCfu = useMemo(() =>
+    gradedExams.reduce((acc, curr) => acc + (Number(curr.credits || curr.cfu) || 0), 0),
+  [gradedExams]);
   
-  const lodeCount = gradedExams.filter(e => e.grade === '30L' || e.grade === '30 e lode' || e.grade === '30 e Lode').length;
+  const lodeCount = useMemo(() =>
+    gradedExams.filter(e => e.grade === '30L' || e.grade === '30 e lode' || e.grade === '30 e Lode').length,
+  [gradedExams]);
   
-  const sumPonderata = gradedExams.reduce((acc, curr) => {
-    const isLode = (curr.grade === '30L' || curr.grade === '30 e lode' || curr.grade === '30 e Lode');
-    const val = isLode ? 31 : Number(curr.grade);
-    return acc + (val * (Number(curr.credits || curr.cfu) || 0));
-  }, 0);
+  const sumPonderata = useMemo(() =>
+    gradedExams.reduce((acc, curr) => {
+      const isLode = (curr.grade === '30L' || curr.grade === '30 e lode' || curr.grade === '30 e Lode');
+      const val = isLode ? 31 : Number(curr.grade);
+      return acc + (val * (Number(curr.credits || curr.cfu) || 0));
+    }, 0),
+  [gradedExams]);
 
-  const sumAritmetica = gradedExams.reduce((acc, curr) => {
-    const isLode = (curr.grade === '30L' || curr.grade === '30 e lode' || curr.grade === '30 e Lode');
-    const val = isLode ? 30 : Number(curr.grade);
-    return acc + val;
-  }, 0);
+  const sumAritmetica = useMemo(() =>
+    gradedExams.reduce((acc, curr) => {
+      const isLode = (curr.grade === '30L' || curr.grade === '30 e lode' || curr.grade === '30 e Lode');
+      const val = isLode ? 30 : Number(curr.grade);
+      return acc + val;
+    }, 0),
+  [gradedExams]);
 
-  const mediaPonderata = gradedCfu > 0 ? (sumPonderata / gradedCfu).toFixed(2) : 0;
-  const mediaAritmetica = gradedExams.length > 0 ? (sumAritmetica / gradedExams.length).toFixed(2) : 0;
+  const mediaPonderata = useMemo(() =>
+    gradedCfu > 0 ? (sumPonderata / gradedCfu).toFixed(2) : 0,
+  [sumPonderata, gradedCfu]);
 
-  const baseLaurea = gradedCfu > 0 
-    ? ((sumPonderata / gradedCfu) * 110 / 30 + (lodeCount * settings.lodeBonus)).toFixed(2) 
-    : 0;
+  const mediaAritmetica = useMemo(() =>
+    gradedExams.length > 0 ? (sumAritmetica / gradedExams.length).toFixed(2) : 0,
+  [sumAritmetica, gradedExams.length]);
+
+  const baseLaurea = useMemo(() =>
+    gradedCfu > 0 
+      ? ((sumPonderata / gradedCfu) * 110 / 30 + (lodeCount * settings.lodeBonus)).toFixed(2) 
+      : 0,
+  [sumPonderata, gradedCfu, lodeCount, settings.lodeBonus]);
 
   const isLight = currentTheme === 'light';
 
-  // Degree Simulator Calculations
-  const degreeResult = calculateDegreeProjection(exams, degreeConfig, {
-    thesisPoints,
-    hasInCorso,
-    hasErasmus,
-    hasSperimentale
-  });
+  // Degree Simulator Calculations — memoizzati separatamente
+  const degreeResult = useMemo(() =>
+    calculateDegreeProjection(exams, degreeConfig, { thesisPoints, hasInCorso, hasErasmus, hasSperimentale }),
+  [exams, degreeConfig, thesisPoints, hasInCorso, hasErasmus, hasSperimentale]);
 
-  const targetAnalysis = calculateRequiredAverageForTarget(
-    exams, 
-    simTargetGrade, 
-    degreeConfig, 
-    { thesisPoints, hasInCorso, hasErasmus, hasSperimentale }, 
-    settings.targetCfu
-  );
+  const targetAnalysis = useMemo(() =>
+    calculateRequiredAverageForTarget(exams, simTargetGrade, degreeConfig, { thesisPoints, hasInCorso, hasErasmus, hasSperimentale }, settings.targetCfu),
+  [exams, simTargetGrade, degreeConfig, thesisPoints, hasInCorso, hasErasmus, hasSperimentale, settings.targetCfu]);
 
-  // Chart Data
-  const chartData = {
+  // Chart Data — ricalcolato solo quando cambiano esami o tema/accent
+  const chartData = useMemo(() => ({
     labels: gradedExams.map(e => e.name.substring(0, 12) + (e.name.length > 12 ? '...' : '')),
     datasets: [
       {
@@ -187,7 +203,7 @@ const Grades = ({ exams: propExams, onOpenProModal }) => {
         pointHoverRadius: 7,
       },
     ],
-  };
+  }), [gradedExams, currentAccent, isLight]);
 
   const chartOptions = {
     responsive: true,
@@ -265,7 +281,7 @@ const Grades = ({ exams: propExams, onOpenProModal }) => {
       {/* Main Stats Grid */}
       <div className="stats-grid">
         <div className="stat-card glass-panel main-stat">
-          <div className="stat-icon" style={{ background: 'rgba(59, 130, 246, 0.2)', color: 'var(--accent-primary)' }}>
+          <div className="stat-icon stat-icon-primary">
             <TrendingUp size={24} />
           </div>
           <div className="stat-info">
@@ -276,12 +292,12 @@ const Grades = ({ exams: propExams, onOpenProModal }) => {
         </div>
 
         <div className="stat-card glass-panel main-stat">
-          <div className="stat-icon" style={{ background: 'rgba(168, 85, 247, 0.2)', color: '#a855f7' }}>
+          <div className="stat-icon stat-icon-degree">
             <Award size={24} />
           </div>
           <div className="stat-info">
-            <h3>Base Laurea Base</h3>
-            <div className="stat-value highlight-purple">{baseLaurea} <span className="text-sm">/ 110</span></div>
+            <h3>Base Laurea</h3>
+            <div className="stat-value highlight-degree">{baseLaurea} <span className="text-sm">/ 110</span></div>
             <div className="stat-sub">{lodeCount} Lodi ottenute</div>
           </div>
         </div>
