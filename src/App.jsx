@@ -30,6 +30,7 @@ import Exams from './pages/Exams'; // Pagina iniziale caricata istantaneamente
 import AccountModal from './components/AccountModal';
 import ThemeModal from './components/ThemeModal';
 import ProUpgradeModal from './components/ProUpgradeModal';
+import { ProfileOnboardingModal } from './components/ProfileOnboardingModal';
 
 // 🚀 Dynamic Lazy Loading per framerate a 60 FPS e bundle compatto
 const Welcome = lazy(() => import('./pages/Welcome'));
@@ -108,7 +109,31 @@ function MainApp() {
   const [isMoreSheetOpen, setIsMoreSheetOpen] = useState(false);
 
   const { currentUser, setIsAuthModalOpen, setAuthModalTab } = useAuth();
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const isElectron = typeof window !== 'undefined' && window.electronAPI?.isElectron;
+
+  // Mostra onboarding automatico per utenti con profilo incompleto (es. dopo Google Sign-In)
+  useEffect(() => {
+    if (currentUser) {
+      const isMissingAcademicData = 
+        !currentUser.university || 
+        currentUser.university === 'Università' || 
+        currentUser.university === 'Non specificata' ||
+        !currentUser.degreeCourse || 
+        currentUser.degreeCourse === 'Corso di Studi' ||
+        currentUser.degreeCourse === 'Non specificato';
+      
+      const isDismissed = localStorage.getItem('uniplanner_onboarding_dismissed');
+      const isCompleted = localStorage.getItem('uniplanner_onboarding_completed');
+
+      if (isMissingAcademicData && !isDismissed && !isCompleted) {
+        const timer = setTimeout(() => {
+          setIsOnboardingOpen(true);
+        }, 600);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [currentUser]);
 
   // Handle Capacitor Native Deep Links & Widget Actions (uniplanner://open?tab=...)
   useEffect(() => {
@@ -814,6 +839,12 @@ function MainApp() {
 
     {/* Account Management Modal */}
     <AccountModal onOpenLegal={handleOpenLegal} />
+
+    {/* Post-Google Sign-in / Incomplete Profile Academic Onboarding Modal */}
+    <ProfileOnboardingModal 
+      isOpen={isOnboardingOpen} 
+      onClose={() => setIsOnboardingOpen(false)} 
+    />
 
     {/* Dedicated Faculty Color Themes Modal */}
     <ThemeModal 

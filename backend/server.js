@@ -41,7 +41,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'uniplanner_prod_jwt_secret_32char_
 const AUTH_SALT = 'uniplanner_secure_salt_v1_';
 const NTFY_CHANNEL = process.env.NTFY_CHANNEL || 'uniplanner-edo-alerts-2026';
 
-// Helper notifiche push su ntfy.sh (per 2FA e allerte di sicurezza)
+let nodemailer = null;
+try {
+  nodemailer = require('nodemailer');
+} catch (e) {
+  // nodemailer opzionale se non installato
+}
+
+// Helper notifiche push su ntfy.sh (per monitoraggio admin e 2FA immediato)
 async function sendNtfyAlert(title, message, tags = 'bell', priority = 'high') {
   try {
     const cleanTitle = title.replace(/[^\x00-\x7F]/g, '').trim();
@@ -57,6 +64,108 @@ async function sendNtfyAlert(title, message, tags = 'bell', priority = 'high') {
   } catch (err) {
     console.error('[NTFY ERROR]', err.message);
   }
+}
+
+// Template HTML per email di verifica OTP
+function buildOtpEmailHtml(otpCode, studentName) {
+  const safeName = studentName ? String(studentName).replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Studente';
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Codice di Verifica UniPlanner</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; color: #f8fafc; margin: 0; padding: 24px;">
+  <div style="max-width: 480px; margin: 0 auto; background: #1e293b; border-radius: 16px; padding: 32px 24px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.4);">
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 24px;">
+      <div style="background: linear-gradient(135deg, #8b5cf6, #6366f1); color: white; font-weight: 800; font-size: 16px; width: 36px; height: 36px; border-radius: 8px; display: inline-block; text-align: center; line-height: 36px;">UP</div>
+      <span style="font-size: 20px; font-weight: 700; color: #ffffff; margin-left: 10px;">UniPlanner</span>
+    </div>
+    <h2 style="color: #ffffff; font-size: 20px; margin: 0 0 12px 0;">Ciao ${safeName},</h2>
+    <p style="color: #cbd5e1; font-size: 14.5px; line-height: 1.6; margin: 0 0 20px 0;">
+      Ecco il tuo codice di verifica monouso a 6 cifre per completare l'accesso al tuo account UniPlanner:
+    </p>
+    
+    <div style="background: rgba(139, 92, 246, 0.12); border: 1.5px dashed #8b5cf6; border-radius: 12px; padding: 20px; text-align: center; margin: 20px 0;">
+      <div style="font-family: monospace; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #a78bfa; margin: 0;">${otpCode}</div>
+      <div style="display: inline-block; background: rgba(239, 68, 68, 0.15); color: #f87171; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; margin-top: 10px;">⏱️ Valido per 5 minuti</div>
+    </div>
+
+    <p style="color: #94a3b8; font-size: 13px; line-height: 1.5; margin: 16px 0 0 0;">
+      Se non hai richiesto tu questo codice di accesso, ignora questa email o proteggi il tuo account cambiando la tua password.
+    </p>
+
+    <div style="border-top: 1px solid rgba(255,255,255,0.08); margin-top: 28px; padding-top: 18px; font-size: 11.5px; color: #64748b; line-height: 1.5; text-align: center;">
+      UniPlanner • Piattaforma Accademica per Studenti Universitari<br>
+      Messaggio automatico di sicurezza generato dal server.
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+// Invia il codice OTP tramite Resend API o SMTP / Nodemailer
+async function sendVerificationEmail({ toEmail, otpCode, studentName }) {
+  if (!toEmail) return false;
+  const html = buildOtpEmailHtml(otpCode, studentName);
+  const subject = `UniPlanner: Il tuo codice di accesso è ${otpCode}`;
+
+  // 1. Priorità: Resend API (HTTPS 443, ideale per Raspberry Pi e server domestici)
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: process.env.EMAIL_FROM || 'UniPlanner <onboarding@resend.dev>',
+          to: [toEmail],
+          subject,
+          html
+        })
+      });
+      if (res.ok) {
+        console.info(`📧 [EMAIL SENT] Codice OTP inviato con successo tramite Resend a: ${toEmail}`);
+        return true;
+      }
+      const errData = await res.json();
+      console.warn(`⚠️ [RESEND WARN] Impossibile inviare email a ${toEmail}:`, errData);
+    } catch (resendErr) {
+      console.error('❌ [RESEND ERROR]', resendErr.message);
+    }
+  }
+
+  // 2. Opzione: Nodemailer con SMTP Standard (Gmail, Brevo, SendGrid, Aruba, ecc.)
+  if (nodemailer && process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT) || 587,
+        secure: Number(process.env.SMTP_PORT) === 465,
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS
+        }
+      });
+
+      await transporter.sendMail({
+        from: process.env.EMAIL_FROM || `"UniPlanner" <${process.env.SMTP_USER}>`,
+        to: toEmail,
+        subject,
+        html
+      });
+      console.info(`📧 [EMAIL SENT] Codice OTP inviato con successo tramite SMTP a: ${toEmail}`);
+      return true;
+    } catch (smtpErr) {
+      console.error('❌ [SMTP ERROR]', smtpErr.message);
+    }
+  }
+
+  // 3. Fallback dev/locale se nessun provider email è configurato
+  console.info(`ℹ️ [EMAIL NOTICE] Nessun provider email configurato in .env. Codice per ${toEmail}: [${otpCode}]`);
+  return false;
 }
 
 // ─── 1. DATABASE SQLITE & WAL MODE ────────────────────────────────────────────
@@ -729,16 +838,23 @@ app.post('/api/auth/login', authLimiter, (req, res) => {
     db.prepare(`UPDATE users SET otp_code = ?, otp_expires_at = ? WHERE id = ?`).run(otpHash, otpExpires, user.id);
     logAudit('LOGIN_2FA_CHALLENGE_ISSUED', user.friend_code, req);
 
-    // Invio notifica push istantanea su ntfy.sh
+    // 1. Invio reale email di verifica allo studente
+    sendVerificationEmail({
+      toEmail: user.email,
+      otpCode,
+      studentName: user.full_name || user.username
+    }).catch(e => console.warn('[2FA EMAIL WARN]', e.message));
+
+    // 2. Invio notifica push istantanea su ntfy.sh (per monitoraggio amministratore)
     sendNtfyAlert(
       'UniPlanner 2FA: Codice OTP',
-      `Il tuo codice di verifica a 6 cifre per accedere a UniPlanner e: ${otpCode} (valido 5 minuti).`,
+      `Codice OTP per ${user.friend_code} (${user.email || 'no-email'}): ${otpCode} (valido 5 min).`,
       'key,shield,lock',
       'urgent'
     ).catch(e => console.warn('[2FA NTFY WARN]', e.message));
 
-    // Stampa o notifica OTP (in produzione via email o push, qui nei log di sicurezza)
-    console.info(`🔐 [2FA SECURITY] Codice OTP generato per ${user.friend_code}: [${otpCode}] (valido 5 min)`);
+    // Stampa o notifica OTP (in produzione nei log di sicurezza)
+    console.info(`🔐 [2FA SECURITY] Codice OTP generato per ${user.friend_code} (${user.email}): [${otpCode}] (valido 5 min)`);
 
     const tempToken = jwt.sign(
       { friendCode: user.friend_code, pending2FA: true }, 
