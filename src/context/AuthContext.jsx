@@ -14,7 +14,9 @@ import {
   toggle2FAOnline, 
   logoutUserOnline, 
   getCurrentUserOnline, 
-  publishUserProfile 
+  publishUserProfile,
+  getAuthToken,
+  setAuthToken 
 } from '../utils/cloudSync';
 
 const AuthContext = createContext();
@@ -57,29 +59,42 @@ export const AuthProvider = ({ children }) => {
     }
   }, [currentUser]);
 
-  // Silent session check on initial load using HttpOnly cookies
+  // Silent session check on initial load with auto-healing token recovery
   useEffect(() => {
     const checkActiveSession = async () => {
       try {
-        const userOnline = await getCurrentUserOnline();
-        if (userOnline && userOnline.friendCode) {
-          const formatted = {
-            id: `usr_${userOnline.friendCode}`,
-            username: userOnline.username,
-            fullName: userOnline.fullName || userOnline.username,
-            email: userOnline.email || '',
-            university: userOnline.university || '',
-            degreeCourse: userOnline.degreeCourse || '',
-            avatarColor: userOnline.avatarColor || '#8b5cf6',
-            friendCode: userOnline.friendCode,
-            bio: userOnline.bio || '',
-            status: userOnline.status || 'In sessione 🎯',
-            shareGrades: userOnline.shareGrades !== false,
-            isPremium: Boolean(userOnline.isPremium),
-            twoFactorEnabled: Boolean(userOnline.twoFactorEnabled),
-            role: userOnline.role || 'student'
-          };
-          setCurrentUser(formatted);
+        const token = getAuthToken();
+        if (token) {
+          const userOnline = await getCurrentUserOnline();
+          if (userOnline && userOnline.friendCode) {
+            const formatted = {
+              id: `usr_${userOnline.friendCode}`,
+              username: userOnline.username,
+              fullName: userOnline.fullName || userOnline.username,
+              email: userOnline.email || '',
+              university: userOnline.university || '',
+              degreeCourse: userOnline.degreeCourse || '',
+              avatarColor: userOnline.avatarColor || '#8b5cf6',
+              friendCode: userOnline.friendCode,
+              bio: userOnline.bio || '',
+              status: userOnline.status || 'In sessione 🎯',
+              shareGrades: userOnline.shareGrades !== false,
+              isPremium: Boolean(userOnline.isPremium),
+              twoFactorEnabled: Boolean(userOnline.twoFactorEnabled),
+              role: userOnline.role || 'student'
+            };
+            setCurrentUser(formatted);
+          }
+        } else if (currentUser && currentUser.friendCode) {
+          // Se l'utente è loggato localmente ma il tab non ha ancora il token (es. nuovo tab o ricarica),
+          // tenta il recupero trasparente del token tramite sync
+          const matchingLocal = users.find(u => u.friendCode === currentUser.friendCode);
+          if (matchingLocal?.passwordHash) {
+            const savedExams = safeJsonParse(localStorage.getItem('uniplanner_exams'), []);
+            const savedSchedule = safeJsonParse(localStorage.getItem('uniplanner_schedule_v1'), []);
+            const savedDeadlines = safeJsonParse(localStorage.getItem('uniplanner_deadlines'), []);
+            await publishUserProfile({ ...currentUser, passwordHash: matchingLocal.passwordHash }, savedExams, savedSchedule, savedDeadlines);
+          }
         }
       } catch (err) {
         console.warn('Session verification fallback to local:', err);
@@ -190,6 +205,12 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('uniplanner_deadlines', JSON.stringify(onlineUser.deadlines));
       }
 
+      if (authResponse.token) {
+        setAuthToken(authResponse.token);
+      }
+
+      const passwordHash = await hashPassword(password);
+
       const formattedUser = {
         id: `usr_${onlineUser.friendCode}`,
         username: onlineUser.username,
@@ -204,7 +225,8 @@ export const AuthProvider = ({ children }) => {
         shareGrades: onlineUser.shareGrades !== false,
         isPremium: Boolean(onlineUser.isPremium),
         twoFactorEnabled: Boolean(onlineUser.twoFactorEnabled),
-        role: onlineUser.role || 'student'
+        role: onlineUser.role || 'student',
+        passwordHash
       };
 
       setUsers(prev => {
@@ -213,9 +235,6 @@ export const AuthProvider = ({ children }) => {
       });
 
       setCurrentUser(formattedUser);
-      setTimeout(() => {
-        window.location.reload();
-      }, 300);
       return formattedUser;
     }
 
@@ -266,9 +285,6 @@ export const AuthProvider = ({ children }) => {
     });
 
     setCurrentUser(formattedUser);
-    setTimeout(() => {
-      window.location.reload();
-    }, 300);
     return formattedUser;
   };
 

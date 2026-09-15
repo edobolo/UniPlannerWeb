@@ -30,9 +30,40 @@ function checkClientRateLimit() {
   return true;
 }
 
+let inMemoryToken = null;
+
+/**
+ * Gestore del Token di Autenticazione (in-memory + sessionStorage).
+ * Garantisce zero salvataggio in LocalStorage, ma preserva l'autenticazione attiva nel tab corrente.
+ */
+export const setAuthToken = (token) => {
+  inMemoryToken = token || null;
+  try {
+    if (token) {
+      sessionStorage.setItem('uniplanner_auth_token', token);
+    } else {
+      sessionStorage.removeItem('uniplanner_auth_token');
+    }
+  } catch (e) {}
+};
+
+export const getAuthToken = () => {
+  if (inMemoryToken) return inMemoryToken;
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      const stored = sessionStorage.getItem('uniplanner_auth_token');
+      if (stored) {
+        inMemoryToken = stored;
+        return inMemoryToken;
+      }
+    }
+  } catch (e) {}
+  return null;
+};
+
 /**
  * Wrapper per fetch che include sempre gli header necessari per Ngrok, CORS e sicurezza,
- * credentials: 'include' per i cookie sicuri HttpOnly, timeout a 15s e retry con backoff.
+ * header Authorization Bearer token, credentials: 'include', timeout a 15s e retry con backoff.
  */
 export const apiFetch = async (endpoint, options = {}, retries = 1) => {
   if (!checkClientRateLimit()) {
@@ -40,9 +71,11 @@ export const apiFetch = async (endpoint, options = {}, retries = 1) => {
   }
 
   const url = endpoint.startsWith('http') ? endpoint : `${BACKEND_URL}${endpoint}`;
+  const token = getAuthToken();
   const headers = {
     'Content-Type': 'application/json',
     'ngrok-skip-browser-warning': 'true',
+    ...(token ? { 'Authorization': `Bearer ${token}`, 'x-auth-token': token } : {}),
     ...(options.headers || {})
   };
 
@@ -149,6 +182,12 @@ export const publishUserProfile = async (user, exams = [], schedule = [], deadli
     });
 
     if (res.ok) {
+      try {
+        const data = await res.json();
+        if (data && data.token) {
+          setAuthToken(data.token);
+        }
+      } catch (e) {}
       // Invalida la cache del profilo così il prossimo fetch scarica dati freschi
       cacheInvalidate(profileKey(user.friendCode));
       cacheInvalidate(friendsListKey(user.friendCode));
@@ -316,6 +355,9 @@ export const loginUserOnline = async (identifier, password) => {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Credenziali non valide.');
+    if (data.token) {
+      setAuthToken(data.token);
+    }
     return data;
   } catch (err) {
     logger.warn('Tentativo di login online fallito per identifier:', cleanId.slice(0, 3) + '***');
@@ -326,17 +368,20 @@ export const loginUserOnline = async (identifier, password) => {
 /**
  * Verifica il codice OTP a 6 cifre per completare il login con 2FA
  */
-export const verify2FAOnline = async (friendCode, otp) => {
+export const verify2FAOnline = async (friendCode, otp, tempToken) => {
   const cleanCode = normalizeFriendCode(friendCode);
   const cleanOtp = sanitizeText(otp, 6).trim();
 
   try {
     const res = await apiFetch('/auth/verify-2fa', {
       method: 'POST',
-      body: JSON.stringify({ friendCode: cleanCode, otp: cleanOtp })
+      body: JSON.stringify({ friendCode: cleanCode, code: cleanOtp, tempToken: tempToken || getAuthToken() || '' })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Codice OTP non valido o scaduto.');
+    if (data.token) {
+      setAuthToken(data.token);
+    }
     return data.user;
   } catch (err) {
     logger.warn('Verifica 2FA fallita:', err.message);
@@ -353,7 +398,7 @@ export const toggle2FAOnline = async (friendCode, enabled) => {
   try {
     const res = await apiFetch('/auth/2fa/toggle', {
       method: 'POST',
-      body: JSON.stringify({ friendCode: cleanCode, enabled: Boolean(enabled) })
+      body: JSON.stringify({ friendCode: cleanCode, enable: Boolean(enabled) })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Impossibile aggiornare impostazioni 2FA.');
@@ -368,6 +413,7 @@ export const toggle2FAOnline = async (friendCode, enabled) => {
  * Disconnette la sessione e distrugge il cookie HttpOnly sul server
  */
 export const logoutUserOnline = async () => {
+  setAuthToken(null);
   try {
     await apiFetch('/auth/logout', { method: 'POST' });
   } catch (err) {
@@ -380,6 +426,8 @@ export const logoutUserOnline = async () => {
  */
 export const getCurrentUserOnline = async () => {
   try {
+    const token = getAuthToken();
+    if (!token) return null;
     const res = await apiFetch('/auth/me', { method: 'GET' }, 0);
     if (res.ok) {
       const data = await res.json();
