@@ -33,7 +33,7 @@ const setupStripeRoutes = require('./stripeController');
 const setupAiRoutes = require('./aiController');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 const isProd = process.env.NODE_ENV === 'production';
 const JWT_SECRET = process.env.JWT_SECRET || 'uniplanner_prod_jwt_secret_32char_key_secure_2026';
 const AUTH_SALT = 'uniplanner_secure_salt_v1_';
@@ -66,6 +66,121 @@ function ensureColumn(table, column, definition) {
     }
   } catch (err) {
     console.warn(`[DB MIGRATION WARNING] ${column}:`, err.message);
+  }
+}
+
+// Auto-migrazione legacy trasparente da database.json a SQLite
+const legacyJsonPath = path.join(__dirname, 'database.json');
+if (fs.existsSync(legacyJsonPath)) {
+  try {
+    const userCount = db.prepare('SELECT count(*) as count FROM users').get().count;
+    if (userCount === 0) {
+      console.log('📦 Trovato database.json legacy: avvio migrazione automatica in SQLite...');
+      const raw = fs.readFileSync(legacyJsonPath, 'utf8');
+      const data = JSON.parse(raw);
+      if (data && data.students) {
+        const insertUser = db.prepare(`
+          INSERT OR IGNORE INTO users (friend_code, username, full_name, email, password_hash, university, degree_course, avatar_color, status, bio, share_grades, is_premium, stripe_customer_id, role)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        const insertExam = db.prepare(`
+          INSERT OR IGNORE INTO exams (id, user_friend_code, name, grade, credits, status, year, is_idoneita, study_time_min)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        const insertSched = db.prepare(`
+          INSERT OR IGNORE INTO schedules (id, user_friend_code, day_index, start_time, end_time, subject, room, professor, color, date)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        const insertDead = db.prepare(`
+          INSERT OR IGNORE INTO deadlines (id, user_friend_code, title, date, tag, color, completed)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        for (const [code, s] of Object.entries(data.students)) {
+          insertUser.run(
+            s.friendCode || code,
+            s.username || (s.friendCode || code),
+            s.fullName || s.username || 'Studente',
+            s.email || '',
+            s.password || '',
+            s.university || '',
+            s.degreeCourse || '',
+            s.avatarColor || '#8b5cf6',
+            s.status || 'In sessione 🎯',
+            s.bio || '',
+            s.shareGrades !== false ? 1 : 0,
+            s.isPremium ? 1 : 0,
+            s.stripeCustomerId || null,
+            'student'
+          );
+
+          if (Array.isArray(s.exams)) {
+            for (const ex of s.exams) {
+              insertExam.run(
+                String(ex.id || Date.now() + Math.random()),
+                s.friendCode || code,
+                ex.name || 'Esame',
+                ex.grade ? String(ex.grade) : null,
+                Number(ex.credits || ex.cfu) || 6,
+                ex.status || (ex.grade ? 'passed' : 'planned'),
+                ex.year || '1° Anno',
+                ex.isIdoneita ? 1 : 0,
+                Number(ex.studyTimeMin) || 0
+              );
+            }
+          }
+
+          if (Array.isArray(s.schedule)) {
+            for (const sc of s.schedule) {
+              insertSched.run(
+                String(sc.id || Date.now() + Math.random()),
+                s.friendCode || code,
+                typeof sc.dayIndex === 'number' ? sc.dayIndex : 0,
+                sc.startTime || '09:00',
+                sc.endTime || '11:00',
+                sc.subject || 'Lezione',
+                sc.room || '',
+                sc.professor || '',
+                sc.color || '#38bdf8',
+                sc.date || null
+              );
+            }
+          }
+
+          if (Array.isArray(s.deadlines)) {
+            for (const dl of s.deadlines) {
+              insertDead.run(
+                String(dl.id || Date.now() + Math.random()),
+                s.friendCode || code,
+                dl.title || 'Scadenza',
+                dl.date || '',
+                dl.tag || 'Esame',
+                dl.color || '#38bdf8',
+                dl.completed ? 1 : 0
+              );
+            }
+          }
+        }
+
+        if (data.connections && typeof data.connections === 'object') {
+          const insertConn = db.prepare(`
+            INSERT OR IGNORE INTO friends (user_code, friend_code)
+            VALUES (?, ?)
+          `);
+          for (const [userA, friendList] of Object.entries(data.connections)) {
+            if (Array.isArray(friendList)) {
+              for (const userB of friendList) {
+                insertConn.run(userA, userB);
+              }
+            }
+          }
+        }
+
+        console.log('✅ Migrazione legacy da database.json a SQLite completata con successo!');
+      }
+    }
+  } catch (migErr) {
+    console.warn('Avviso migrazione database.json:', migErr.message);
   }
 }
 
@@ -386,10 +501,25 @@ app.post('/api/auth/login', authLimiter, (req, res) => {
     }
   }
 
-  // Verifica password con SHA-256 e salt
-  const calculatedHash = crypto.createHash('sha256').update(AUTH_SALT + password).digest('hex');
+  // Verifica password con supporto doppio formato (scrypt da database.json legacy o SHA-256)
+  let passwordMatches = false;
+  if (user.password_hash) {
+    if (user.password_hash.includes(':')) {
+      try {
+        const [salt, keyHex] = user.password_hash.split(':');
+        const keyBuffer = Buffer.from(keyHex, 'hex');
+        const derivedKey = crypto.scryptSync(password, salt, 64);
+        passwordMatches = crypto.timingSafeEqual(keyBuffer, derivedKey);
+      } catch (e) {
+        passwordMatches = false;
+      }
+    } else {
+      const calculatedHash = crypto.createHash('sha256').update(AUTH_SALT + password).digest('hex');
+      passwordMatches = (user.password_hash === calculatedHash || user.password_hash === password);
+    }
+  }
 
-  if (user.password_hash !== calculatedHash) {
+  if (!passwordMatches) {
     const attempts = (user.failed_login_attempts || 0) + 1;
     if (attempts >= 5) {
       const lockUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString();
