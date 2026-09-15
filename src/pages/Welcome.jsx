@@ -231,7 +231,10 @@ const Welcome = ({ onNavigate, onOpenDownload, onOpenLegal, onOpenPro }) => {
         <div className="welcome-top-left">
           <div className="welcome-mini-logo">UP</div>
           <span className="welcome-brand">UniPlanner</span>
-          <span className="welcome-tagline-badge">Accademico</span>
+          <span className="welcome-ai-badge">
+            <Sparkles size={11} />
+            <span>Powered by AI</span>
+          </span>
         </div>
 
         <nav className="welcome-nav-links">
@@ -294,7 +297,7 @@ const Welcome = ({ onNavigate, onOpenDownload, onOpenLegal, onOpenPro }) => {
           {/* Eyebrow Badge */}
           <div className="welcome-badge">
             <Sparkles size={14} className="sparkle-icon" />
-            <span>L'Hub Accademico Definitivo per Studenti Universitari</span>
+            <span>L'Hub Accademico Definitivo • Powered by AI</span>
           </div>
 
           {/* Headline */}

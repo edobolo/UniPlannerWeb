@@ -90,9 +90,9 @@ const LegalModal = ({ isOpen, onClose, initialTab = 'privacy' }) => {
               </div>
 
               <section className="legal-section">
-                <h3>1. Titolare del Trattamento</h3>
+                <h3>1. Titolare del Trattamento & Contatti</h3>
                 <p>
-                  Il progetto <strong>UniPlanner</strong> è una piattaforma accademica indipendente per studenti universitari finalizzata alla gestione dello studio, dell'orario delle lezioni e delle scadenze accademiche. Il trattamento dei dati è limitato esclusivamente all'erogazione delle funzionalità dell'applicazione.
+                  Il progetto <strong>UniPlanner</strong> è una piattaforma accademica indipendente creata per supportare il metodo di studio degli studenti universitari. Per qualsiasi richiesta relativa alla protezione dei dati o per l'esercizio immediato dei propri diritti GDPR, è possibile contattare l'amministrazione all'indirizzo email: <strong>privacy@uniplanner.app</strong> o tramite il modulo di supporto interno.
                 </p>
               </section>
 
