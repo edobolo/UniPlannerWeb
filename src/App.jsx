@@ -57,13 +57,42 @@ function MainApp() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab');
-      if (tabParam) return tabParam;
+      if (tabParam) {
+        if (tabParam === 'welcome' || tabParam === 'benvenuto' || tabParam === 'home') {
+          return 'benvenuto';
+        }
+        return tabParam;
+      }
+      if (window.location.pathname === '/welcome' || window.location.pathname === '/benvenuto') {
+        return 'benvenuto';
+      }
       if (window.location.search.includes('u=') || window.location.search.includes('importFriend=')) {
         return 'amici';
+      }
+      // Se l'utente è un visitatore nuovo e non ha ancora esami salvati, mostra la pagina di presentazione
+      const welcomeSeen = localStorage.getItem('uniplanner_welcome_seen');
+      const hasExams = localStorage.getItem('uniplanner_exams');
+      if (!welcomeSeen && !hasExams) {
+        return 'benvenuto';
       }
     }
     return 'esami';
   });
+
+  const handleNavigateTab = (tab) => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (tab === 'benvenuto') {
+        url.searchParams.set('tab', 'welcome');
+      } else if (tab === 'esami') {
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.set('tab', tab);
+      }
+      window.history.replaceState({}, '', url.toString());
+    }
+  };
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('uniplanner_theme') || 'dark';
   });
@@ -301,17 +330,31 @@ function MainApp() {
     }
   };
 
+  const isStandaloneWelcome = activeTab === 'benvenuto';
+
   return (
-    <div className="app-root">
+    <div className={`app-root ${isStandaloneWelcome ? 'standalone-welcome-mode' : ''}`}>
       <TitleBar />
 
-      {/* Mobile Top Header — Clean & Compact */}
-      <header className="mobile-header glass-panel">
-        <div 
-          className="mobile-logo" 
-          onClick={() => setActiveTab('esami')}
-          title="Home"
-        >
+      {isStandaloneWelcome ? (
+        /* Pagina di Benvenuto e Presentazione Standalone (100% separata dalle funzioni dell'app) */
+        <Suspense fallback={<div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.6 }} />}>
+          <Welcome 
+            onNavigate={handleNavigateTab} 
+            onOpenDownload={() => setIsDownloadModalOpen(true)} 
+            onOpenLegal={handleOpenLegal}
+            onOpenPro={() => setIsProModalOpen(true)}
+          />
+        </Suspense>
+      ) : (
+        <>
+          {/* Mobile Top Header — Clean & Compact */}
+          <header className="mobile-header glass-panel">
+            <div 
+              className="mobile-logo" 
+              onClick={() => handleNavigateTab('esami')}
+              title="Home"
+            >
           <div className="logo-icon">UP</div>
           <h2>{currentPageTitle}</h2>
         </div>
@@ -346,8 +389,8 @@ function MainApp() {
           <div className="sidebar-top">
             <div 
               className="logo-container clickable-logo" 
-              onClick={() => setActiveTab('benvenuto')}
-              title="Guida & Presentazione UniPlanner"
+              onClick={() => handleNavigateTab('benvenuto')}
+              title="Presentazione e Piani UniPlanner"
             >
               <div className="logo-icon">UP</div>
               <h2>UniPlanner</h2>
@@ -458,11 +501,11 @@ function MainApp() {
 
               <button 
                 className="footer-mini-btn"
-                onClick={() => setActiveTab('benvenuto')}
-                title="Scopri la guida e tutte le funzioni di UniPlanner"
+                onClick={() => handleNavigateTab('benvenuto')}
+                title="Presentazione e Piani UniPlanner"
               >
                 <Sparkles size={15} className="guide-sparkle-icon" />
-                <span>Guida</span>
+                <span>Presentazione</span>
               </button>
 
               <button 
@@ -533,24 +576,6 @@ function MainApp() {
 
         <Suspense fallback={<div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.6 }} />}>
           <AnimatePresence mode="wait">
-            {activeTab === 'benvenuto' && (
-              <motion.div
-                key="benvenuto"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                className="page-wrapper gpu-accelerated"
-              >
-                <Welcome 
-                  onNavigate={(tab) => setActiveTab(tab)} 
-                  onOpenDownload={() => setIsDownloadModalOpen(true)} 
-                  onOpenLegal={handleOpenLegal}
-                  onOpenPro={() => setIsProModalOpen(true)}
-                />
-              </motion.div>
-            )}
-
             {activeTab === 'esami' && (
               <motion.div
                 key="esami"
@@ -655,7 +680,7 @@ function MainApp() {
               </motion.div>
             )}
 
-            {!['benvenuto', 'esami', 'ai-assistant', 'voti', 'orario', 'scadenze', 'pomodoro', 'amici', 'notifiche'].includes(activeTab) && (
+            {!['esami', 'ai-assistant', 'voti', 'orario', 'scadenze', 'pomodoro', 'amici', 'notifiche'].includes(activeTab) && (
               <motion.div
                 key="not-found"
                 initial={{ opacity: 0, y: 10 }}
@@ -664,7 +689,7 @@ function MainApp() {
                 transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
                 className="page-wrapper gpu-accelerated"
               >
-                <NotFound onNavigate={(tab) => setActiveTab(tab)} />
+                <NotFound onNavigate={handleNavigateTab} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -757,7 +782,7 @@ function MainApp() {
                 })}
               </div>
               <div className="more-sheet-extras">
-                <button className="more-sheet-extra-btn" onClick={() => { setActiveTab('benvenuto'); setIsMoreSheetOpen(false); }}>
+                <button className="more-sheet-extra-btn" onClick={() => { handleNavigateTab('benvenuto'); setIsMoreSheetOpen(false); }}>
                   <Sparkles size={18} />
                   <span>Guida</span>
                 </button>
@@ -784,6 +809,8 @@ function MainApp() {
           </>
         )}
       </AnimatePresence>
+    </>
+  )}
 
     {/* Account Management Modal */}
     <AccountModal onOpenLegal={handleOpenLegal} />

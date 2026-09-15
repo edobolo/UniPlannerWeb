@@ -7,6 +7,14 @@
   color: var(--text-primary);
 }
 
+.app-root.standalone-welcome-mode {
+  height: auto;
+  min-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: block;
+}
+
 .app-container {
   display: flex;
   flex: 1;
