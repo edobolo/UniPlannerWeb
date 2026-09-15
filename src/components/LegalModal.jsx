@@ -92,7 +92,7 @@ const LegalModal = ({ isOpen, onClose, initialTab = 'privacy' }) => {
               <section className="legal-section">
                 <h3>1. Titolare del Trattamento</h3>
                 <p>
-                  Il progetto <strong>UniPlanner</strong> è una piattaforma indipendente no-profit per studenti universitari finalizzata alla gestione dello studio, dell'orario delle lezioni e delle scadenze accademiche. Il trattamento dei dati è limitato esclusivamente all'erogazione delle funzionalità dell'applicazione.
+                  Il progetto <strong>UniPlanner</strong> è una piattaforma accademica indipendente per studenti universitari finalizzata alla gestione dello studio, dell'orario delle lezioni e delle scadenze accademiche. Il trattamento dei dati è limitato esclusivamente all'erogazione delle funzionalità dell'applicazione.
                 </p>
               </section>
 
@@ -146,7 +146,7 @@ const LegalModal = ({ isOpen, onClose, initialTab = 'privacy' }) => {
               <section className="legal-section">
                 <h3>1. Natura del Servizio</h3>
                 <p>
-                  UniPlanner è offerto a titolo gratuito *"così com'è"* (*as-is*) per assistere gli studenti nell'organizzazione autonoma del proprio tempo e del proprio percorso di studi.
+                  UniPlanner offre un piano Base gratuito accessibile a tutti gli studenti, affiancato da piani avanzati opzionali (UniPlanner PRO: Mensile, Annuale e Founder's Edition) per il supporto intensivo allo studio e strumenti potenziati da intelligenza artificiale.
                 </p>
               </section>
 
@@ -174,6 +174,13 @@ const LegalModal = ({ isOpen, onClose, initialTab = 'privacy' }) => {
                 <h3>4. Condotta e Rispetto della Community</h3>
                 <p>
                   Gli utenti si impegnano a utilizzare il servizio in modo corretto, a non caricare contenuti illeciti o offensivi e a non tentare di compromettere l'integrità del sistema.
+                </p>
+              </section>
+
+              <section className="legal-section">
+                <h3>5. Piani PRO, Pagamenti Sicuri Stripe & Recesso</h3>
+                <p>
+                  I pagamenti e la fatturazione dei piani PRO sono gestiti tramite l'infrastruttura certificata PCI-DSS di Stripe. Gli abbonamenti ricorrenti (Mensile e Annuale) possono essere disdetti in qualsiasi momento con un clic dal Customer Portal di Stripe senza penali né costi aggiuntivi. In conformità con le normative UE a tutela del consumatore, è garantito il diritto di recesso entro 14 giorni dall'acquisto iniziale.
                 </p>
               </section>
             </div>

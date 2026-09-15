@@ -409,7 +409,7 @@ const Welcome = ({ onNavigate, onOpenDownload, onOpenLegal, onOpenPro }) => {
                   >
                     <div className="preview-stat-cards-grid">
                       <div className="preview-stat-card">
-                        <span className="card-label">CFU Conseguite</span>
+                        <span className="card-label">CFU Conseguiti</span>
                         <div className="card-big-value">132 <small>/ 180</small></div>
                         <div className="preview-progress-track">
                           <div className="preview-progress-fill" style={{ width: '73.3%' }}></div>
