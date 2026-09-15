@@ -69,6 +69,9 @@ function ensureColumn(table, column, definition) {
   }
 }
 
+ensureColumn('users', 'google_id', 'TEXT');
+ensureColumn('users', 'avatar_url', 'TEXT');
+
 // Auto-migrazione legacy trasparente da database.json a SQLite
 const legacyJsonPath = path.join(__dirname, 'database.json');
 if (fs.existsSync(legacyJsonPath)) {
@@ -251,7 +254,7 @@ app.use(cors({
   },
   credentials: true, // Necessario per la ricezione e l'invio dei cookie httpOnly
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning', 'x-requested-with']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token', 'ngrok-skip-browser-warning', 'x-requested-with']
 }));
 
 // Monta Stripe routes prima di express.json globale per consentire il raw body sul webhook
@@ -501,6 +504,123 @@ app.post('/api/auth/register', authLimiter, (req, res) => {
     },
     token // Restituito in memoria per il client state (non in localStorage)
   });
+});
+
+/**
+ * POST /api/auth/google — Accesso e Registrazione automatica con Account Google
+ */
+app.post('/api/auth/google', authLimiter, (req, res) => {
+  const { credential, profile } = req.body || {};
+  let googleEmail = null;
+  let googleName = null;
+  let googleSub = null;
+  let googlePicture = null;
+
+  if (credential) {
+    try {
+      const decoded = jwt.decode(credential);
+      if (decoded && decoded.email) {
+        googleEmail = String(decoded.email).trim().toLowerCase();
+        googleName = decoded.name || decoded.given_name || googleEmail.split('@')[0];
+        googleSub = decoded.sub;
+        googlePicture = decoded.picture || null;
+      }
+    } catch (e) {
+      console.warn('Decodifica token Google fallita:', e.message);
+    }
+  }
+
+  if (!googleEmail && profile && profile.email) {
+    googleEmail = String(profile.email).trim().toLowerCase();
+    googleName = profile.name || profile.fullName || googleEmail.split('@')[0];
+    googleSub = profile.sub || profile.id || null;
+    googlePicture = profile.picture || profile.avatar || null;
+  }
+
+  if (!googleEmail) {
+    return res.status(400).json({ error: 'Credenziali Google non valide o email non fornita.' });
+  }
+
+  // Cerca utente per email o google_id
+  let user = db.prepare(`
+    SELECT id, friend_code, username, full_name, email, university, degree_course, avatar_color, bio, status, share_grades, is_premium, stripe_customer_id, role, two_factor_enabled, google_id
+    FROM users
+    WHERE LOWER(email) = ? OR (google_id IS NOT NULL AND google_id = ?)
+  `).get(googleEmail, googleSub || '');
+
+  if (!user) {
+    // Nuovo studente: registrazione automatica con Friend Code univoco
+    const friendCode = `UP-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+    const userId = `usr_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+    const baseUsername = googleEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '').slice(0, 18) || 'studente';
+    
+    let finalUsername = baseUsername;
+    const exists = db.prepare(`SELECT id FROM users WHERE LOWER(username) = ?`).get(finalUsername.toLowerCase());
+    if (exists) {
+      finalUsername = `${baseUsername}_${crypto.randomBytes(2).toString('hex')}`.slice(0, 20);
+    }
+
+    const randomColors = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#06b6d4'];
+    const avatarColor = randomColors[Math.floor(Math.random() * randomColors.length)];
+
+    db.prepare(`
+      INSERT INTO users (id, friend_code, username, full_name, email, password_hash, university, degree_course, avatar_color, status, bio, role, google_id, avatar_url)
+      VALUES (?, ?, ?, ?, ?, '', '', '', ?, 'In sessione 🎯', 'Studente UniPlanner', 'student', ?, ?)
+    `).run(userId, friendCode, finalUsername, googleName, googleEmail, avatarColor, googleSub || '', googlePicture || '');
+
+    logAudit('USER_REGISTERED_GOOGLE', friendCode, req, `Email: ${googleEmail}`);
+
+    user = {
+      id: userId,
+      friend_code: friendCode,
+      username: finalUsername,
+      full_name: googleName,
+      email: googleEmail,
+      university: '',
+      degree_course: '',
+      avatar_color: avatarColor,
+      bio: 'Studente UniPlanner',
+      status: 'In sessione 🎯',
+      share_grades: 1,
+      is_premium: 0,
+      stripe_customer_id: null,
+      role: 'student',
+      two_factor_enabled: 0
+    };
+  } else {
+    if (googleSub && !user.google_id) {
+      db.prepare(`UPDATE users SET google_id = ? WHERE id = ?`).run(googleSub, user.id);
+    }
+    logAudit('USER_LOGIN_GOOGLE', user.friend_code, req, `Email: ${googleEmail}`);
+  }
+
+  const token = jwt.sign({ friendCode: user.friend_code, role: user.role || 'student' }, JWT_SECRET, { expiresIn: '30d' });
+
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+    maxAge: 30 * 24 * 3600 * 1000
+  });
+
+  const safeProfile = {
+    friendCode: user.friend_code,
+    username: user.username,
+    fullName: user.full_name || user.username,
+    email: user.email,
+    university: user.university || '',
+    degreeCourse: user.degree_course || '',
+    avatarColor: user.avatar_color || '#8b5cf6',
+    bio: user.bio || '',
+    status: user.status || 'In sessione 🎯',
+    shareGrades: Boolean(user.share_grades),
+    isPremium: Boolean(user.is_premium),
+    stripeCustomerId: user.stripe_customer_id,
+    role: user.role || 'student',
+    twoFactorEnabled: Boolean(user.two_factor_enabled)
+  };
+
+  return res.json({ success: true, user: safeProfile, token });
 });
 
 /**

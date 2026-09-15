@@ -546,6 +546,7 @@ function MainApp() {
                   onNavigate={(tab) => setActiveTab(tab)} 
                   onOpenDownload={() => setIsDownloadModalOpen(true)} 
                   onOpenLegal={handleOpenLegal}
+                  onOpenPro={() => setIsProModalOpen(true)}
                 />
               </motion.div>
             )}

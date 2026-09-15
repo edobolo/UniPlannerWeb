@@ -10,6 +10,7 @@ import {
 } from '../utils/security';
 import { 
   loginUserOnline, 
+  loginGoogleOnline,
   verify2FAOnline, 
   toggle2FAOnline, 
   logoutUserOnline, 
@@ -254,6 +255,98 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
+   * Accesso e registrazione rapida con Account Google
+   */
+  const loginWithGoogle = async (credential, profile = null) => {
+    let authRes = null;
+    try {
+      authRes = await loginGoogleOnline(credential, profile);
+    } catch (err) {
+      console.warn('Login Google backend non raggiungibile, utilizzo fallback locale:', err);
+    }
+
+    let googleEmail = profile?.email;
+    let googleName = profile?.name || profile?.fullName;
+    let googlePicture = profile?.picture;
+
+    if (credential && !googleEmail) {
+      try {
+        const payloadBase64 = credential.split('.')[1];
+        const decoded = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
+        googleEmail = decoded.email;
+        googleName = decoded.name || decoded.given_name;
+        googlePicture = decoded.picture;
+      } catch (e) {}
+    }
+
+    if (authRes && authRes.user) {
+      const onlineUser = authRes.user;
+      if (authRes.token) {
+        setAuthToken(authRes.token);
+      }
+      const formattedUser = {
+        id: `usr_${onlineUser.friendCode}`,
+        username: onlineUser.username,
+        fullName: onlineUser.fullName || onlineUser.username,
+        email: onlineUser.email || '',
+        university: onlineUser.university || '',
+        degreeCourse: onlineUser.degreeCourse || '',
+        avatarColor: onlineUser.avatarColor || '#8b5cf6',
+        friendCode: onlineUser.friendCode,
+        bio: onlineUser.bio || '',
+        status: onlineUser.status || 'In sessione 🎯',
+        shareGrades: onlineUser.shareGrades !== false,
+        isPremium: Boolean(onlineUser.isPremium),
+        twoFactorEnabled: Boolean(onlineUser.twoFactorEnabled),
+        role: onlineUser.role || 'student',
+        avatarUrl: googlePicture || null
+      };
+
+      setUsers(prev => {
+        const filtered = prev.filter(u => u.friendCode !== formattedUser.friendCode);
+        return [...filtered, formattedUser];
+      });
+
+      setCurrentUser(formattedUser);
+      return formattedUser;
+    }
+
+    // Fallback Locale se offline
+    if (googleEmail) {
+      const cleanEmail = googleEmail.toLowerCase();
+      let localUser = users.find(u => u.email?.toLowerCase() === cleanEmail);
+      if (!localUser) {
+        const avatarColors = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#06b6d4'];
+        const randomColor = avatarColors[Math.floor(Math.random() * avatarColors.length)];
+        localUser = {
+          id: `usr_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+          username: googleEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '').slice(0, 18) || 'studente',
+          fullName: googleName || googleEmail.split('@')[0],
+          email: cleanEmail,
+          passwordHash: '',
+          university: 'Università',
+          degreeCourse: 'Corso di Studi',
+          avatarColor: randomColor,
+          friendCode: generateFriendCode(),
+          bio: 'Studente UniPlanner',
+          status: 'In sessione 🎯',
+          shareGrades: true,
+          twoFactorEnabled: false,
+          isPremium: false,
+          role: 'student',
+          avatarUrl: googlePicture || null,
+          createdAt: new Date().toISOString()
+        };
+        setUsers(prev => [...prev, localUser]);
+      }
+      setCurrentUser(localUser);
+      return localUser;
+    }
+
+    throw new Error('Impossibile completare l\'accesso con Google.');
+  };
+
+  /**
    * Completes 2FA verification with 6-digit OTP
    */
   const verify2FA = async (friendCode, otp) => {
@@ -346,6 +439,7 @@ export const AuthProvider = ({ children }) => {
       users,
       register,
       login,
+      loginWithGoogle,
       verify2FA,
       toggle2FA,
       logout,
