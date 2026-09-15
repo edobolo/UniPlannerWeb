@@ -8,7 +8,14 @@ import {
   generateFriendCode, 
   safeJsonParse 
 } from '../utils/security';
-import { loginUserOnline, publishUserProfile } from '../utils/cloudSync';
+import { 
+  loginUserOnline, 
+  verify2FAOnline, 
+  toggle2FAOnline, 
+  logoutUserOnline, 
+  getCurrentUserOnline, 
+  publishUserProfile 
+} from '../utils/cloudSync';
 
 const AuthContext = createContext();
 
@@ -17,26 +24,11 @@ const STORAGE_SESSION_KEY = 'uniplanner_active_session_v2';
 
 export const AuthProvider = ({ children }) => {
   const [users, setUsers] = useState(() => {
-    // Purge legacy v1 demo users if present
-    const legacyV1 = safeJsonParse(localStorage.getItem('uniplanner_users_db_v1'), []);
-    const cleanV1 = legacyV1.filter(u => u.id !== 'usr_main_demo' && u.username !== 'edoardo_dev');
-    if (cleanV1.length > 0) {
-      localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(cleanV1));
-    }
-    localStorage.removeItem('uniplanner_users_db_v1');
-
     const currentV2 = safeJsonParse(localStorage.getItem(STORAGE_USERS_KEY), []);
     return currentV2.filter(u => u.id !== 'usr_main_demo' && u.username !== 'edoardo_dev');
   });
 
   const [currentUser, setCurrentUser] = useState(() => {
-    // Purge legacy v1 demo session
-    const legacySession = safeJsonParse(localStorage.getItem('uniplanner_active_session_v1'), null);
-    if (legacySession && (legacySession.id === 'usr_main_demo' || legacySession.username === 'edoardo_dev')) {
-      localStorage.removeItem('uniplanner_active_session_v1');
-    }
-    localStorage.removeItem('uniplanner_active_session_v1');
-
     const session = safeJsonParse(localStorage.getItem(STORAGE_SESSION_KEY), null);
     if (session && session.id && session.id !== 'usr_main_demo' && session.username !== 'edoardo_dev') {
       return session;
@@ -45,7 +37,7 @@ export const AuthProvider = ({ children }) => {
   });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalTab, setAuthModalTab] = useState('register'); // 'profile' | 'login' | 'register'
+  const [authModalTab, setAuthModalTab] = useState('register'); // 'profile' | 'login' | 'register' | 'otp'
 
   useEffect(() => {
     localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(users));
@@ -53,33 +45,49 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (currentUser) {
-      localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(currentUser));
+      // Store public profile attributes only (never session tokens or secrets)
+      const safeSession = { ...currentUser };
+      delete safeSession.token;
+      delete safeSession.jwt;
+      delete safeSession.password;
+      delete safeSession.passwordHash;
+      localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(safeSession));
     } else {
       localStorage.removeItem(STORAGE_SESSION_KEY);
     }
   }, [currentUser]);
 
-  // Sincronizza lo stato PRO in tempo reale dal backend al caricamento o dopo il pagamento
+  // Silent session check on initial load using HttpOnly cookies
   useEffect(() => {
-    const refreshProfileFromCloud = async () => {
-      if (!currentUser?.friendCode) return;
+    const checkActiveSession = async () => {
       try {
-        const { fetchUserProfile } = await import('../utils/cloudSync');
-        const onlineProfile = await fetchUserProfile(currentUser.friendCode);
-        if (onlineProfile) {
-          setCurrentUser(prev => ({
-            ...prev,
-            isPremium: Boolean(onlineProfile.isPremium),
-            stripeCustomerId: onlineProfile.stripeCustomerId || prev?.stripeCustomerId || null
-          }));
+        const userOnline = await getCurrentUserOnline();
+        if (userOnline && userOnline.friendCode) {
+          const formatted = {
+            id: `usr_${userOnline.friendCode}`,
+            username: userOnline.username,
+            fullName: userOnline.fullName || userOnline.username,
+            email: userOnline.email || '',
+            university: userOnline.university || '',
+            degreeCourse: userOnline.degreeCourse || '',
+            avatarColor: userOnline.avatarColor || '#8b5cf6',
+            friendCode: userOnline.friendCode,
+            bio: userOnline.bio || '',
+            status: userOnline.status || 'In sessione 🎯',
+            shareGrades: userOnline.shareGrades !== false,
+            isPremium: Boolean(userOnline.isPremium),
+            twoFactorEnabled: Boolean(userOnline.twoFactorEnabled),
+            role: userOnline.role || 'student'
+          };
+          setCurrentUser(formatted);
         }
       } catch (err) {
-        console.warn('Silent cloud status refresh error:', err);
+        console.warn('Session verification fallback to local:', err);
       }
     };
 
-    refreshProfileFromCloud();
-  }, [currentUser?.friendCode]);
+    checkActiveSession();
+  }, []);
 
   /**
    * Secure User Registration
@@ -125,6 +133,9 @@ export const AuthProvider = ({ children }) => {
       bio: 'Studente UniPlanner',
       status: 'Libero ☕',
       shareGrades: true,
+      twoFactorEnabled: false,
+      isPremium: false,
+      role: 'student',
       createdAt: new Date().toISOString()
     };
 
@@ -141,7 +152,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
-   * Secure User Login (Backend First with Local Fallback)
+   * Secure User Login with 2FA Support
    */
   const login = async (identifier, password) => {
     const cleanId = sanitizeText(identifier, 100).trim();
@@ -149,19 +160,26 @@ export const AuthProvider = ({ children }) => {
       throw new Error('Inserisci username/email e password.');
     }
 
-    let onlineUser = null;
+    let authResponse = null;
     try {
-      onlineUser = await loginUserOnline(cleanId, password);
+      authResponse = await loginUserOnline(cleanId, password);
     } catch (onlineErr) {
-      // Se l'errore è credenziali errate dal server, lancia subito l'errore
-      if (onlineErr.message && onlineErr.message.includes('non valide')) {
+      if (onlineErr.message && (onlineErr.message.includes('non valide') || onlineErr.message.includes('bloccato'))) {
         throw onlineErr;
       }
       console.warn('Login online fallito, provo fallback locale:', onlineErr);
     }
 
-    if (onlineUser) {
-      // Salva i dati dell'utente online in locale
+    // Se il server richiede 2FA OTP
+    if (authResponse && authResponse.require2FA) {
+      return {
+        require2FA: true,
+        friendCode: authResponse.friendCode
+      };
+    }
+
+    if (authResponse && authResponse.user) {
+      const onlineUser = authResponse.user;
       if (onlineUser.exams) {
         localStorage.setItem('uniplanner_exams', JSON.stringify(onlineUser.exams));
       }
@@ -183,7 +201,10 @@ export const AuthProvider = ({ children }) => {
         friendCode: onlineUser.friendCode,
         bio: onlineUser.bio || '',
         status: onlineUser.status || 'In sessione 🎯',
-        shareGrades: onlineUser.shareGrades !== false
+        shareGrades: onlineUser.shareGrades !== false,
+        isPremium: Boolean(onlineUser.isPremium),
+        twoFactorEnabled: Boolean(onlineUser.twoFactorEnabled),
+        role: onlineUser.role || 'student'
       };
 
       setUsers(prev => {
@@ -192,9 +213,6 @@ export const AuthProvider = ({ children }) => {
       });
 
       setCurrentUser(formattedUser);
-      localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(formattedUser));
-      
-      // Ricarica per applicare tutti i dati del profilo
       setTimeout(() => {
         window.location.reload();
       }, 300);
@@ -217,15 +235,69 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
-   * Logout Completo & Pulizia Dati Totale
+   * Completes 2FA verification with 6-digit OTP
    */
-  const logout = () => {
+  const verify2FA = async (friendCode, otp) => {
+    const userOnline = await verify2FAOnline(friendCode, otp);
+    if (!userOnline) {
+      throw new Error('Verifica 2FA non riuscita.');
+    }
+
+    const formattedUser = {
+      id: `usr_${userOnline.friendCode}`,
+      username: userOnline.username,
+      fullName: userOnline.fullName || userOnline.username,
+      email: userOnline.email || '',
+      university: userOnline.university || '',
+      degreeCourse: userOnline.degreeCourse || '',
+      avatarColor: userOnline.avatarColor || '#8b5cf6',
+      friendCode: userOnline.friendCode,
+      bio: userOnline.bio || '',
+      status: userOnline.status || 'In sessione 🎯',
+      shareGrades: userOnline.shareGrades !== false,
+      isPremium: Boolean(userOnline.isPremium),
+      twoFactorEnabled: Boolean(userOnline.twoFactorEnabled),
+      role: userOnline.role || 'student'
+    };
+
+    setUsers(prev => {
+      const filtered = prev.filter(u => u.friendCode !== formattedUser.friendCode);
+      return [...filtered, formattedUser];
+    });
+
+    setCurrentUser(formattedUser);
+    setTimeout(() => {
+      window.location.reload();
+    }, 300);
+    return formattedUser;
+  };
+
+  /**
+   * Toggles 2FA setting on the backend
+   */
+  const toggle2FA = async (enabled) => {
+    if (!currentUser?.friendCode) return;
+    const res = await toggle2FAOnline(currentUser.friendCode, enabled);
+    setCurrentUser(prev => ({
+      ...prev,
+      twoFactorEnabled: Boolean(res.twoFactorEnabled)
+    }));
+    return res;
+  };
+
+  /**
+   * Logout Completo & Pulizia Dati
+   */
+  const logout = async () => {
+    await logoutUserOnline();
     setCurrentUser(null);
     try {
-      localStorage.clear();
+      localStorage.removeItem(STORAGE_SESSION_KEY);
+      localStorage.removeItem('uniplanner_exams');
+      localStorage.removeItem('uniplanner_schedule_v1');
+      localStorage.removeItem('uniplanner_deadlines');
     } catch (e) {}
     
-    // Ricarica la pagina per resettare completamente l'interfaccia a 0
     window.location.reload();
   };
 
@@ -250,30 +322,7 @@ export const AuthProvider = ({ children }) => {
     setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
   };
 
-  const [isProUser, setIsProUser] = useState(() => {
-    return Boolean(currentUser?.isPremium);
-  });
-
-  useEffect(() => {
-    localStorage.removeItem('uniplanner_pro_unlocked');
-    setIsProUser(Boolean(currentUser?.isPremium));
-  }, [currentUser?.isPremium]);
-
-  const unlockPro = (code) => {
-    const cleanCode = (code || '').trim().toUpperCase();
-    if (
-      cleanCode === 'UNIPLANNER-PRO-2026' || 
-      cleanCode === 'EDO-PRO-VIP' || 
-      cleanCode === 'EDO' || 
-      cleanCode === 'PRO' ||
-      cleanCode === 'EDOBOLO'
-    ) {
-      localStorage.setItem('uniplanner_pro_unlocked', 'true');
-      setIsProUser(true);
-      return true;
-    }
-    return false;
-  };
+  const isProUser = Boolean(currentUser?.isPremium || currentUser?.role === 'admin');
 
   return (
     <AuthContext.Provider value={{
@@ -281,14 +330,15 @@ export const AuthProvider = ({ children }) => {
       users,
       register,
       login,
+      verify2FA,
+      toggle2FA,
       logout,
       updateProfile,
       isAuthModalOpen,
       setIsAuthModalOpen,
       authModalTab,
       setAuthModalTab,
-      isPro: isProUser,
-      unlockPro
+      isPro: isProUser
     }}>
       {children}
     </AuthContext.Provider>

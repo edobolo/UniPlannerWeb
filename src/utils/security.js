@@ -175,3 +175,83 @@ export function maskSensitiveData(obj) {
   }
   return masked;
 }
+
+/**
+ * Validates password strength and returns score + breakdown.
+ * Requirements:
+ * - At least 8 characters
+ * - At least 1 uppercase letter
+ * - At least 1 lowercase letter
+ * - At least 1 digit
+ * - At least 1 special character
+ */
+export function checkPasswordStrength(password) {
+  if (typeof password !== 'string') {
+    return {
+      isStrong: false,
+      score: 0,
+      checks: {
+        length: false,
+        uppercase: false,
+        lowercase: false,
+        number: false,
+        special: false
+      },
+      feedback: ['Inserisci una password.']
+    };
+  }
+
+  const checks = {
+    length: password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /[0-9]/.test(password),
+    special: /[^A-Za-z0-9]/.test(password)
+  };
+
+  const score = Object.values(checks).filter(Boolean).length;
+  const feedback = [];
+  if (!checks.length) feedback.push('Almeno 8 caratteri');
+  if (!checks.uppercase) feedback.push('Almeno una lettera maiuscola');
+  if (!checks.lowercase) feedback.push('Almeno una lettera minuscola');
+  if (!checks.number) feedback.push('Almeno un numero');
+  if (!checks.special) feedback.push('Almeno un carattere speciale');
+
+  return {
+    isStrong: score >= 4 && checks.length,
+    score,
+    checks,
+    feedback
+  };
+}
+
+/**
+ * Escapes HTML entities to neutralize XSS in dynamic text rendering
+ */
+export function escapeHtml(str) {
+  if (typeof str !== 'string') return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * Strict URL sanitization: whitelist only http: and https: protocols
+ * Blocks javascript:, data:, vbscript:, file: and invalid URIs.
+ */
+export function sanitizeResourceUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  try {
+    const parsed = new URL(trimmed, window.location.origin);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return parsed.href;
+    }
+    return '';
+  } catch {
+    return '';
+  }
+}

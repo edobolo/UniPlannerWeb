@@ -27,11 +27,12 @@ import {
   ExternalLink,
   Upload,
   FolderUp,
-  RefreshCw
+  RefreshCw,
+  KeyRound
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { generateShareLink, resetUserPassword, apiFetch, publishUserProfile } from '../utils/cloudSync';
-import { safeJsonParse } from '../utils/security';
+import { safeJsonParse, checkPasswordStrength } from '../utils/security';
 import './AccountModal.css';
 
 const AccountModal = ({ onOpenLegal }) => {
@@ -42,6 +43,8 @@ const AccountModal = ({ onOpenLegal }) => {
     authModalTab, 
     setAuthModalTab, 
     login, 
+    verify2FA,
+    toggle2FA,
     register, 
     logout, 
     updateProfile 
@@ -82,9 +85,11 @@ const AccountModal = ({ onOpenLegal }) => {
 
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState(false);
   const [restoreSuccess, setRestoreSuccess] = useState('');
+  const [otpForm, setOtpForm] = useState({ friendCode: '', otp: '' });
+  const [twoFactorToggling, setTwoFactorToggling] = useState(false);
   const jsonFileInputRef = React.useRef(null);
+  const passStrength = checkPasswordStrength(registerForm.password);
 
   // 1. Export Complete Student Backup (JSON)
   const handleExportData = () => {
@@ -275,7 +280,12 @@ const AccountModal = ({ onOpenLegal }) => {
     setErrorMsg('');
     setLoading(true);
     try {
-      await login(loginForm.identifier, loginForm.password);
+      const res = await login(loginForm.identifier, loginForm.password);
+      if (res && res.require2FA) {
+        setOtpForm({ friendCode: res.friendCode, otp: '' });
+        setAuthModalTab('otp');
+        return;
+      }
       setLoginForm({ identifier: '', password: '' });
       setIsAuthModalOpen(false);
     } catch (err) {
@@ -285,9 +295,44 @@ const AccountModal = ({ onOpenLegal }) => {
     }
   };
 
+  const handleOtpSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setLoading(true);
+    try {
+      await verify2FA(otpForm.friendCode, otpForm.otp);
+      setOtpForm({ friendCode: '', otp: '' });
+      setIsAuthModalOpen(false);
+    } catch (err) {
+      setErrorMsg(err.message || 'Codice OTP non valido o scaduto.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggle2FA = async () => {
+    setTwoFactorToggling(true);
+    setErrorMsg('');
+    try {
+      await toggle2FA(!currentUser?.twoFactorEnabled);
+    } catch (err) {
+      setErrorMsg(err.message || 'Impossibile aggiornare le impostazioni 2FA.');
+    } finally {
+      setTwoFactorToggling(false);
+    }
+  };
+
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
+    
+    // Validazione robustezza password
+    const strength = checkPasswordStrength(registerForm.password);
+    if (!strength.isStrong) {
+      setErrorMsg('La password non soddisfa tutti i requisiti di sicurezza (minimo 8 caratteri, maiuscola, minuscola, numero, simbolo speciale).');
+      return;
+    }
+
     setLoading(true);
     try {
       await register(registerForm);
@@ -400,11 +445,11 @@ const AccountModal = ({ onOpenLegal }) => {
             </button>
           )}
           <button 
-            className={`account-tab-btn ${authModalTab === 'login' ? 'active' : ''}`}
+            className={`account-tab-btn ${authModalTab === 'login' || authModalTab === 'otp' ? 'active' : ''}`}
             onClick={() => { setAuthModalTab('login'); setErrorMsg(''); }}
           >
             <LogIn size={16} />
-            <span>{currentUser ? 'Cambia Account' : 'Accedi'}</span>
+            <span>{authModalTab === 'otp' ? 'Verifica 2FA' : (currentUser ? 'Cambia Account' : 'Accedi')}</span>
           </button>
           <button 
             className={`account-tab-btn ${authModalTab === 'register' ? 'active' : ''}`}
@@ -546,6 +591,33 @@ const AccountModal = ({ onOpenLegal }) => {
                     onClick={toggleGradePrivacyQuick}
                   >
                     {currentUser.shareGrades !== false ? 'Nascondi i miei voti agli amici' : 'Condividi voti con gli amici'}
+                  </button>
+                </div>
+
+                {/* Two-Factor Authentication (2FA) Card */}
+                <div className="profile-privacy-box" style={{ marginTop: '12px' }}>
+                  <div className="privacy-box-header">
+                    <div className="privacy-title-group">
+                      <KeyRound size={15} className="privacy-icon" style={{ color: currentUser.twoFactorEnabled ? '#10b981' : '#f59e0b' }} />
+                      <span className="privacy-title">Autenticazione a Due Fattori (2FA / OTP)</span>
+                    </div>
+                    <span className={`privacy-badge ${currentUser.twoFactorEnabled ? 'shared' : 'hidden'}`}>
+                      {currentUser.twoFactorEnabled ? '🛡️ Attiva (OTP)' : '⚠️ Disattivata'}
+                    </span>
+                  </div>
+                  <p className="privacy-desc">
+                    {currentUser.twoFactorEnabled 
+                      ? 'Il tuo account richiede una verifica crittografica con codice OTP a 6 cifre ad ogni accesso per bloccare intrusioni.'
+                      : 'Proteggi il tuo account abilitando il codice OTP a 6 cifre inviato ad ogni tentativo di accesso.'}
+                  </p>
+                  <button 
+                    type="button" 
+                    className="privacy-toggle-btn"
+                    disabled={twoFactorToggling}
+                    onClick={handleToggle2FA}
+                    style={{ borderColor: currentUser.twoFactorEnabled ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)', color: currentUser.twoFactorEnabled ? '#ef4444' : '#10b981' }}
+                  >
+                    {twoFactorToggling ? 'Aggiornamento...' : (currentUser.twoFactorEnabled ? 'Disattiva Protezione 2FA' : 'Attiva Protezione 2FA')}
                   </button>
                 </div>
 
@@ -949,6 +1021,45 @@ const AccountModal = ({ onOpenLegal }) => {
           </form>
         )}
 
+        {/* OTP VERIFICATION TAB (2FA) */}
+        {authModalTab === 'otp' && (
+          <form onSubmit={handleOtpSubmit} className="account-tab-content auth-form">
+            <div style={{ marginBottom: '14px', background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.2)', padding: '12px', borderRadius: '10px', fontSize: '13px', color: 'var(--text-primary)' }}>
+              🛡️ <strong>Verifica 2FA Richiesta:</strong> Inserisci il codice numerico monouso a 6 cifre per accedere al tuo account in modo sicuro.
+            </div>
+
+            <div className="form-group">
+              <label>Codice OTP a 6 Cifre</label>
+              <div className="input-with-icon">
+                <KeyRound size={18} className="input-icon" />
+                <input 
+                  type="text" 
+                  value={otpForm.otp}
+                  onChange={(e) => setOtpForm({ ...otpForm, otp: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                  placeholder="123456"
+                  maxLength={6}
+                  style={{ letterSpacing: '4px', fontSize: '18px', fontWeight: 'bold', textAlign: 'center' }}
+                  required
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
+              <button 
+                type="button" 
+                className="ghost-btn" 
+                onClick={() => { setAuthModalTab('login'); setErrorMsg(''); }}
+              >
+                Annulla
+              </button>
+              <button type="submit" className="primary-btn" disabled={loading || otpForm.otp.length !== 6} style={{ flex: 1 }}>
+                <span>{loading ? 'Verifica in corso...' : 'Conferma Accesso'}</span>
+              </button>
+            </div>
+          </form>
+        )}
+
         {/* REGISTER TAB */}
         {authModalTab === 'register' && (
           <form onSubmit={handleRegisterSubmit} className="account-tab-content auth-form">
@@ -995,7 +1106,7 @@ const AccountModal = ({ onOpenLegal }) => {
             </div>
 
             <div className="form-group">
-              <label>Password (min. 6 caratteri)</label>
+              <label>Password (min. 8 caratteri, requisiti di sicurezza)</label>
               <div className="input-with-icon">
                 <Lock size={18} className="input-icon" />
                 <input 
@@ -1003,10 +1114,28 @@ const AccountModal = ({ onOpenLegal }) => {
                   value={registerForm.password}
                   onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
                   placeholder="••••••••"
-                  minLength={6}
+                  minLength={8}
                   required
                 />
               </div>
+              {registerForm.password && (
+                <div style={{ marginTop: '8px', fontSize: '12px' }}>
+                  <div style={{ display: 'flex', height: '4px', borderRadius: '2px', overflow: 'hidden', background: 'rgba(255,255,255,0.1)', marginBottom: '6px' }}>
+                    <div style={{ 
+                      width: `${(passStrength.score / 5) * 100}%`, 
+                      background: passStrength.score <= 2 ? '#ef4444' : passStrength.score <= 3 ? '#f59e0b' : '#10b981',
+                      transition: 'width 0.3s ease, background 0.3s ease' 
+                    }} />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', color: 'var(--text-muted, #94a3b8)' }}>
+                    <span style={{ color: passStrength.checks.length ? '#10b981' : undefined }}>{passStrength.checks.length ? '✓' : '•'} 8+ caratteri</span>
+                    <span style={{ color: passStrength.checks.uppercase ? '#10b981' : undefined }}>{passStrength.checks.uppercase ? '✓' : '•'} 1 Maiuscola</span>
+                    <span style={{ color: passStrength.checks.lowercase ? '#10b981' : undefined }}>{passStrength.checks.lowercase ? '✓' : '•'} 1 Minuscola</span>
+                    <span style={{ color: passStrength.checks.number ? '#10b981' : undefined }}>{passStrength.checks.number ? '✓' : '•'} 1 Numero</span>
+                    <span style={{ color: passStrength.checks.special ? '#10b981' : undefined }}>{passStrength.checks.special ? '✓' : '•'} 1 Simbolo</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="form-row">

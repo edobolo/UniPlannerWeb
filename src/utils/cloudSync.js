@@ -31,9 +31,10 @@ function checkClientRateLimit() {
 }
 
 /**
- * Wrapper per fetch che include sempre gli header necessari per Ngrok, CORS e sicurezza
+ * Wrapper per fetch che include sempre gli header necessari per Ngrok, CORS e sicurezza,
+ * credentials: 'include' per i cookie sicuri HttpOnly, timeout a 15s e retry con backoff.
  */
-export const apiFetch = async (endpoint, options = {}) => {
+export const apiFetch = async (endpoint, options = {}, retries = 1) => {
   if (!checkClientRateLimit()) {
     throw new Error('Frequenza richieste troppo elevata. Attendi qualche secondo.');
   }
@@ -45,9 +46,32 @@ export const apiFetch = async (endpoint, options = {}) => {
     ...(options.headers || {})
   };
 
+  const executeFetch = async () => {
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeoutId = controller ? setTimeout(() => controller.abort(), 15000) : null;
+    const signal = options.signal || (controller ? controller.signal : undefined);
+
+    try {
+      const res = await fetch(url, {
+        ...options,
+        headers,
+        credentials: 'include',
+        signal
+      });
+      return res;
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+  };
+
   try {
-    return await fetch(url, { ...options, headers });
+    return await executeFetch();
   } catch (err) {
+    if (retries > 0 && err.name !== 'AbortError') {
+      logger.warn(`Fetch error su ${endpoint}, retry tra 500ms...`, err.message);
+      await new Promise(r => setTimeout(r, 500));
+      return apiFetch(endpoint, options, retries - 1);
+    }
     logger.error(`Network fetch error per ${endpoint}:`, err.message);
     throw err;
   }
@@ -280,6 +304,7 @@ export const resetUserPassword = async (friendCode, email, newPassword) => {
 
 /**
  * Autentica l'utente tramite il server backend Raspberry Pi
+ * Supporta 2FA / OTP e salva il session token in HttpOnly Cookie.
  */
 export const loginUserOnline = async (identifier, password) => {
   const cleanId = sanitizeText(identifier, 100).trim();
@@ -291,9 +316,77 @@ export const loginUserOnline = async (identifier, password) => {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Credenziali non valide.');
-    return data.user;
+    return data;
   } catch (err) {
     logger.warn('Tentativo di login online fallito per identifier:', cleanId.slice(0, 3) + '***');
     throw err;
+  }
+};
+
+/**
+ * Verifica il codice OTP a 6 cifre per completare il login con 2FA
+ */
+export const verify2FAOnline = async (friendCode, otp) => {
+  const cleanCode = normalizeFriendCode(friendCode);
+  const cleanOtp = sanitizeText(otp, 6).trim();
+
+  try {
+    const res = await apiFetch('/auth/verify-2fa', {
+      method: 'POST',
+      body: JSON.stringify({ friendCode: cleanCode, otp: cleanOtp })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Codice OTP non valido o scaduto.');
+    return data.user;
+  } catch (err) {
+    logger.warn('Verifica 2FA fallita:', err.message);
+    throw err;
+  }
+};
+
+/**
+ * Attiva o disattiva l'autenticazione a due fattori (2FA / OTP)
+ */
+export const toggle2FAOnline = async (friendCode, enabled) => {
+  const cleanCode = normalizeFriendCode(friendCode);
+
+  try {
+    const res = await apiFetch('/auth/2fa/toggle', {
+      method: 'POST',
+      body: JSON.stringify({ friendCode: cleanCode, enabled: Boolean(enabled) })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Impossibile aggiornare impostazioni 2FA.');
+    return data;
+  } catch (err) {
+    logger.error('Errore toggle 2FA:', err.message);
+    throw err;
+  }
+};
+
+/**
+ * Disconnette la sessione e distrugge il cookie HttpOnly sul server
+ */
+export const logoutUserOnline = async () => {
+  try {
+    await apiFetch('/auth/logout', { method: 'POST' });
+  } catch (err) {
+    logger.warn('Logout online backend non raggiungibile:', err.message);
+  }
+};
+
+/**
+ * Recupera la sessione attiva corrente tramite HttpOnly cookie
+ */
+export const getCurrentUserOnline = async () => {
+  try {
+    const res = await apiFetch('/auth/me', { method: 'GET' }, 0);
+    if (res.ok) {
+      const data = await res.json();
+      return data.user || null;
+    }
+    return null;
+  } catch {
+    return null;
   }
 };

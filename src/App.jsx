@@ -40,9 +40,11 @@ const Pomodoro = lazy(() => import('./pages/Pomodoro'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const Schedule = lazy(() => import('./pages/Schedule'));
 const Friends = lazy(() => import('./pages/Friends'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 const LegalModal = lazy(() => import('./components/LegalModal'));
 const BugReportModal = lazy(() => import('./components/BugReportModal'));
 
+import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { fetchUserProfile, publishUserProfile, connectMutualFriend } from './utils/cloudSync';
 import { safeJsonParse } from './utils/security';
@@ -651,6 +653,19 @@ function MainApp() {
                 <Notifications />
               </motion.div>
             )}
+
+            {!['benvenuto', 'esami', 'ai-assistant', 'voti', 'orario', 'scadenze', 'pomodoro', 'amici', 'notifiche'].includes(activeTab) && (
+              <motion.div
+                key="not-found"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                className="page-wrapper gpu-accelerated"
+              >
+                <NotFound onNavigate={(tab) => setActiveTab(tab)} />
+              </motion.div>
+            )}
           </AnimatePresence>
         </Suspense>
       </main>
@@ -906,9 +921,11 @@ function MainApp() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <MainApp />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

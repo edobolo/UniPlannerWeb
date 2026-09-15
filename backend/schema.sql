@@ -4,6 +4,9 @@
 -- =====================================================================
 
 PRAGMA foreign_keys = ON;
+PRAGMA journal_mode = WAL;
+PRAGMA synchronous = NORMAL;
+PRAGMA cache_size = -64000;
 
 -- 1. Tabella Utenti (Nessuna tabella pubblicata direttamente; colonne sensibili isolate)
 CREATE TABLE IF NOT EXISTS users (
@@ -22,6 +25,13 @@ CREATE TABLE IF NOT EXISTS users (
     share_grades INTEGER DEFAULT 1 CHECK(share_grades IN (0, 1)),
     is_premium INTEGER DEFAULT 0 CHECK(is_premium IN (0, 1)),
     stripe_customer_id TEXT DEFAULT NULL,
+    failed_login_attempts INTEGER DEFAULT 0,
+    locked_until DATETIME DEFAULT NULL,
+    two_factor_enabled INTEGER DEFAULT 0 CHECK(two_factor_enabled IN (0, 1)),
+    otp_code TEXT DEFAULT NULL,
+    otp_expires_at DATETIME DEFAULT NULL,
+    daily_ai_requests INTEGER DEFAULT 0,
+    last_ai_request_date TEXT DEFAULT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -30,6 +40,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE INDEX IF NOT EXISTS idx_users_friend_code ON users(friend_code);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_locked ON users(locked_until);
 
 -- 2. Tabella Esami (Ownership isolata: ogni riga appartiene a un friend_code)
 CREATE TABLE IF NOT EXISTS exams (
@@ -47,6 +58,7 @@ CREATE TABLE IF NOT EXISTS exams (
 );
 
 CREATE INDEX IF NOT EXISTS idx_exams_user ON exams(user_friend_code);
+CREATE INDEX IF NOT EXISTS idx_exams_user_status ON exams(user_friend_code, status);
 
 -- 3. Tabella Lezioni Orario (Ownership isolata)
 CREATE TABLE IF NOT EXISTS schedules (
@@ -65,6 +77,7 @@ CREATE TABLE IF NOT EXISTS schedules (
 );
 
 CREATE INDEX IF NOT EXISTS idx_schedules_user ON schedules(user_friend_code);
+CREATE INDEX IF NOT EXISTS idx_schedules_day ON schedules(user_friend_code, day_index);
 
 -- 4. Tabella Scadenze & Consegne (Ownership isolata)
 CREATE TABLE IF NOT EXISTS deadlines (
@@ -80,6 +93,7 @@ CREATE TABLE IF NOT EXISTS deadlines (
 );
 
 CREATE INDEX IF NOT EXISTS idx_deadlines_user ON deadlines(user_friend_code);
+CREATE INDEX IF NOT EXISTS idx_deadlines_date ON deadlines(user_friend_code, date, completed);
 
 -- 5. Tabella Amicizie Reciproche (Collegamento bilaterale verificato)
 CREATE TABLE IF NOT EXISTS friends (
@@ -116,3 +130,6 @@ CREATE TABLE IF NOT EXISTS security_audit_logs (
     details TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_audit_event ON security_audit_logs(event_type);
+CREATE INDEX IF NOT EXISTS idx_audit_time ON security_audit_logs(created_at);
