@@ -269,8 +269,6 @@ const AccountModal = ({ onOpenLegal }) => {
     localStorage.setItem('uniplanner_notif_enabled', JSON.stringify(nextVal));
   };
 
-  if (!isAuthModalOpen) return null;
-
   const handleCopyCode = () => {
     if (!currentUser?.friendCode) return;
     navigator.clipboard.writeText(currentUser.friendCode);
@@ -532,6 +530,8 @@ const AccountModal = ({ onOpenLegal }) => {
     'Sotto esami ⚡'
   ];
 
+  if (!isAuthModalOpen) return null;
+
   return (
     <div className="modal-overlay">
       <motion.div 
@@ -572,7 +572,7 @@ const AccountModal = ({ onOpenLegal }) => {
             </button>
           )}
           <button 
-            className={`account-tab-btn ${authModalTab === 'login' || authModalTab === 'otp' ? 'active' : ''}`}
+            className={`account-tab-btn ${authModalTab === 'login' || authModalTab === 'otp' || authModalTab === 'google' ? 'active' : ''}`}
             onClick={() => { setAuthModalTab('login'); setErrorMsg(''); }}
           >
             <LogIn size={16} />
@@ -970,7 +970,7 @@ const AccountModal = ({ onOpenLegal }) => {
         )}
 
         {/* LOGIN TAB */}
-        {authModalTab === 'login' && (
+        {(authModalTab === 'login' || authModalTab === 'google') && (
           <form onSubmit={handleLoginSubmit} className="account-tab-content auth-form">
             {/* Google 1-Click Official Button Mount Container */}
             <div id="google-btn-login" className="google-official-btn-container"></div>
