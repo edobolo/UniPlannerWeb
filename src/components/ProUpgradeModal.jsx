@@ -4,40 +4,71 @@ import { Sparkles, Crown, Rocket, CheckCircle2, X, Loader2 } from 'lucide-react'
 import { apiFetch } from '../utils/cloudSync';
 import './ProUpgradeModal.css';
 
-export default function ProUpgradeModal({ isOpen, onClose, friendCode }) {
+export default function ProUpgradeModal({ isOpen, onClose, friendCode, initialPriceId }) {
   const [loadingPriceId, setLoadingPriceId] = useState(null);
   const [error, setError] = useState('');
 
-  // Stripe Live Price IDs
+  // Stripe Live Price IDs & Detailed Feature Benefits
   const plans = [
     {
       id: 'price_1U9AixGfd5kpnWkPoYGqB8p2',
-      name: 'Mensile',
+      name: 'Mensile ✨',
       icon: <Sparkles className="plan-icon" />,
       price: '1,99 €',
       period: '/ mese',
-      desc: 'Flessibilità totale',
-      color: '#38bdf8'
+      desc: 'Il piano ideale per superare la sessione d\'esami con la massima flessibilità.',
+      subtext: 'Disdici in 1 clic senza vincoli',
+      color: '#38bdf8',
+      badge: 'Flessibile',
+      features: [
+        'AI Study Assistant Illimitato (Groq & Gemini Flash)',
+        'Simulatore Avanzato Laurea & Calcolo Scarto CFU (110L)',
+        'Statistiche Accademiche & Grafici Illimitati',
+        'Temi & Palette Accademiche Esclusive per Facoltà',
+        'Sincronizzazione Cloud Crittografata Prioritaria',
+        'Widget Live Schermata Home per Smartphone',
+        'Disdetta immediata con 1 click senza penali'
+      ]
     },
     {
       id: 'price_1U9AixGfd5kpnWkPleI7MBq9',
-      name: 'Annuale',
+      name: 'Annuale 🎓',
       icon: <Crown className="plan-icon" />,
       price: '9,99 €',
       period: '/ anno',
-      desc: 'Risparmi il 58%',
+      desc: 'Tutto il tuo anno accademico al massimo livello con oltre il 58% di risparmio.',
+      subtext: 'Solo ~0,83 €/mese • Prezzo Bloccato',
       color: '#f59e0b',
-      badge: 'PIÙ SCELTO'
+      badge: 'PIÙ SCELTO • -58%',
+      features: [
+        'Tutto ciò che è incluso nel piano Mensile',
+        'Accesso completo 365 giorni a prezzo bloccato',
+        'Generazione kit d\'esame, riassunti e quiz con IA',
+        'Badge dorato PRO verificato nel profilo e amici',
+        'Import avanzato orari da file atenei (XLS, CSV, ICS)',
+        'Archivio appunti e documenti con backup orario',
+        'Supporto accademico prioritario per tutto l\'anno'
+      ]
     },
     {
       id: 'price_1U9Aj2Gfd5kpnWkPU7bgOY6o',
-      name: "Founder's Edition",
+      name: "Founder's Edition 🚀",
       icon: <Rocket className="plan-icon" />,
       price: '19,99 €',
       period: 'una tantum',
-      desc: 'Accesso a vita',
+      desc: 'Accesso illimitato per sempre per tutta la tua carriera (Triennale, Magistrale e Master).',
+      subtext: 'Un solo pagamento • Nessun abbonamento mai più',
       color: '#ec4899',
-      badge: 'BEST VALUE'
+      badge: 'BEST VALUE • A VITA',
+      features: [
+        'Accesso Illimitato a VITA (Triennale, Magistrale, Master)',
+        'Zero canoni ricorrenti: paghi una volta sola per sempre',
+        'Badge esclusivo dorato "Founder" permanente sul profilo',
+        'Accesso anticipato (Early Access) ai nuovi modelli AI',
+        'Cloud RLS prioritario illimitato con zero perdita dati',
+        'Canale prioritario VIP diretto con gli sviluppatori',
+        'Tutti i futuri aggiornamenti PRO inclusi automaticamente'
+      ]
     }
   ];
 
@@ -103,7 +134,7 @@ export default function ProUpgradeModal({ isOpen, onClose, friendCode }) {
             {plans.map((plan) => (
               <div 
                 key={plan.id} 
-                className="pro-plan-card"
+                className={`pro-plan-card ${initialPriceId === plan.id ? 'target-plan-selected' : ''} ${plan.badge?.includes('PIÙ SCELTO') ? 'featured-card' : ''}`}
                 style={{ '--plan-color': plan.color }}
               >
                 {plan.badge && (
@@ -123,14 +154,17 @@ export default function ProUpgradeModal({ isOpen, onClose, friendCode }) {
                   <span className="price-amount">{plan.price}</span>
                   <span className="price-period">{plan.period}</span>
                 </div>
+                {plan.subtext && <div className="plan-subtext">{plan.subtext}</div>}
                 
                 <p className="plan-desc">{plan.desc}</p>
 
                 <ul className="plan-features">
-                  <li><CheckCircle2 size={16} /> Simulatore Laurea 100%</li>
-                  <li><CheckCircle2 size={16} /> Calcolo Scarto CFU</li>
-                  <li><CheckCircle2 size={16} /> Statistiche Illimitate</li>
-                  {plan.id.includes('tantum') && <li><CheckCircle2 size={16} /> Supporto Prioritario</li>}
+                  {plan.features.map((feat, idx) => (
+                    <li key={idx}>
+                      <CheckCircle2 size={15} />
+                      <span>{feat}</span>
+                    </li>
+                  ))}
                 </ul>
 
                 <button 

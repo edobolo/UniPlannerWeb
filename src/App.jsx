@@ -102,6 +102,7 @@ function MainApp() {
   const [isBugModalOpen, setIsBugModalOpen] = useState(false);
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(false);
+  const [selectedProPriceId, setSelectedProPriceId] = useState(null);
   const [legalInitialTab, setLegalInitialTab] = useState('privacy');
   const [updateDownloaded, setUpdateDownloaded] = useState(false);
   const [updateInfo, setUpdateInfo] = useState(null);
@@ -368,7 +369,10 @@ function MainApp() {
             onNavigate={handleNavigateTab} 
             onOpenDownload={() => setIsDownloadModalOpen(true)} 
             onOpenLegal={handleOpenLegal}
-            onOpenPro={() => setIsProModalOpen(true)}
+            onOpenPro={(priceId) => {
+              setSelectedProPriceId(priceId || null);
+              setIsProModalOpen(true);
+            }}
           />
         </Suspense>
       ) : (
@@ -868,8 +872,12 @@ function MainApp() {
     {/* Pro Upgrade Modal */}
     <ProUpgradeModal 
       isOpen={isProModalOpen}
-      onClose={() => setIsProModalOpen(false)}
+      onClose={() => {
+        setIsProModalOpen(false);
+        setSelectedProPriceId(null);
+      }}
       friendCode={currentUser?.friendCode}
+      initialPriceId={selectedProPriceId}
     />
 
     {/* Lazy Modals with Suspense */}

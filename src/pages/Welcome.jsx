@@ -93,14 +93,14 @@ const Welcome = ({ onNavigate, onOpenDownload, onOpenLegal, onOpenPro }) => {
       id: 'free',
       name: 'Base',
       badge: 'Gratuito',
-      price: '€0',
+      price: '0 €',
       period: 'per sempre',
       description: 'Tutto il necessario per organizzare il tuo percorso accademico.',
       features: [
         'Gestione completa Piano di Studi & CFU',
         'Calcolo Media Ponderata e Aritmetica',
         'Orario Settimanale & Calendario',
-        'Timer Pomodoro con suoni ambientali',
+        'Timer Focus Pomodoro con suoni ambientali',
         'Accesso completo Web & PWA Mobile',
         'Zero annunci o tracciamento commerciale'
       ],
@@ -110,57 +110,67 @@ const Welcome = ({ onNavigate, onOpenDownload, onOpenLegal, onOpenPro }) => {
     },
     {
       id: 'monthly',
-      name: 'Mensile',
+      priceId: 'price_1U9AixGfd5kpnWkPoYGqB8p2',
+      name: 'Mensile ✨',
       badge: 'Flessibile',
-      price: '€2.99',
+      price: '1,99 €',
       period: '/ mese',
-      description: 'Flessibilità totale, ideale durante la sessione d\'esami.',
+      subtext: 'Disdici in 1 clic senza vincoli',
+      description: 'Il piano ideale per superare la sessione d\'esami con la massima flessibilità.',
       features: [
         'Tutte le funzionalità del piano Base',
-        'AI Study Assistant illimitato (Gemini Flash)',
-        'Simulatore avanzato Voto di Laurea',
-        'Sincronizzazione Cloud crittografata',
-        'Backup automatici multi-dispositivo'
+        'AI Study Assistant Illimitato (Groq & Gemini Flash)',
+        'Simulatore Avanzato Laurea & Calcolo Scarto CFU (110L)',
+        'Statistiche Accademiche & Grafici Illimitati',
+        'Temi & Palette Accademiche Esclusive per Facoltà',
+        'Sincronizzazione Cloud Crittografata Prioritaria'
       ],
       isPopular: false,
       ctaText: 'Scegli Mensile',
       isPro: true
     },
     {
-      id: 'semester',
-      name: 'Semestrale',
-      badge: 'Risparmi il 45%',
-      price: '€9.99',
-      period: '/ semestre',
-      description: 'La scelta consigliata per coprire un intero semestre di lezioni ed esami.',
+      id: 'yearly',
+      priceId: 'price_1U9AixGfd5kpnWkPleI7MBq9',
+      name: 'Annuale 🎓',
+      badge: 'Più Scelto • Risparmi il 58%',
+      price: '9,99 €',
+      period: '/ anno',
+      subtext: 'Solo ~0,83 € al mese • Prezzo Bloccato',
+      description: 'Tutto il tuo anno accademico al massimo livello con oltre il 58% di risparmio.',
       features: [
-        'Tutte le funzionalità del piano Mensile',
-        'Priorità elaborazione per l\'AI Tutor',
-        'Import avanzato orari da file atenei (XLS/ICS)',
-        'Statistiche approfondite sui tempi di studio',
-        'Supporto accademico prioritario'
+        'Tutto ciò che è incluso nel piano Mensile',
+        '365 giorni di accesso completo a prezzo bloccato',
+        'Generazione kit d\'esame, riassunti e quiz con IA',
+        'Badge dorato PRO verificato nel profilo e amici',
+        'Import avanzato orari da file atenei (XLS, CSV, ICS)',
+        'Archivio appunti e note con backup orario continuo',
+        'Supporto accademico prioritario per tutto l\'anno'
       ],
-      isPopular: false,
-      ctaText: 'Scegli Semestrale',
+      isPopular: true,
+      ctaText: 'Scegli Annuale',
       isPro: true
     },
     {
-      id: 'yearly',
-      name: 'Annuale',
-      badge: 'Best Value • Più Scelto',
-      price: '€24.99',
-      period: '/ anno',
-      subtext: 'Solo ~€2.08 al mese',
-      description: 'Il piano completo per studenti universitari ambiziosi. Risparmi oltre il 30%.',
+      id: 'founder',
+      priceId: 'price_1U9Aj2Gfd5kpnWkPU7bgOY6o',
+      name: "Founder's Edition 🚀",
+      badge: 'Best Value • Accesso a Vita',
+      price: '19,99 €',
+      period: 'una tantum',
+      subtext: 'Un solo pagamento, nessun abbonamento mai più',
+      description: 'Accesso illimitato per sempre per tutta la tua carriera universitaria (Triennale, Magistrale e Master).',
       features: [
-        'Accesso illimitato a tutte le feature presenti e future',
-        'Badge Studente Pro verificato sul profilo',
-        'Spazio documenti e appunti esteso',
-        'Accesso anticipato a nuove integrazioni atenei',
-        'Supporto dedicato VIP 24/7'
+        'Accesso Illimitato a VITA (Triennale, Magistrale, Master)',
+        'Zero canoni ricorrenti: paghi una volta sola per sempre',
+        'Badge esclusivo dorato "Founder" permanente sul profilo',
+        'Accesso anticipato (Early Access) ai nuovi modelli AI',
+        'Cloud RLS prioritario illimitato con zero perdita dati',
+        'Canale prioritario VIP diretto con gli sviluppatori',
+        'Tutti i futuri aggiornamenti PRO inclusi automaticamente'
       ],
-      isPopular: true,
-      ctaText: 'Ottieni Best Value',
+      isPopular: false,
+      ctaText: "Ottieni Founder's Edition",
       isPro: true
     }
   ];
@@ -197,59 +207,15 @@ const Welcome = ({ onNavigate, onOpenDownload, onOpenLegal, onOpenPro }) => {
     setIsAuthModalOpen(true);
   };
 
-  const handleGoogleSignIn = async () => {
-    const googleClientId = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GOOGLE_CLIENT_ID) || '';
-
-    if (googleClientId && typeof window !== 'undefined') {
-      try {
-        if (!window.google?.accounts?.id) {
-          await new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://accounts.google.com/gsi/client';
-            script.async = true;
-            script.defer = true;
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-          });
-        }
-
-        window.google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: async (response) => {
-            if (response.credential) {
-              await loginWithGoogle(response.credential);
-              handleStart();
-            }
-          }
-        });
-
-        window.google.accounts.id.prompt();
-        return;
-      } catch (err) {
-        console.warn('Errore GIS:', err);
-      }
-    }
-
-    try {
-      const email = prompt('Accedi con il tuo indirizzo Google:', 'studente@gmail.com');
-      if (!email) return;
-      const name = email.split('@')[0];
-      await loginWithGoogle(null, {
-        email: email.trim(),
-        name: name.charAt(0).toUpperCase() + name.slice(1),
-        picture: 'https://lh3.googleusercontent.com/a/default-user=s96-c'
-      });
-      handleStart();
-    } catch (err) {
-      console.error('Errore Google Sign-In:', err);
-    }
+  const handleGoogleSignIn = () => {
+    setAuthModalTab('google');
+    setIsAuthModalOpen(true);
   };
 
   const handlePlanAction = (plan) => {
     if (plan.isPro) {
       if (onOpenPro) {
-        onOpenPro();
+        onOpenPro(plan.priceId);
       } else {
         handleRegisterClick();
       }

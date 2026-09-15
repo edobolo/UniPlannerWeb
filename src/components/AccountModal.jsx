@@ -403,6 +403,13 @@ const AccountModal = ({ onOpenLegal }) => {
     }
   }, [isAuthModalOpen, authModalTab, googleClientId]);
 
+  // Se la modale viene aperta con tab='google' (es. dalla pagina Welcome), mostra subito il selettore
+  useEffect(() => {
+    if (isAuthModalOpen && authModalTab === 'google') {
+      setShowGooglePicker(true);
+    }
+  }, [isAuthModalOpen, authModalTab]);
+
   const handleGoogleAuth = () => {
     setErrorMsg('');
     if (googleClientId && window.google?.accounts?.id) {
