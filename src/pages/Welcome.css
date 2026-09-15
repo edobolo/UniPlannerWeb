@@ -836,7 +836,7 @@
   overflow-x: hidden;
 }
 
-.pricing-grid {
+.welcome-pricing-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
@@ -844,36 +844,36 @@
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  padding-top: 14px;
 }
 
-.pricing-card {
+.pricing-tier-card {
   background: var(--bg-card);
   border: 1px solid var(--glass-border);
   border-radius: 14px;
-  padding: 24px 16px;
+  padding: 24px 18px;
   display: flex;
   flex-direction: column;
   position: relative;
   transition: all 0.2s ease;
   min-width: 0;
   box-sizing: border-box;
-  overflow: hidden;
 }
 
-.pricing-card:hover {
+.pricing-tier-card:hover {
   border-color: rgba(255, 255, 255, 0.25);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
 }
 
-.pricing-card.popular-plan {
+.pricing-tier-card.popular-tier {
   border: 2px solid var(--accent-primary);
   background: linear-gradient(180deg, var(--bg-card) 0%, var(--accent-soft) 100%);
-  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.35);
 }
 
-.pricing-popular-ribbon {
+.pricing-tier-popular-ribbon {
   position: absolute;
-  top: -12px;
+  top: -13px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--accent-primary);
@@ -882,108 +882,120 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 3px 12px;
+  padding: 4px 14px;
   border-radius: 20px;
   display: flex;
   align-items: center;
   gap: 5px;
   white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  z-index: 2;
 }
 
-.plan-header {
+.pricing-tier-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
   margin-bottom: 20px;
+  width: 100%;
 }
 
-.plan-pill-badge {
+.pricing-tier-badge {
   display: inline-block;
   font-size: 11px;
   font-weight: 600;
   padding: 3px 8px;
-  border-radius: 4px;
+  border-radius: 5px;
   background: var(--bg-hover);
   color: var(--text-secondary);
   border: 1px solid var(--glass-border);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
-.plan-title {
+.pricing-tier-title {
   font-family: var(--font-serif);
   font-size: 22px;
   font-weight: 700;
   color: var(--text-primary);
-  margin: 4px 0 10px 0;
+  margin: 0;
+  line-height: 1.2;
 }
 
-.plan-price-wrapper {
+.pricing-tier-price-row {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  margin-bottom: 4px;
+  margin: 8px 0 2px 0;
 }
 
-.price-amount {
+.pricing-tier-amount {
   font-family: var(--font-serif);
   font-size: 34px;
   font-weight: 700;
   color: var(--text-primary);
+  line-height: 1;
 }
 
-.price-period {
+.pricing-tier-period {
   font-size: 13.5px;
   color: var(--text-secondary);
+  font-weight: 500;
 }
 
-.plan-subtext {
+.pricing-tier-subtext {
   font-size: 12px;
   font-weight: 600;
-  color: #10b981;
-  margin-bottom: 8px;
+  color: var(--success);
+  margin-bottom: 4px;
 }
 
-.plan-desc {
-  font-size: 12.5px;
+.pricing-tier-desc {
+  font-size: 13px;
   color: var(--text-secondary);
-  line-height: 1.45;
-  margin: 8px 0 0 0;
-  min-height: 38px;
+  line-height: 1.5;
+  margin: 6px 0 0 0;
+  min-height: 40px;
+  width: 100%;
 }
 
-.plan-features-list {
+.pricing-tier-features-list {
   display: flex;
   flex-direction: column;
-  gap: 11px;
+  gap: 12px;
   margin-bottom: 24px;
   flex: 1;
+  width: 100%;
 }
 
-.plan-feature-row {
+.pricing-tier-feature-row {
   display: flex;
   align-items: flex-start;
   gap: 9px;
   font-size: 13px;
   color: var(--text-secondary);
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
-.feature-check-icon {
+.tier-check-icon {
   color: var(--accent-primary);
   flex-shrink: 0;
-  margin-top: 1px;
+  margin-top: 2px;
 }
 
-.plan-cta-button {
+.pricing-tier-cta-btn {
   width: 100%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 16px;
-  font-size: 13.5px;
+  padding: 11px 16px;
+  font-size: 14px;
   font-weight: 600;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
-  text-decoration: none;
+  margin-top: auto;
 }
 
 .pricing-guarantees {
@@ -1211,6 +1223,7 @@
    ============================================================ */
 
 @media (max-width: 1120px) {
+  .welcome-pricing-grid,
   .pricing-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
@@ -1245,6 +1258,7 @@
     font-size: 14px;
   }
 
+  .welcome-pricing-grid,
   .pricing-grid {
     grid-template-columns: 1fr;
     gap: 16px;

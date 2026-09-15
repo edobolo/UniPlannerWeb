@@ -645,34 +645,36 @@ const Welcome = ({ onNavigate, onOpenDownload, onOpenLegal, onOpenPro }) => {
           <p>Investi sul tuo metodo di studio. Nessun costo nascosto, cancellazione immediata in 1 clic.</p>
         </div>
 
-        <div className="pricing-grid">
+        <div className="welcome-pricing-grid">
           {pricingPlans.map((plan) => (
             <div 
               key={plan.id} 
-              className={`pricing-card glass-panel ${plan.isPopular ? 'popular-plan' : ''}`}
+              className={`pricing-tier-card glass-panel ${plan.isPopular ? 'popular-tier' : ''}`}
             >
               {plan.isPopular && (
-                <div className="pricing-popular-ribbon">
+                <div className="pricing-tier-popular-ribbon">
                   <Star size={12} fill="currentColor" />
                   <span>{plan.badge}</span>
                 </div>
               )}
 
-              <div className="plan-header">
-                {!plan.isPopular && <span className="plan-pill-badge">{plan.badge}</span>}
-                <h3 className="plan-title">{plan.name}</h3>
-                <div className="plan-price-wrapper">
-                  <span className="price-amount">{plan.price}</span>
-                  <span className="price-period">{plan.period}</span>
+              <div className="pricing-tier-header">
+                {!plan.isPopular && plan.badge && (
+                  <span className="pricing-tier-badge">{plan.badge}</span>
+                )}
+                <h3 className="pricing-tier-title">{plan.name}</h3>
+                <div className="pricing-tier-price-row">
+                  <span className="pricing-tier-amount">{plan.price}</span>
+                  <span className="pricing-tier-period">{plan.period}</span>
                 </div>
-                {plan.subtext && <div className="plan-subtext">{plan.subtext}</div>}
-                <p className="plan-desc">{plan.description}</p>
+                {plan.subtext && <div className="pricing-tier-subtext">{plan.subtext}</div>}
+                <p className="pricing-tier-desc">{plan.description}</p>
               </div>
 
-              <div className="plan-features-list">
+              <div className="pricing-tier-features-list">
                 {plan.features.map((feat, idx) => (
-                  <div key={idx} className="plan-feature-row">
-                    <Check size={16} className="feature-check-icon" />
+                  <div key={idx} className="pricing-tier-feature-row">
+                    <Check size={16} className="tier-check-icon" />
                     <span>{feat}</span>
                   </div>
                 ))}
@@ -680,7 +682,7 @@ const Welcome = ({ onNavigate, onOpenDownload, onOpenLegal, onOpenPro }) => {
 
               <button 
                 type="button"
-                className={`plan-cta-button ${plan.isPopular ? 'primary-btn' : 'secondary-btn'}`}
+                className={`pricing-tier-cta-btn ${plan.isPopular ? 'primary-btn' : 'secondary-btn'}`}
                 onClick={() => handlePlanAction(plan)}
               >
                 <span>{plan.ctaText}</span>

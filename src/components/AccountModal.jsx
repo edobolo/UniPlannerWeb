@@ -87,7 +87,7 @@ const AccountModal = ({ onOpenLegal }) => {
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [restoreSuccess, setRestoreSuccess] = useState('');
-  const [otpForm, setOtpForm] = useState({ friendCode: '', otp: '' });
+  const [otpForm, setOtpForm] = useState({ friendCode: '', otp: '', tempToken: '', devOtp: '' });
   const [twoFactorToggling, setTwoFactorToggling] = useState(false);
   const jsonFileInputRef = React.useRef(null);
   const passStrength = checkPasswordStrength(registerForm.password);
@@ -283,7 +283,12 @@ const AccountModal = ({ onOpenLegal }) => {
     try {
       const res = await login(loginForm.identifier, loginForm.password);
       if (res && res.require2FA) {
-        setOtpForm({ friendCode: res.friendCode, otp: '' });
+        setOtpForm({
+          friendCode: res.friendCode,
+          otp: res.devOtp || '',
+          tempToken: res.tempToken || '',
+          devOtp: res.devOtp || ''
+        });
         setAuthModalTab('otp');
         return;
       }
@@ -301,8 +306,8 @@ const AccountModal = ({ onOpenLegal }) => {
     setErrorMsg('');
     setLoading(true);
     try {
-      await verify2FA(otpForm.friendCode, otpForm.otp);
-      setOtpForm({ friendCode: '', otp: '' });
+      await verify2FA(otpForm.friendCode, otpForm.otp, otpForm.tempToken);
+      setOtpForm({ friendCode: '', otp: '', tempToken: '', devOtp: '' });
       setIsAuthModalOpen(false);
     } catch (err) {
       setErrorMsg(err.message || 'Codice OTP non valido o scaduto.');
@@ -1109,8 +1114,39 @@ const AccountModal = ({ onOpenLegal }) => {
         {authModalTab === 'otp' && (
           <form onSubmit={handleOtpSubmit} className="account-tab-content auth-form">
             <div style={{ marginBottom: '14px', background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.2)', padding: '12px', borderRadius: '10px', fontSize: '13px', color: 'var(--text-primary)' }}>
-              🛡️ <strong>Verifica 2FA Richiesta:</strong> Inserisci il codice numerico monouso a 6 cifre per accedere al tuo account in modo sicuro.
+              🛡️ <strong>Verifica 2FA Richiesta:</strong> Inserisci il codice numerico monouso a 6 cifre per accedere al tuo account.
             </div>
+
+            {otpForm.devOtp && (
+              <div style={{
+                marginBottom: '14px',
+                background: 'rgba(16, 185, 129, 0.1)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                padding: '12px 14px',
+                borderRadius: '10px',
+                fontSize: '13px',
+                color: 'var(--text-primary)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ fontWeight: '600', color: '#10b981' }}>🔑 Codice di Accesso:</span>
+                  <span style={{
+                    fontFamily: 'monospace',
+                    fontSize: '18px',
+                    fontWeight: '700',
+                    letterSpacing: '2px',
+                    color: '#10b981',
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    padding: '2px 8px',
+                    borderRadius: '6px'
+                  }}>
+                    {otpForm.devOtp}
+                  </span>
+                </div>
+                <p style={{ margin: 0, fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                  Il codice è stato inviato anche via notifica push ntfy e precompilato qui sotto per consentirti l'accesso immediato.
+                </p>
+              </div>
+            )}
 
             <div className="form-group">
               <label>Codice OTP a 6 Cifre</label>

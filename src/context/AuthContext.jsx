@@ -190,7 +190,10 @@ export const AuthProvider = ({ children }) => {
     if (authResponse && authResponse.require2FA) {
       return {
         require2FA: true,
-        friendCode: authResponse.friendCode
+        friendCode: authResponse.friendCode,
+        tempToken: authResponse.tempToken,
+        devOtp: authResponse.devOtp,
+        message: authResponse.message
       };
     }
 
@@ -349,8 +352,8 @@ export const AuthProvider = ({ children }) => {
   /**
    * Completes 2FA verification with 6-digit OTP
    */
-  const verify2FA = async (friendCode, otp) => {
-    const userOnline = await verify2FAOnline(friendCode, otp);
+  const verify2FA = async (friendCode, otp, tempToken) => {
+    const userOnline = await verify2FAOnline(friendCode, otp, tempToken);
     if (!userOnline) {
       throw new Error('Verifica 2FA non riuscita.');
     }
