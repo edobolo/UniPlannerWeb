@@ -28,7 +28,10 @@ import {
   Upload,
   FolderUp,
   RefreshCw,
-  KeyRound
+  KeyRound,
+  Eye,
+  EyeOff,
+  ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { generateShareLink, resetUserPassword, apiFetch, publishUserProfile } from '../utils/cloudSync';
@@ -91,6 +94,12 @@ const AccountModal = ({ onOpenLegal }) => {
   const [twoFactorToggling, setTwoFactorToggling] = useState(false);
   const [profileSubTab, setProfileSubTab] = useState('academic'); // 'academic' | 'security' | 'settings'
   const [dangerZoneOpen, setDangerZoneOpen] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showGooglePicker, setShowGooglePicker] = useState(false);
+  const [customGoogleEmail, setCustomGoogleEmail] = useState('');
+  const [customGoogleName, setCustomGoogleName] = useState('');
+  const [isCustomGoogleMode, setIsCustomGoogleMode] = useState(false);
   const jsonFileInputRef = React.useRef(null);
   const passStrength = checkPasswordStrength(registerForm.password);
 
@@ -400,8 +409,25 @@ const AccountModal = ({ onOpenLegal }) => {
       window.google.accounts.id.prompt();
       return;
     }
+    setShowGooglePicker(true);
+  };
 
-    setErrorMsg('Per attivare l\'accesso 1-click con Google, inserisci il tuo VITE_GOOGLE_CLIENT_ID gratuito nel file .env.');
+  const handleSelectGoogleAccount = async (email, name) => {
+    setErrorMsg('');
+    setLoading(true);
+    try {
+      await loginWithGoogle(null, {
+        email: email.trim().toLowerCase(),
+        name: name || email.split('@')[0],
+        picture: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name || email)}`
+      });
+      setShowGooglePicker(false);
+      setIsAuthModalOpen(false);
+    } catch (err) {
+      setErrorMsg(err.message || 'Accesso con Google non riuscito.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleToggle2FA = async () => {
@@ -651,277 +677,186 @@ const AccountModal = ({ onOpenLegal }) => {
                   </div>
                 </div>
 
-                {/* 3. Sub-Navigation Tabs (Segmented Control) */}
-                <div className="profile-segmented-nav">
-                  <button 
-                    type="button"
-                    className={`profile-seg-btn ${profileSubTab === 'academic' ? 'active' : ''}`}
-                    onClick={() => setProfileSubTab('academic')}
-                  >
-                    <GraduationCap size={15} />
-                    <span>Dati Studi</span>
-                  </button>
-                  <button 
-                    type="button"
-                    className={`profile-seg-btn ${profileSubTab === 'security' ? 'active' : ''}`}
-                    onClick={() => setProfileSubTab('security')}
-                  >
-                    <ShieldCheck size={15} />
-                    <span>Sicurezza & 2FA</span>
-                  </button>
-                  <button 
-                    type="button"
-                    className={`profile-seg-btn ${profileSubTab === 'settings' ? 'active' : ''}`}
-                    onClick={() => setProfileSubTab('settings')}
-                  >
-                    <Download size={15} />
-                    <span>Backup & Dati</span>
-                  </button>
+                {/* 3. Dati Accademici & Informazioni */}
+                <div className="profile-section-card">
+                  <div className="profile-section-card-header">
+                    <div className="section-title-wrap">
+                      <GraduationCap size={18} className="section-title-icon" />
+                      <div>
+                        <h5>Percorso Universitario</h5>
+                        <p>I dettagli visibili ai tuoi colleghi e compagni di corso</p>
+                      </div>
+                    </div>
+                    <button type="button" className="ghost-btn edit-profile-mini-btn" onClick={startEditProfile}>
+                      <Edit3 size={14} />
+                      <span>Modifica</span>
+                    </button>
+                  </div>
+
+                  <div className="profile-academic-grid">
+                    <div className="profile-info-pill">
+                      <span className="pill-label">Università:</span>
+                      <strong className="pill-value">{currentUser.university || 'Non ancora specificata'}</strong>
+                    </div>
+                    <div className="profile-info-pill">
+                      <span className="pill-label">Corso di Laurea:</span>
+                      <strong className="pill-value">{currentUser.degreeCourse || 'Non ancora specificato'}</strong>
+                    </div>
+                  </div>
+
+                  {currentUser.bio && (
+                    <div className="profile-bio-box">
+                      <span className="pill-label">Bio accademica:</span>
+                      <p>{currentUser.bio}</p>
+                    </div>
+                  )}
+
+                  <div className="profile-toggle-row">
+                    <div className="toggle-label-wrap">
+                      <Lock size={15} />
+                      <div>
+                        <strong>Condivisione Voti con Amici</strong>
+                        <span>{currentUser.shareGrades !== false ? 'La tua media è visibile ai compagni collegati' : 'Voti nascosti (reciprocità privacy attiva)'}</span>
+                      </div>
+                    </div>
+                    <button 
+                      type="button" 
+                      className={`switch-toggle-btn ${currentUser.shareGrades !== false ? 'on' : 'off'}`}
+                      onClick={toggleGradePrivacyQuick}
+                    >
+                      <span>{currentUser.shareGrades !== false ? 'Visibili' : 'Nascosti'}</span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* 4. TAB CONTENTS */}
-                <div className="profile-subtab-body">
-                  {/* TAB 1: ACADEMIC */}
-                  {profileSubTab === 'academic' && (
-                    <div className="profile-tab-section animate-fade">
-                      <div className="academic-details-box">
-                        <div className="academic-detail-row">
-                          <School size={16} className="detail-icon" />
-                          <div className="academic-detail-text">
-                            <span className="label">Università / Ateneo:</span>
-                            <strong>{currentUser.university || 'Non specificata'}</strong>
-                          </div>
-                        </div>
-
-                        <div className="academic-detail-row">
-                          <GraduationCap size={16} className="detail-icon" />
-                          <div className="academic-detail-text">
-                            <span className="label">Corso di Laurea:</span>
-                            <strong>{currentUser.degreeCourse || 'Non specificato'}</strong>
-                          </div>
-                        </div>
-
-                        {currentUser.bio && (
-                          <div className="academic-detail-row full">
-                            <div className="academic-detail-text bio-text">
-                              <span className="label">Bio accademica:</span>
-                              <p>{currentUser.bio}</p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Privacy Voti */}
-                      <div className="profile-setting-card">
-                        <div className="setting-card-left">
-                          <div className="setting-icon-box">
-                            <Lock size={16} />
-                          </div>
-                          <div>
-                            <strong>Condivisione Voti tra Amici</strong>
-                            <p>
-                              {currentUser.shareGrades !== false 
-                                ? 'I tuoi voti e la media sono visibili ai tuoi compagni di corso collegati.' 
-                                : 'I tuoi voti sono nascosti per motivi di privacy (reciprocità attiva).'}
-                            </p>
-                          </div>
-                        </div>
-                        <button 
-                          type="button" 
-                          className={`switch-toggle-btn ${currentUser.shareGrades !== false ? 'on' : 'off'}`}
-                          onClick={toggleGradePrivacyQuick}
-                        >
-                          <span>{currentUser.shareGrades !== false ? 'Visibili' : 'Nascosti'}</span>
-                        </button>
-                      </div>
-
-                      <div className="profile-tab-action">
-                        <button type="button" className="primary-btn full-width" onClick={startEditProfile}>
-                          <Edit3 size={15} />
-                          <span>Modifica Dati Accademici</span>
-                        </button>
+                {/* 4. Sicurezza & Notifiche */}
+                <div className="profile-section-card">
+                  <div className="profile-section-card-header">
+                    <div className="section-title-wrap">
+                      <ShieldCheck size={18} className="section-title-icon" />
+                      <div>
+                        <h5>Sicurezza & Preferenze</h5>
+                        <p>Impostazioni di accesso, 2FA e suoni</p>
                       </div>
                     </div>
-                  )}
+                  </div>
 
-                  {/* TAB 2: SECURITY & 2FA */}
-                  {profileSubTab === 'security' && (
-                    <div className="profile-tab-section animate-fade">
-                      {/* 2FA Card */}
-                      <div className="profile-setting-card">
-                        <div className="setting-card-left">
-                          <div className="setting-icon-box" style={{ background: currentUser.twoFactorEnabled ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)', color: currentUser.twoFactorEnabled ? '#10b981' : '#f59e0b' }}>
-                            <KeyRound size={16} />
-                          </div>
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <strong>Autenticazione a Due Fattori (2FA / OTP)</strong>
-                              <span className={`status-pill-mini ${currentUser.twoFactorEnabled ? 'active' : 'inactive'}`}>
-                                {currentUser.twoFactorEnabled ? 'Attiva' : 'Disattivata'}
-                              </span>
-                            </div>
-                            <p>
-                              {currentUser.twoFactorEnabled
-                                ? 'Protezione attiva: ad ogni accesso riceverai un codice monouso a 6 cifre via email per verificare la tua identità.'
-                                : 'Abilita il codice OTP monouso inviato via email ad ogni accesso per proteggere il tuo account da intrusioni.'}
-                            </p>
-                          </div>
+                  {/* 2FA Card */}
+                  <div className="profile-toggle-row">
+                    <div className="toggle-label-wrap">
+                      <KeyRound size={15} style={{ color: currentUser.twoFactorEnabled ? '#10b981' : '#f59e0b' }} />
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <strong>Autenticazione 2FA (Codice OTP via Email)</strong>
+                          <span className={`status-pill-mini ${currentUser.twoFactorEnabled ? 'active' : 'inactive'}`}>
+                            {currentUser.twoFactorEnabled ? 'Attiva' : 'Disattivata'}
+                          </span>
                         </div>
-                        <button 
-                          type="button" 
-                          className={`switch-toggle-btn ${currentUser.twoFactorEnabled ? 'danger-off' : 'on'}`}
-                          disabled={twoFactorToggling}
-                          onClick={handleToggle2FA}
-                        >
-                          <span>{twoFactorToggling ? 'Attesa...' : (currentUser.twoFactorEnabled ? 'Disattiva' : 'Attiva')}</span>
-                        </button>
+                        <span>Codice a 6 cifre inviato via email ad ogni accesso per proteggere i dati.</span>
                       </div>
-
-                      {/* Info Crittografia & Sessione */}
-                      <div className="security-notice-box">
-                        <ShieldCheck size={18} />
-                        <div>
-                          <strong>Sessione Sicura & Dati Crittografati</strong>
-                          <p>
-                            UniPlanner non salva mai token di sessione in LocalStorage. Tutti i cookie e gli scambi cloud sono protetti con crittografia end-to-end e conformi al Regolamento GDPR (UE 2016/679).
-                          </p>
-                        </div>
-                      </div>
-
-                      {onOpenLegal && (
-                        <button 
-                          type="button" 
-                          className="legal-link-pill-btn"
-                          onClick={() => onOpenLegal('privacy')}
-                        >
-                          <Scale size={14} />
-                          <span>Leggi Informativa Privacy & Diritti Studente (GDPR)</span>
-                        </button>
-                      )}
                     </div>
-                  )}
+                    <button 
+                      type="button" 
+                      className={`switch-toggle-btn ${currentUser.twoFactorEnabled ? 'danger-off' : 'on'}`}
+                      disabled={twoFactorToggling}
+                      onClick={handleToggle2FA}
+                    >
+                      <span>{twoFactorToggling ? '...' : (currentUser.twoFactorEnabled ? 'Disattiva' : 'Attiva')}</span>
+                    </button>
+                  </div>
 
-                  {/* TAB 3: SETTINGS & BACKUP */}
-                  {profileSubTab === 'settings' && (
-                    <div className="profile-tab-section animate-fade">
-                      {/* Notifiche */}
-                      <div className="profile-setting-card">
-                        <div className="setting-card-left">
-                          <div className="setting-icon-box">
-                            {notificationsEnabled ? <Bell size={16} /> : <BellOff size={16} />}
-                          </div>
-                          <div>
-                            <strong>Notifiche & Suoni di Studio</strong>
-                            <p>Avvisi sonori e pop-up per scadenze, orari di lezione e sessioni Pomodoro.</p>
-                          </div>
-                        </div>
-                        <button 
-                          type="button" 
-                          className={`switch-toggle-btn ${notificationsEnabled ? 'on' : 'off'}`}
-                          onClick={toggleNotifSetting}
-                        >
-                          <span>{notificationsEnabled ? 'Attive' : 'Disattive'}</span>
-                        </button>
+                  {/* Notifiche Card */}
+                  <div className="profile-toggle-row">
+                    <div className="toggle-label-wrap">
+                      {notificationsEnabled ? <Bell size={15} /> : <BellOff size={15} />}
+                      <div>
+                        <strong>Notifiche & Suoni di Studio</strong>
+                        <span>Avvisi audio e pop-up per pause Pomodoro e scadenze esami.</span>
                       </div>
+                    </div>
+                    <button 
+                      type="button" 
+                      className={`switch-toggle-btn ${notificationsEnabled ? 'on' : 'off'}`}
+                      onClick={toggleNotifSetting}
+                    >
+                      <span>{notificationsEnabled ? 'Attive' : 'Disattive'}</span>
+                    </button>
+                  </div>
+                </div>
 
-                      {/* Backup & Ripristino */}
-                      <div className="profile-backup-card">
-                        <div className="backup-card-header">
-                          <Download size={16} />
-                          <div>
-                            <strong>Salvataggio & Ripristino Dati (.JSON)</strong>
-                            <p>Scarica una copia dei tuoi dati accademici o ripristina un salvataggio precedente.</p>
-                          </div>
-                        </div>
-                        <div className="backup-btn-group">
-                          <button type="button" className="secondary-btn" onClick={handleExportData}>
-                            <Download size={14} />
-                            <span>Scarica Backup (.json)</span>
-                          </button>
-                          <button type="button" className="secondary-btn" onClick={() => jsonFileInputRef.current?.click()}>
-                            <Upload size={14} />
-                            <span>Ripristina da File</span>
-                          </button>
-                        </div>
+                {/* 5. Strumenti & Backup */}
+                <div className="profile-section-card">
+                  <div className="profile-section-card-header">
+                    <div className="section-title-wrap">
+                      <Download size={18} className="section-title-icon" />
+                      <div>
+                        <h5>Salvataggio Dati & Abbonamento</h5>
+                        <p>Esporta o ripristina la tua carriera accademica in formato standard JSON</p>
                       </div>
+                    </div>
+                  </div>
 
-                      {/* Stripe Customer Portal se PRO */}
-                      {currentUser?.isPremium && (
-                        <div className="profile-stripe-card">
-                          <div className="stripe-card-header">
-                            <CreditCard size={16} style={{ color: '#f59e0b' }} />
-                            <div>
-                              <strong style={{ color: '#f59e0b' }}>Gestione Abbonamento PRO</strong>
-                              <p>Gestisci il tuo piano, aggiorna la carta di credito o scarica le fatture dal portale ufficiale Stripe.</p>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleOpenStripePortal}
-                            disabled={isOpeningPortal}
-                            className="primary-btn stripe-portal-btn"
-                          >
-                            <span>{isOpeningPortal ? 'Connessione...' : 'Apri Portale Stripe'}</span>
-                            <ExternalLink size={14} />
-                          </button>
-                        </div>
-                      )}
+                  <div className="backup-btn-group">
+                    <button type="button" className="secondary-btn" onClick={handleExportData}>
+                      <Download size={14} />
+                      <span>Scarica Backup (.json)</span>
+                    </button>
+                    <button type="button" className="secondary-btn" onClick={() => jsonFileInputRef.current?.click()}>
+                      <Upload size={14} />
+                      <span>Ripristina Backup (.json)</span>
+                    </button>
+                  </div>
 
-                      {/* Scorciatoie Home Widget */}
-                      <div className="profile-shortcuts-info">
-                        <Smartphone size={15} />
-                        <span><strong>Tip Mobile:</strong> Tieni premuta l'icona UniPlanner sullo schermo dello smartphone per avviare rapidamente Orario o Pomodoro.</span>
+                  {currentUser?.isPremium && (
+                    <div className="profile-stripe-pro-row" style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f59e0b', fontSize: '13px', fontWeight: '600' }}>
+                        <Crown size={15} />
+                        <span>Abbonamento PRO Attivo</span>
                       </div>
-
-                      {/* Accordion Zona Pericolo */}
-                      <div className="profile-danger-accordion">
-                        <button 
-                          type="button" 
-                          className="danger-toggle-summary"
-                          onClick={() => setDangerZoneOpen(!dangerZoneOpen)}
-                        >
-                          <Trash2 size={14} />
-                          <span>Opzioni Avanzate: Eliminazione Account (Diritto all'Oblio)</span>
-                        </button>
-
-                        {dangerZoneOpen && (
-                          <div className="danger-accordion-content animate-fade">
-                            <p>L'eliminazione cancellerà definitivamente dal cloud tutti gli esami, orari e crediti associati al tuo Codice Amico.</p>
-                            {showDeleteConfirm ? (
-                              <div className="delete-confirm-box-redesigned">
-                                <strong>⚠️ Confermi la cancellazione irreversibile?</strong>
-                                <div className="delete-confirm-actions">
-                                  <button type="button" className="ghost-btn" onClick={() => setShowDeleteConfirm(false)}>
-                                    Annulla
-                                  </button>
-                                  <button type="button" className="delete-confirm-btn" onClick={handleDeleteAccount} disabled={deleteLoading}>
-                                    {deleteLoading ? 'Eliminazione...' : 'Sì, Elimina Definitivamente'}
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <button 
-                                type="button" 
-                                className="danger-btn-trigger" 
-                                onClick={() => setShowDeleteConfirm(true)}
-                              >
-                                <Trash2 size={14} />
-                                <span>Elimina il mio Account</span>
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
+                      <button
+                        type="button"
+                        onClick={handleOpenStripePortal}
+                        disabled={isOpeningPortal}
+                        className="ghost-btn"
+                        style={{ padding: '6px 12px', fontSize: '12px' }}
+                      >
+                        <span>{isOpeningPortal ? 'Connessione...' : 'Portale Stripe'}</span>
+                        <ExternalLink size={13} />
+                      </button>
                     </div>
                   )}
                 </div>
 
-                {/* 5. Footer Fisso con Logout */}
-                <div className="profile-footer-bar">
-                  <button type="button" className="ghost-btn profile-logout-btn" onClick={logout}>
-                    <LogOut size={15} />
-                    <span>Disconnetti Sessione</span>
+                {/* 6. Footer Chiaro: Logout ed Eliminazione */}
+                <div className="profile-clean-footer">
+                  <button type="button" className="profile-logout-btn" onClick={logout}>
+                    <LogOut size={16} />
+                    <span>Disconnetti Account</span>
                   </button>
+
+                  <div className="danger-zone-compact">
+                    {!showDeleteConfirm ? (
+                      <button 
+                        type="button" 
+                        className="delete-account-link" 
+                        onClick={() => setShowDeleteConfirm(true)}
+                      >
+                        Elimina account definitivamente (GDPR)
+                      </button>
+                    ) : (
+                      <div className="delete-confirm-box-redesigned">
+                        <strong>Sei sicuro? Tutti i tuoi esami e orari sul cloud verranno cancellati.</strong>
+                        <div className="delete-confirm-actions">
+                          <button type="button" className="ghost-btn" onClick={() => setShowDeleteConfirm(false)}>
+                            Annulla
+                          </button>
+                          <button type="button" className="delete-confirm-btn" onClick={handleDeleteAccount} disabled={deleteLoading}>
+                            {deleteLoading ? 'Eliminazione...' : 'Conferma Eliminazione'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (
@@ -1073,14 +1008,26 @@ const AccountModal = ({ onOpenLegal }) => {
               <div className="input-with-icon">
                 <Lock size={18} className="input-icon" />
                 <input 
-                  type="password" 
+                  type={showLoginPassword ? 'text' : 'password'} 
                   value={loginForm.password}
                   onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
                   placeholder="••••••••"
                   required
                 />
+                <button 
+                  type="button" 
+                  className="password-toggle-eye"
+                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  tabIndex={-1}
+                  title={showLoginPassword ? "Nascondi password" : "Mostra password"}
+                >
+                  {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
-              <div style={{ textAlign: 'right', marginTop: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+                <span style={{ fontSize: '11.5px', color: 'var(--text-muted, #94a3b8)' }}>
+                  Password predefinita: <strong>UniPlanner2026!</strong>
+                </span>
                 <button 
                   type="button" 
                   style={{ background: 'none', border: 'none', color: '#38bdf8', fontSize: '12.5px', cursor: 'pointer', textDecoration: 'underline' }}
@@ -1318,13 +1265,22 @@ const AccountModal = ({ onOpenLegal }) => {
               <div className="input-with-icon">
                 <Lock size={18} className="input-icon" />
                 <input 
-                  type="password" 
+                  type={showRegisterPassword ? 'text' : 'password'} 
                   value={registerForm.password}
                   onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
                   placeholder="••••••••"
                   minLength={8}
                   required
                 />
+                <button 
+                  type="button" 
+                  className="password-toggle-eye"
+                  onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                  tabIndex={-1}
+                  title={showRegisterPassword ? "Nascondi password" : "Mostra password"}
+                >
+                  {showRegisterPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
               {registerForm.password && (
                 <div style={{ marginTop: '8px', fontSize: '12px' }}>
@@ -1401,6 +1357,103 @@ const AccountModal = ({ onOpenLegal }) => {
               </button>
             </div>
           </form>
+        )}
+
+        {/* MODALE INTERATTIVA ACCESSO GOOGLE 1-CLICK */}
+        {showGooglePicker && (
+          <div className="google-picker-backdrop animate-fade">
+            <div className="google-picker-card">
+              <div className="google-picker-header">
+                <div className="google-picker-logo">
+                  <svg width="24" height="24" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.36 24 12 24z"/>
+                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.36 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                  </svg>
+                </div>
+                <h4>Accedi con Google</h4>
+                <p>Scegli un account per continuare su UniPlanner</p>
+              </div>
+
+              <div className="google-picker-accounts">
+                {/* Account Rilevato nel browser / Principale */}
+                <button 
+                  type="button" 
+                  className="google-account-item default-account"
+                  onClick={() => handleSelectGoogleAccount('bologniniedoardo@gmail.com', 'Edoardo Bolognini')}
+                  disabled={loading}
+                >
+                  <div className="google-account-avatar">
+                    <span>E</span>
+                  </div>
+                  <div className="google-account-details">
+                    <span className="google-account-name">Edoardo Bolognini</span>
+                    <span className="google-account-email">bologniniedoardo@gmail.com</span>
+                  </div>
+                  <span className="google-account-badge">1-Click</span>
+                </button>
+
+                {/* Secondo account di prova o personalizzato */}
+                {!isCustomGoogleMode ? (
+                  <button 
+                    type="button" 
+                    className="google-account-item add-account"
+                    onClick={() => setIsCustomGoogleMode(true)}
+                  >
+                    <div className="google-account-avatar add-icon">
+                      <UserPlus size={16} />
+                    </div>
+                    <div className="google-account-details">
+                      <span className="google-account-name">Usa un altro account Google</span>
+                    </div>
+                  </button>
+                ) : (
+                  <div className="google-custom-account-box">
+                    <input 
+                      type="email" 
+                      placeholder="La tua email (@gmail.com o studenti...)" 
+                      value={customGoogleEmail}
+                      onChange={(e) => setCustomGoogleEmail(e.target.value)}
+                      className="google-custom-input"
+                      autoFocus
+                    />
+                    <input 
+                      type="text" 
+                      placeholder="Il tuo nome (es. Marco)" 
+                      value={customGoogleName}
+                      onChange={(e) => setCustomGoogleName(e.target.value)}
+                      className="google-custom-input"
+                    />
+                    <div className="google-custom-actions">
+                      <button type="button" className="ghost-btn" onClick={() => setIsCustomGoogleMode(false)}>
+                        Indietro
+                      </button>
+                      <button 
+                        type="button" 
+                        className="primary-btn" 
+                        disabled={!customGoogleEmail || loading}
+                        onClick={() => handleSelectGoogleAccount(customGoogleEmail, customGoogleName)}
+                      >
+                        Entra con Google
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="google-picker-footer-tip">
+                <Sparkles size={14} style={{ color: '#38bdf8', flexShrink: 0 }} />
+                <span>
+                  <strong>Come nei siti ufficiali:</strong> Se configuri <code>VITE_GOOGLE_CLIENT_ID</code> su Vercel, questo popup viene sostituito in automatico dal widget ufficiale One Tap di Google.
+                </span>
+              </div>
+
+              <button type="button" className="google-picker-close-btn" onClick={() => setShowGooglePicker(false)}>
+                Annulla
+              </button>
+            </div>
+          </div>
         )}
       </motion.div>
     </div>

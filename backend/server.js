@@ -395,6 +395,7 @@ app.use(express.json({ limit: '5mb' }));
 
 // ─── 5. RATE LIMITERS & SPENDING CAPS ─────────────────────────────────────────
 const generalLimiter = rateLimit({
+  validate: { xForwardedForHeader: false },
   windowMs: 15 * 60 * 1000,
   max: 150,
   standardHeaders: true,
@@ -405,6 +406,7 @@ app.use('/api/', generalLimiter);
 
 // Rate limiter severo per login / password reset (prevenzione brute-force)
 const authLimiter = rateLimit({
+  validate: { xForwardedForHeader: false },
   windowMs: 15 * 60 * 1000,
   max: 10,
   standardHeaders: true,
@@ -413,6 +415,7 @@ const authLimiter = rateLimit({
 });
 
 const bugReportLimiter = rateLimit({
+  validate: { xForwardedForHeader: false },
   windowMs: 15 * 60 * 1000,
   max: 5,
   message: { error: 'Limite di segnalazioni raggiunto. Riprova tra 15 minuti.' }
@@ -751,6 +754,34 @@ app.post('/api/auth/google', authLimiter, (req, res) => {
   };
 
   return res.json({ success: true, user: safeProfile, token });
+});
+
+/**
+ * POST /api/auth/reset-password — Reimposta password verificando Codice Amico ed Email
+ */
+app.post('/api/auth/reset-password', authLimiter, (req, res) => {
+  const { friendCode, email, newPassword } = req.body;
+  if (!friendCode || !email || !newPassword || newPassword.length < 6) {
+    return res.status(400).json({ error: 'Dati incompleti o password troppo breve (min. 6 caratteri).' });
+  }
+
+  const cleanCode = String(friendCode).trim().toUpperCase();
+  const cleanEmail = String(email).trim().toLowerCase();
+
+  const user = db.prepare(`SELECT id, friend_code, email, full_name, username FROM users WHERE UPPER(friend_code) = ?`).get(cleanCode);
+  if (!user) {
+    return res.status(404).json({ error: 'Nessun account trovato con questo Codice Amico.' });
+  }
+
+  if (user.email && user.email.toLowerCase() !== cleanEmail) {
+    return res.status(403).json({ error: 'L\'email inserita non corrisponde a questo account.' });
+  }
+
+  const newHash = crypto.createHash('sha256').update(AUTH_SALT + newPassword).digest('hex');
+  db.prepare(`UPDATE users SET password_hash = ?, failed_login_attempts = 0, locked_until = NULL, updated_at = CURRENT_TIMESTAMP WHERE UPPER(friend_code) = ?`).run(newHash, cleanCode);
+  logAudit('RESET_PASSWORD_SUCCESS', cleanCode, req);
+
+  return res.json({ success: true, message: 'Password aggiornata con successo! Ora puoi accedere.' });
 });
 
 /**
