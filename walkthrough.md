@@ -65,6 +65,21 @@ Tutti i requisiti di sicurezza avanzata, integrità dei dati, protezione da atta
 - **`ErrorBoundary.jsx`**: Cattura eccezioni a runtime nei componenti React, evitando schermate bianche ed esponendo un recupero rapido.
 - **`NotFound.jsx` & `NotFound.css`**: Design coerente con il tema accademico editoriale (*Newsreader*, *JetBrains Mono*, *Plus Jakarta Sans*), pulsanti di reindirizzamento al Piano Esami e alla Guida.
 
+### 12. Risoluzione Glitch Visivo Barra Aggiungi Esame
+- **Doppio Bordo al Focus**: Rimossa la sovrapposizione tra il contorno del container `.modern-add-bar` e l'input interno `.borderless-input`. Applicato `border: none !important; box-shadow: none !important; outline: none !important; border-radius: 0 !important; background: transparent !important;` in `src/pages/Exams.css` e `src/index.css`.
+
+### 13. Eliminazione Password Predefinita & Riforma Password Policy
+- **Rimozione Password Predefinita**: Eliminata completamente dall'interfaccia la scritta fuorviante `Password predefinita: UniPlanner2026!`.
+- **Policy di Complessità Standardizzata**: Rilassata la regola rigida (che imponeva obbligatoriamente simboli speciali complessi, bloccando password normali come `Edoardo2026`): ora richiede almeno 8 caratteri con lettere e numeri. I simboli speciali rimangono supportati e consigliati con punteggio bonus visivo.
+- **Registrazione Connessa al Database**: `register()` in `AuthContext.jsx` ora invoca `registerUserOnline()` creando l'account in SQLite con credenziali conformi e token di sessione autenticato.
+
+### 14. Overhaul Completo Ripristino Password (OTP via Email a 2 Passaggi)
+- **Eliminazione Falla di Sicurezza `friendCode`**: Il vecchio reset richiedeva solo Codice Amico ed Email, consentendo a conoscenti di sovrascrivere la password di un account. Il parametro `friendCode` è stato completamente rimosso dal ripristino credenziali.
+- **Flusso Professionale a 2 Fasi**:
+  1. **Fase 1 (`POST /api/auth/forgot-password`)**: L'utente inserisce la propria email (o username). Il server genera un codice OTP numerico a 6 cifre, lo memorizza sotto forma di hash SHA-256 con scadenza a 10 minuti (`reset_code_expires`), e lo recapita all'email registrata.
+  2. **Fase 2 (`POST /api/auth/reset-password`)**: L'utente inserisce il codice OTP a 6 cifre ricevuto e la nuova password. Il server verifica l'hash del codice, controlla che non sia scaduto, impone un limite anti-bruteforce (massimo 5 tentativi errati) e aggiorna la password.
+- **Protezione Anti-Enumerazione**: Se l'email inserita non esiste, il server risponde comunque con messaggio generico per non rivelare quali email sono iscritte alla piattaforma.
+
 ---
 
 ## Risultati dei Test e Verifiche
@@ -73,11 +88,11 @@ Tutti i requisiti di sicurezza avanzata, integrità dei dati, protezione da atta
 |---|---|---|---|
 | **Stress Test Concorrenza SQLite** | `scratch/test_concurrency.js` | **SUPERATO (0 errori)** | 30 transazioni simultanee completate in 3ms in WAL mode senza lock contention |
 | **Integrità Backup & Restore** | `scratch/test_backup_restore.js` | **SUPERATO (0 errori)** | Checksum SHA-256 speculari al 100% prima e dopo la serializzazione |
-| **Build di Produzione Frontend** | `npm run build` | **SUPERATO (0 errori)** | 3.497 moduli trasformati e bundlati in 14.63s (Vite v5.4.21) |
+| **Test Flusso Auth & Reset OTP su Raspberry Pi** | `scratch/test_auth_flow.js` | **SUPERATO (0 errori)** | Registrazione 200 OK, Generazione OTP 200 OK, Verifica OTP e cambio password 200 OK, Login con nuova password 200 OK |
+| **Build di Produzione Frontend** | `npm run build` | **SUPERATO (0 errori)** | 3.499 moduli trasformati e bundlati in 14.79s (Vite v5.4.21) |
 
 ---
 
 ## Note per il Deployment
-Per aggiornare la versione su Vercel e Raspberry Pi:
-1. Eseguire il commit dei file modificati e inviare su GitHub (`git push origin main`), innescando il deploy automatico su Vercel.
-2. Sul server Node del Raspberry Pi, aggiornare il file `.env` con le variabili necessarie (`JWT_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) e riavviare il servizio.
+1. Le modifiche frontend e backend sono state committate e spinte su GitHub (`main`), innescando il deploy automatico su Vercel.
+2. Sul server Raspberry Pi (`edob@100.121.66.33`), `server.js` e `schema.sql` sono stati sincronizzati e il processo PM2 `uniplanner-api` (id 0) è stato riavviato e verificato online in produzione.
