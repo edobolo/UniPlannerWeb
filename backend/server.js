@@ -398,10 +398,19 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'https://uniplanner-web-a
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+    if (
+      !origin || 
+      allowedOrigins.includes(origin) || 
+      origin.endsWith('.vercel.app') ||
+      origin.includes('ngrok-free.dev') ||
+      origin.includes('ngrok.io') ||
+      origin.includes('100.121.66.33') ||
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1')
+    ) {
       callback(null, true);
     } else {
-      callback(new Error('Origine non consentita dalle policy CORS di UniPlanner'));
+      callback(null, false);
     }
   },
   credentials: true, // Necessario per la ricezione e l'invio dei cookie httpOnly
@@ -1987,8 +1996,8 @@ app.post('/admin/login', (req, res) => {
   const passwordInput = (req.body && req.body.password) ? String(req.body.password).trim() : '';
   const validPassword = ADMIN_PASSWORD || 'XZn4mZ!$ix7yqe^hwAL244ZP';
 
-  // Supporta sia la chiave sicura master che la password principale dell'amministratore
-  if (passwordInput === validPassword || passwordInput === 'UniPlanner2026!') {
+  // Accetta ESCLUSIVAMENTE la password originale master dell'amministratore
+  if (passwordInput === validPassword) {
     const sessionToken = crypto.randomBytes(32).toString('hex');
     adminSessions.add(sessionToken);
     delete adminFailedAttempts[ip];
