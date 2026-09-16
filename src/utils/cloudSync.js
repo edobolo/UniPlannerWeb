@@ -417,6 +417,39 @@ export const loginGoogleOnline = async (credential, profile = null) => {
 };
 
 /**
+ * Collega un account Google all'utente attualmente autenticato
+ */
+export const linkGoogleOnline = async (credential, profile = null) => {
+  try {
+    const res = await apiFetch('/auth/link-google', {
+      method: 'POST',
+      body: JSON.stringify({ credential, profile })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Impossibile collegare l\'account Google.');
+    return data;
+  } catch (err) {
+    logger.error('Errore collegamento Google online:', err.message);
+    throw err;
+  }
+};
+
+/**
+ * Scollega l'account Google dall'utente attualmente autenticato
+ */
+export const unlinkGoogleOnline = async () => {
+  try {
+    const res = await apiFetch('/auth/unlink-google', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Impossibile scollegare l\'account Google.');
+    return data;
+  } catch (err) {
+    logger.error('Errore scollegamento Google online:', err.message);
+    throw err;
+  }
+};
+
+/**
  * Autentica l'utente tramite il server backend Raspberry Pi
  * Supporta 2FA / OTP e salva il session token in HttpOnly Cookie.
  */

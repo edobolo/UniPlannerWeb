@@ -210,6 +210,7 @@ function ensureColumn(table, column, definition) {
 }
 
 ensureColumn('users', 'google_id', 'TEXT');
+ensureColumn('users', 'google_email', 'TEXT');
 ensureColumn('users', 'avatar_url', 'TEXT');
 
 // Auto-migrazione legacy trasparente da database.json a SQLite
@@ -686,12 +687,14 @@ app.post('/api/auth/google', authLimiter, (req, res) => {
     return res.status(400).json({ error: 'Credenziali Google non valide o email non fornita.' });
   }
 
-  // Cerca utente per email o google_id
+  // Cerca utente per email principale, google_email collegata o google_id
   let user = db.prepare(`
-    SELECT id, friend_code, username, full_name, email, university, degree_course, avatar_color, bio, status, share_grades, is_premium, stripe_customer_id, role, two_factor_enabled, google_id
+    SELECT id, friend_code, username, full_name, email, university, degree_course, avatar_color, bio, status, share_grades, is_premium, stripe_customer_id, role, two_factor_enabled, google_id, google_email, avatar_url
     FROM users
-    WHERE LOWER(email) = ? OR (google_id IS NOT NULL AND google_id = ?)
-  `).get(googleEmail, googleSub || '');
+    WHERE LOWER(email) = ? 
+       OR (google_email IS NOT NULL AND LOWER(google_email) = ?) 
+       OR (google_id IS NOT NULL AND google_id != '' AND google_id = ?)
+  `).get(googleEmail, googleEmail, googleSub || '');
 
   if (!user) {
     // Nuovo studente: registrazione automatica con Friend Code univoco
@@ -709,9 +712,9 @@ app.post('/api/auth/google', authLimiter, (req, res) => {
     const avatarColor = randomColors[Math.floor(Math.random() * randomColors.length)];
 
     db.prepare(`
-      INSERT INTO users (id, friend_code, username, full_name, email, password_hash, university, degree_course, avatar_color, status, bio, role, google_id, avatar_url)
-      VALUES (?, ?, ?, ?, ?, '', '', '', ?, 'In sessione 🎯', 'Studente UniPlanner', 'student', ?, ?)
-    `).run(userId, friendCode, finalUsername, googleName, googleEmail, avatarColor, googleSub || '', googlePicture || '');
+      INSERT INTO users (id, friend_code, username, full_name, email, google_email, password_hash, university, degree_course, avatar_color, status, bio, role, google_id, avatar_url)
+      VALUES (?, ?, ?, ?, ?, ?, '', '', '', ?, 'In sessione 🎯', 'Studente UniPlanner', 'student', ?, ?)
+    `).run(userId, friendCode, finalUsername, googleName, googleEmail, googleEmail, avatarColor, googleSub || '', googlePicture || '');
 
     logAudit('USER_REGISTERED_GOOGLE', friendCode, req, `Email: ${googleEmail}`);
 
@@ -721,9 +724,11 @@ app.post('/api/auth/google', authLimiter, (req, res) => {
       username: finalUsername,
       full_name: googleName,
       email: googleEmail,
+      google_email: googleEmail,
       university: '',
       degree_course: '',
       avatar_color: avatarColor,
+      avatar_url: googlePicture || null,
       bio: 'Studente UniPlanner',
       status: 'In sessione 🎯',
       share_grades: 1,
@@ -733,8 +738,15 @@ app.post('/api/auth/google', authLimiter, (req, res) => {
       two_factor_enabled: 0
     };
   } else {
-    if (googleSub && !user.google_id) {
-      db.prepare(`UPDATE users SET google_id = ? WHERE id = ?`).run(googleSub, user.id);
+    // Aggiorna google_id, google_email o avatar_url se mancanti sull'account esistente
+    if ((googleSub && !user.google_id) || (googleEmail && !user.google_email) || (googlePicture && !user.avatar_url)) {
+      db.prepare(`
+        UPDATE users 
+        SET google_id = COALESCE(google_id, ?),
+            google_email = COALESCE(google_email, ?),
+            avatar_url = COALESCE(avatar_url, ?)
+        WHERE id = ?
+      `).run(googleSub || null, googleEmail, googlePicture || null, user.id);
     }
     logAudit('USER_LOGIN_GOOGLE', user.friend_code, req, `Email: ${googleEmail}`);
   }
@@ -753,6 +765,8 @@ app.post('/api/auth/google', authLimiter, (req, res) => {
     username: user.username,
     fullName: user.full_name || user.username,
     email: user.email,
+    googleEmail: user.google_email || (user.google_id ? user.email : null),
+    avatarUrl: user.avatar_url || null,
     university: user.university || '',
     degreeCourse: user.degree_course || '',
     avatarColor: user.avatar_color || '#8b5cf6',
@@ -766,6 +780,80 @@ app.post('/api/auth/google', authLimiter, (req, res) => {
   };
 
   return res.json({ success: true, user: safeProfile, token });
+});
+
+/**
+ * POST /api/auth/link-google — Collega account Google all'account studente autenticato
+ */
+app.post('/api/auth/link-google', authenticateToken, (req, res) => {
+  const { credential, profile } = req.body || {};
+  let googleEmail = null;
+  let googleSub = null;
+  let googlePicture = null;
+
+  if (credential) {
+    try {
+      const decoded = jwt.decode(credential);
+      if (decoded && decoded.email) {
+        googleEmail = String(decoded.email).trim().toLowerCase();
+        googleSub = decoded.sub;
+        googlePicture = decoded.picture || null;
+      }
+    } catch (e) {}
+  }
+
+  if (!googleEmail && profile && profile.email) {
+    googleEmail = String(profile.email).trim().toLowerCase();
+    googleSub = profile.sub || profile.id || null;
+    googlePicture = profile.picture || profile.avatar || null;
+  }
+
+  if (!googleEmail) {
+    return res.status(400).json({ error: 'Dati account Google non validi.' });
+  }
+
+  // Verifica se un altro account ha già associata questa email Google
+  const existingOther = db.prepare(`
+    SELECT id, friend_code FROM users 
+    WHERE (LOWER(email) = ? OR LOWER(COALESCE(google_email, '')) = ? OR (google_id IS NOT NULL AND google_id != '' AND google_id = ?))
+      AND UPPER(friend_code) != UPPER(?)
+  `).get(googleEmail, googleEmail, googleSub || '', req.user.friendCode);
+
+  if (existingOther) {
+    return res.status(400).json({ error: 'Questo account Google è già collegato a un altro profilo studente.' });
+  }
+
+  db.prepare(`
+    UPDATE users 
+    SET google_id = ?,
+        google_email = ?,
+        avatar_url = COALESCE(avatar_url, ?)
+    WHERE UPPER(friend_code) = UPPER(?)
+  `).run(googleSub || '', googleEmail, googlePicture || null, req.user.friendCode);
+
+  logAudit('GOOGLE_ACCOUNT_LINKED', req.user.friendCode, req, `Email Google: ${googleEmail}`);
+
+  return res.json({ 
+    success: true, 
+    message: 'Account Google collegato con successo!',
+    googleEmail,
+    avatarUrl: googlePicture
+  });
+});
+
+/**
+ * POST /api/auth/unlink-google — Scollega account Google dal profilo studente
+ */
+app.post('/api/auth/unlink-google', authenticateToken, (req, res) => {
+  db.prepare(`
+    UPDATE users 
+    SET google_id = NULL, google_email = NULL 
+    WHERE UPPER(friend_code) = UPPER(?)
+  `).run(req.user.friendCode);
+
+  logAudit('GOOGLE_ACCOUNT_UNLINKED', req.user.friendCode, req);
+
+  return res.json({ success: true, message: 'Account Google scollegato.' });
 });
 
 /**
@@ -916,10 +1004,10 @@ app.post('/api/auth/login', authLimiter, (req, res) => {
   const cleanId = String(identifier).trim().toLowerCase();
 
   const user = db.prepare(`
-    SELECT id, friend_code, username, full_name, email, password_hash, university, degree_course, avatar_color, bio, status, share_grades, is_premium, stripe_customer_id, role, failed_login_attempts, locked_until, two_factor_enabled
+    SELECT id, friend_code, username, full_name, email, password_hash, university, degree_course, avatar_color, bio, status, share_grades, is_premium, stripe_customer_id, role, failed_login_attempts, locked_until, two_factor_enabled, google_id, google_email, avatar_url
     FROM users
-    WHERE LOWER(username) = ? OR LOWER(email) = ? OR UPPER(friend_code) = UPPER(?)
-  `).get(cleanId, cleanId, cleanId);
+    WHERE LOWER(username) = ? OR LOWER(email) = ? OR LOWER(COALESCE(google_email, '')) = ? OR UPPER(friend_code) = UPPER(?)
+  `).get(cleanId, cleanId, cleanId, cleanId);
 
   if (!user) {
     logAudit('LOGIN_FAILED_UNKNOWN_USER', cleanId, req);
@@ -1038,6 +1126,8 @@ app.post('/api/auth/login', authLimiter, (req, res) => {
     username: user.username,
     fullName: user.full_name,
     email: user.email,
+    googleEmail: user.google_email || (user.google_id ? user.email : null),
+    avatarUrl: user.avatar_url || null,
     university: user.university,
     degreeCourse: user.degree_course,
     avatarColor: user.avatar_color,
@@ -1162,7 +1252,7 @@ app.get('/api/auth/me', authenticateToken, (req, res) => {
   const friendCode = req.user.friendCode;
 
   const user = db.prepare(`
-    SELECT friend_code, username, full_name, email, university, degree_course, avatar_color, bio, status, share_grades, is_premium, stripe_customer_id, role, two_factor_enabled
+    SELECT friend_code, username, full_name, email, university, degree_course, avatar_color, bio, status, share_grades, is_premium, stripe_customer_id, role, two_factor_enabled, google_id, google_email, avatar_url
     FROM users WHERE UPPER(friend_code) = UPPER(?)
   `).get(friendCode);
 
@@ -1175,6 +1265,8 @@ app.get('/api/auth/me', authenticateToken, (req, res) => {
     username: user.username,
     fullName: user.full_name,
     email: user.email,
+    googleEmail: user.google_email || (user.google_id ? user.email : null),
+    avatarUrl: user.avatar_url || null,
     university: user.university,
     degreeCourse: user.degree_course,
     avatarColor: user.avatar_color,
