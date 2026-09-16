@@ -108,10 +108,14 @@ export function isValidFriendCode(code) {
 }
 
 /**
- * Validate password strength (minimum 6 chars, max 128 chars)
+ * Validate password strength (minimum 8 chars, letter + number, max 128 chars)
  */
 export function validatePassword(password) {
-  return typeof password === 'string' && password.length >= 6 && password.length <= 128;
+  return typeof password === 'string' && 
+    password.length >= 8 && 
+    password.length <= 128 && 
+    /[a-zA-Z]/.test(password) && 
+    /[0-9]/.test(password);
 }
 
 /**
@@ -178,12 +182,11 @@ export function maskSensitiveData(obj) {
 
 /**
  * Validates password strength and returns score + breakdown.
- * Requirements:
+ * Requirements for valid password:
  * - At least 8 characters
- * - At least 1 uppercase letter
- * - At least 1 lowercase letter
+ * - At least 1 letter (uppercase or lowercase)
  * - At least 1 digit
- * - At least 1 special character
+ * Symbols and mixed case provide bonus security score.
  */
 export function checkPasswordStrength(password) {
   if (typeof password !== 'string') {
@@ -212,13 +215,14 @@ export function checkPasswordStrength(password) {
   const score = Object.values(checks).filter(Boolean).length;
   const feedback = [];
   if (!checks.length) feedback.push('Almeno 8 caratteri');
-  if (!checks.uppercase) feedback.push('Almeno una lettera maiuscola');
-  if (!checks.lowercase) feedback.push('Almeno una lettera minuscola');
+  if (!checks.uppercase && !checks.lowercase) feedback.push('Almeno una lettera');
   if (!checks.number) feedback.push('Almeno un numero');
-  if (!checks.special) feedback.push('Almeno un carattere speciale');
+
+  const hasLetter = checks.uppercase || checks.lowercase;
+  const isStrong = checks.length && hasLetter && checks.number;
 
   return {
-    isStrong: score >= 4 && checks.length,
+    isStrong,
     score,
     checks,
     feedback

@@ -34,7 +34,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { generateShareLink, resetUserPassword, apiFetch, publishUserProfile } from '../utils/cloudSync';
+import { generateShareLink, requestPasswordResetOtp, verifyPasswordResetOtp, apiFetch, publishUserProfile } from '../utils/cloudSync';
 import { safeJsonParse, checkPasswordStrength } from '../utils/security';
 import './AccountModal.css';
 
@@ -64,7 +64,12 @@ const AccountModal = ({ onOpenLegal }) => {
     university: '',
     degreeCourse: ''
   });
-  const [resetForm, setResetForm] = useState({ friendCode: '', email: '', newPassword: '' });
+  const [resetStep, setResetStep] = useState(1); // 1 = Richiedi OTP, 2 = Verifica OTP e Nuova Password
+  const [resetIdentifier, setResetIdentifier] = useState('');
+  const [resetOtp, setResetOtp] = useState('');
+  const [resetNewPassword, setResetNewPassword] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetDevOtp, setResetDevOtp] = useState('');
   const [resetSuccess, setResetSuccess] = useState('');
   const [profileEdit, setProfileEdit] = useState({
     fullName: '',
@@ -451,10 +456,10 @@ const AccountModal = ({ onOpenLegal }) => {
     e.preventDefault();
     setErrorMsg('');
     
-    // Validazione robustezza password
+    // Validazione robustezza password (minimo 8 caratteri, lettere e numeri)
     const strength = checkPasswordStrength(registerForm.password);
     if (!strength.isStrong) {
-      setErrorMsg('La password non soddisfa tutti i requisiti di sicurezza (minimo 8 caratteri, maiuscola, minuscola, numero, simbolo speciale).');
+      setErrorMsg('La password deve contenere almeno 8 caratteri, con lettere e numeri.');
       return;
     }
 
@@ -477,17 +482,64 @@ const AccountModal = ({ onOpenLegal }) => {
     }
   };
 
-  const handleResetSubmit = async (e) => {
+  // Step 1: Richiesta codice OTP via Email
+  const handleRequestResetOtp = async (e) => {
     e.preventDefault();
+    if (!resetIdentifier) {
+      setErrorMsg('Inserisci la tua email o username.');
+      return;
+    }
     setErrorMsg('');
     setResetSuccess('');
     setLoading(true);
     try {
-      const res = await resetUserPassword(resetForm.friendCode, resetForm.email, resetForm.newPassword);
-      setResetSuccess(res.message || 'Password aggiornata con successo! Ora puoi accedere.');
-      setResetForm({ friendCode: '', email: '', newPassword: '' });
+      const res = await requestPasswordResetOtp(resetIdentifier);
+      if (res.devOtp) {
+        setResetDevOtp(res.devOtp);
+      }
+      setResetStep(2);
+      setResetSuccess(res.message || 'Abbiamo inviato un codice OTP alla tua email.');
     } catch (err) {
-      setErrorMsg(err.message || 'Impossibile resettare la password. Verifica i dati inseriti.');
+      setErrorMsg(err.message || 'Errore durante l\'invio del codice OTP. Riprova più tardi.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Step 2: Convalida codice OTP e impostazione nuova password
+  const handleVerifyResetOtp = async (e) => {
+    e.preventDefault();
+    if (!resetOtp || resetOtp.length !== 6) {
+      setErrorMsg('Inserisci il codice OTP numerico a 6 cifre.');
+      return;
+    }
+
+    const strength = checkPasswordStrength(resetNewPassword);
+    if (!strength.isStrong) {
+      setErrorMsg('La nuova password deve contenere almeno 8 caratteri, con lettere e numeri.');
+      return;
+    }
+
+    setErrorMsg('');
+    setResetSuccess('');
+    setLoading(true);
+    try {
+      const res = await verifyPasswordResetOtp({
+        identifier: resetIdentifier,
+        code: resetOtp,
+        newPassword: resetNewPassword
+      });
+      setResetSuccess(res.message || 'Password aggiornata con successo! Ora puoi accedere.');
+      setResetOtp('');
+      setResetNewPassword('');
+      setTimeout(() => {
+        setAuthModalTab('login');
+        setErrorMsg('');
+        setResetSuccess('');
+        setResetStep(1);
+      }, 1500);
+    } catch (err) {
+      setErrorMsg(err.message || 'Codice OTP non valido o scaduto.');
     } finally {
       setLoading(false);
     }
@@ -1031,14 +1083,16 @@ const AccountModal = ({ onOpenLegal }) => {
                   {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
-                <span style={{ fontSize: '11.5px', color: 'var(--text-muted, #94a3b8)' }}>
-                  Password predefinita: <strong>UniPlanner2026!</strong>
-                </span>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '6px' }}>
                 <button 
                   type="button" 
                   style={{ background: 'none', border: 'none', color: '#38bdf8', fontSize: '12.5px', cursor: 'pointer', textDecoration: 'underline' }}
-                  onClick={() => { setAuthModalTab('reset'); setErrorMsg(''); setResetSuccess(''); }}
+                  onClick={() => { 
+                    setAuthModalTab('reset'); 
+                    setErrorMsg(''); 
+                    setResetSuccess(''); 
+                    setResetStep(1);
+                  }}
                 >
                   Password dimenticata?
                 </button>
@@ -1063,69 +1117,136 @@ const AccountModal = ({ onOpenLegal }) => {
           </form>
         )}
 
-        {/* FORGOT PASSWORD RESET TAB */}
+        {/* FORGOT PASSWORD RESET TAB (2-STEP OTP FLOW) */}
         {authModalTab === 'reset' && (
-          <form onSubmit={handleResetSubmit} className="account-tab-content auth-form">
-            <div style={{ marginBottom: '14px', background: 'rgba(255,255,255,0.04)', padding: '12px', borderRadius: '10px', fontSize: '12.5px', color: 'var(--text-secondary)' }}>
-              🔑 Inserisci il tuo <strong>Codice Amico</strong> e l'<strong>Email</strong> usata per la registrazione per impostare una nuova password.
-            </div>
+          <div className="account-tab-content auth-form">
+            {resetStep === 1 ? (
+              <form onSubmit={handleRequestResetOtp}>
+                <div style={{ marginBottom: '14px', background: 'rgba(255,255,255,0.04)', padding: '12px', borderRadius: '10px', fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                  🔑 Inserisci la tua <strong>email</strong> o il tuo <strong>username</strong>. Ti invieremo un codice di verifica numerico a 6 cifre per reimpostare la tua password in sicurezza.
+                </div>
 
-            <div className="form-group">
-              <label>Il tuo Codice Amico (es. UP-XXXX)</label>
-              <div className="input-with-icon">
-                <User size={18} className="input-icon" />
-                <input 
-                  type="text" 
-                  value={resetForm.friendCode}
-                  onChange={(e) => setResetForm({ ...resetForm, friendCode: e.target.value })}
-                  placeholder="UP-XXXX"
-                  required
-                />
-              </div>
-            </div>
+                <div className="form-group">
+                  <label>Email o Username Registrato</label>
+                  <div className="input-with-icon">
+                    <Mail size={18} className="input-icon" />
+                    <input 
+                      type="text" 
+                      value={resetIdentifier}
+                      onChange={(e) => setResetIdentifier(e.target.value)}
+                      placeholder="nome@universita.it oppure username"
+                      required
+                      autoFocus
+                    />
+                  </div>
+                </div>
 
-            <div className="form-group">
-              <label>Indirizzo Email Registrato</label>
-              <div className="input-with-icon">
-                <Mail size={18} className="input-icon" />
-                <input 
-                  type="email" 
-                  value={resetForm.email}
-                  onChange={(e) => setResetForm({ ...resetForm, email: e.target.value })}
-                  placeholder="mario.rossi@studenti.it"
-                  required
-                />
-              </div>
-            </div>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+                  <button 
+                    type="button" 
+                    className="ghost-btn" 
+                    onClick={() => { setAuthModalTab('login'); setErrorMsg(''); setResetSuccess(''); setResetStep(1); }}
+                  >
+                    Annulla
+                  </button>
+                  <button type="submit" className="primary-btn" disabled={loading || !resetIdentifier.trim()} style={{ flex: 1 }}>
+                    <span>{loading ? 'Invio in corso...' : 'Invia Codice OTP'}</span>
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyResetOtp}>
+                <div style={{ marginBottom: '14px', background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.2)', padding: '12px', borderRadius: '10px', fontSize: '12.5px', color: 'var(--text-primary)', lineHeight: '1.5' }}>
+                  ✉️ Abbiamo inviato un codice OTP a 6 cifre all'indirizzo associato a <strong>{resetIdentifier}</strong>. Inseriscilo insieme alla nuova password.
+                </div>
 
-            <div className="form-group">
-              <label>Nuova Password</label>
-              <div className="input-with-icon">
-                <Lock size={18} className="input-icon" />
-                <input 
-                  type="password" 
-                  value={resetForm.newPassword}
-                  onChange={(e) => setResetForm({ ...resetForm, newPassword: e.target.value })}
-                  placeholder="Almeno 6 caratteri"
-                  minLength={6}
-                  required
-                />
-              </div>
-            </div>
+                {resetDevOtp && (
+                  <div style={{
+                    marginBottom: '14px',
+                    background: 'rgba(16, 185, 129, 0.1)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    padding: '12px 14px',
+                    borderRadius: '10px',
+                    fontSize: '13px',
+                    color: 'var(--text-primary)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ fontWeight: '600', color: '#10b981' }}>🔑 Codice di Verifica:</span>
+                      <span style={{
+                        fontFamily: 'monospace',
+                        fontSize: '18px',
+                        fontWeight: '700',
+                        letterSpacing: '2px',
+                        color: '#10b981',
+                        background: 'rgba(16, 185, 129, 0.15)',
+                        padding: '2px 8px',
+                        borderRadius: '6px'
+                      }}>
+                        {resetDevOtp}
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                      Il codice è stato inviato anche via push alert.
+                    </p>
+                  </div>
+                )}
 
-            <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
-              <button 
-                type="button" 
-                className="ghost-btn" 
-                onClick={() => { setAuthModalTab('login'); setErrorMsg(''); setResetSuccess(''); }}
-              >
-                Annulla
-              </button>
-              <button type="submit" className="primary-btn" disabled={loading} style={{ flex: 1 }}>
-                <span>{loading ? 'Aggiornamento...' : 'Reimposta Password'}</span>
-              </button>
-            </div>
-          </form>
+                <div className="form-group">
+                  <label>Codice OTP a 6 Cifre</label>
+                  <div className="input-with-icon">
+                    <KeyRound size={18} className="input-icon" />
+                    <input 
+                      type="text" 
+                      value={resetOtp}
+                      onChange={(e) => setResetOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="123456"
+                      maxLength={6}
+                      style={{ letterSpacing: '4px', fontSize: '18px', fontWeight: 'bold', textAlign: 'center' }}
+                      required
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Nuova Password (min. 8 caratteri, lettere e numeri)</label>
+                  <div className="input-with-icon">
+                    <Lock size={18} className="input-icon" />
+                    <input 
+                      type={showResetPassword ? 'text' : 'password'} 
+                      value={resetNewPassword}
+                      onChange={(e) => setResetNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      minLength={8}
+                      required
+                    />
+                    <button 
+                      type="button" 
+                      className="password-toggle-eye"
+                      onClick={() => setShowResetPassword(!showResetPassword)}
+                      tabIndex={-1}
+                      title={showResetPassword ? "Nascondi password" : "Mostra password"}
+                    >
+                      {showResetPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+                  <button 
+                    type="button" 
+                    className="ghost-btn" 
+                    onClick={() => { setResetStep(1); setErrorMsg(''); setResetSuccess(''); }}
+                  >
+                    Indietro
+                  </button>
+                  <button type="submit" className="primary-btn" disabled={loading || resetOtp.length !== 6 || resetNewPassword.length < 8} style={{ flex: 1 }}>
+                    <span>{loading ? 'Reimpostazione...' : 'Reimposta Password'}</span>
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         )}
 
         {/* OTP VERIFICATION TAB (2FA) */}
@@ -1300,10 +1421,9 @@ const AccountModal = ({ onOpenLegal }) => {
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', color: 'var(--text-muted, #94a3b8)' }}>
                     <span style={{ color: passStrength.checks.length ? '#10b981' : undefined }}>{passStrength.checks.length ? '✓' : '•'} 8+ caratteri</span>
-                    <span style={{ color: passStrength.checks.uppercase ? '#10b981' : undefined }}>{passStrength.checks.uppercase ? '✓' : '•'} 1 Maiuscola</span>
-                    <span style={{ color: passStrength.checks.lowercase ? '#10b981' : undefined }}>{passStrength.checks.lowercase ? '✓' : '•'} 1 Minuscola</span>
-                    <span style={{ color: passStrength.checks.number ? '#10b981' : undefined }}>{passStrength.checks.number ? '✓' : '•'} 1 Numero</span>
-                    <span style={{ color: passStrength.checks.special ? '#10b981' : undefined }}>{passStrength.checks.special ? '✓' : '•'} 1 Simbolo</span>
+                    <span style={{ color: (passStrength.checks.uppercase || passStrength.checks.lowercase) ? '#10b981' : undefined }}>{(passStrength.checks.uppercase || passStrength.checks.lowercase) ? '✓' : '•'} Lettere (A-z)</span>
+                    <span style={{ color: passStrength.checks.number ? '#10b981' : undefined }}>{passStrength.checks.number ? '✓' : '•'} Almeno 1 Numero</span>
+                    <span style={{ color: passStrength.checks.special ? '#10b981' : undefined }}>{passStrength.checks.special ? '✓' : '•'} Simboli (opzionali)</span>
                   </div>
                 </div>
               )}

@@ -52,16 +52,20 @@
   flex: 1;
 }
 
-.borderless-input {
+.borderless-input,
+.borderless-input:focus,
+.borderless-input:active {
   width: 100%;
   background: transparent !important;
   border: none !important;
-  padding: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  padding: 4px 0 !important;
   font-family: var(--font-sans);
   font-size: 14.5px;
   color: var(--text-primary);
   font-weight: 500;
-  outline: none;
+  border-radius: 0 !important;
 }
 
 .borderless-input::placeholder {

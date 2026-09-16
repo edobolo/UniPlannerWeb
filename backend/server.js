@@ -66,14 +66,20 @@ async function sendNtfyAlert(title, message, tags = 'bell', priority = 'high') {
   }
 }
 
-// Template HTML per email di verifica OTP
-function buildOtpEmailHtml(otpCode, studentName) {
+// Template HTML per email di verifica OTP (Login 2FA o Reset Password)
+function buildOtpEmailHtml(otpCode, studentName, isPasswordReset = false) {
   const safeName = studentName ? String(studentName).replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Studente';
+  const headerTitle = isPasswordReset ? 'Reimposta Password' : 'Verifica di Accesso';
+  const introText = isPasswordReset 
+    ? 'Abbiamo ricevuto una richiesta per reimpostare la password del tuo account UniPlanner. Inserisci il seguente codice di verifica monouso a 6 cifre:'
+    : 'Ecco il tuo codice di verifica monouso a 6 cifre per completare l\'accesso al tuo account UniPlanner:';
+  const expiryText = isPasswordReset ? '⏱️ Valido per 10 minuti' : '⏱️ Valido per 5 minuti';
+
   return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Codice di Verifica UniPlanner</title>
+  <title>${headerTitle} - UniPlanner</title>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; color: #f8fafc; margin: 0; padding: 24px;">
   <div style="max-width: 480px; margin: 0 auto; background: #1e293b; border-radius: 16px; padding: 32px 24px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.4);">
@@ -83,16 +89,18 @@ function buildOtpEmailHtml(otpCode, studentName) {
     </div>
     <h2 style="color: #ffffff; font-size: 20px; margin: 0 0 12px 0;">Ciao ${safeName},</h2>
     <p style="color: #cbd5e1; font-size: 14.5px; line-height: 1.6; margin: 0 0 20px 0;">
-      Ecco il tuo codice di verifica monouso a 6 cifre per completare l'accesso al tuo account UniPlanner:
+      ${introText}
     </p>
     
     <div style="background: rgba(139, 92, 246, 0.12); border: 1.5px dashed #8b5cf6; border-radius: 12px; padding: 20px; text-align: center; margin: 20px 0;">
       <div style="font-family: monospace; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #a78bfa; margin: 0;">${otpCode}</div>
-      <div style="display: inline-block; background: rgba(239, 68, 68, 0.15); color: #f87171; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; margin-top: 10px;">⏱️ Valido per 5 minuti</div>
+      <div style="display: inline-block; background: rgba(239, 68, 68, 0.15); color: #f87171; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; margin-top: 10px;">${expiryText}</div>
     </div>
 
     <p style="color: #94a3b8; font-size: 13px; line-height: 1.5; margin: 16px 0 0 0;">
-      Se non hai richiesto tu questo codice di accesso, ignora questa email o proteggi il tuo account cambiando la tua password.
+      ${isPasswordReset 
+        ? 'Se non hai richiesto tu il ripristino della password, puoi ignorare questa email: la tua password attuale rimarrà invariata.' 
+        : 'Se non hai richiesto tu questo codice di accesso, ignora questa email o proteggi il tuo account cambiando la tua password.'}
     </p>
 
     <div style="border-top: 1px solid rgba(255,255,255,0.08); margin-top: 28px; padding-top: 18px; font-size: 11.5px; color: #64748b; line-height: 1.5; text-align: center;">
@@ -105,10 +113,12 @@ function buildOtpEmailHtml(otpCode, studentName) {
 }
 
 // Invia il codice OTP tramite Resend API o SMTP / Nodemailer
-async function sendVerificationEmail({ toEmail, otpCode, studentName }) {
+async function sendVerificationEmail({ toEmail, otpCode, studentName, isPasswordReset = false }) {
   if (!toEmail) return false;
-  const html = buildOtpEmailHtml(otpCode, studentName);
-  const subject = `UniPlanner: Il tuo codice di accesso è ${otpCode}`;
+  const html = buildOtpEmailHtml(otpCode, studentName, isPasswordReset);
+  const subject = isPasswordReset 
+    ? `UniPlanner: Codice di ripristino password ${otpCode}` 
+    : `UniPlanner: Il tuo codice di accesso è ${otpCode}`;
 
   // 1. Priorità: Resend API (HTTPS 443, ideale per Raspberry Pi e server domestici)
   if (process.env.RESEND_API_KEY) {
@@ -322,6 +332,9 @@ ensureColumn('users', 'locked_until', 'DATETIME DEFAULT NULL');
 ensureColumn('users', 'two_factor_enabled', 'INTEGER DEFAULT 0');
 ensureColumn('users', 'otp_code', 'TEXT DEFAULT NULL');
 ensureColumn('users', 'otp_expires_at', 'DATETIME DEFAULT NULL');
+ensureColumn('users', 'reset_code_hash', 'TEXT DEFAULT NULL');
+ensureColumn('users', 'reset_code_expires', 'DATETIME DEFAULT NULL');
+ensureColumn('users', 'reset_attempts', 'INTEGER DEFAULT 0');
 ensureColumn('users', 'daily_ai_requests', 'INTEGER DEFAULT 0');
 ensureColumn('users', 'last_ai_request_date', 'TEXT DEFAULT NULL');
 
@@ -366,6 +379,7 @@ app.use((req, res, next) => {
 });
 
 // ─── 4. SECURITY HEADERS & CORS ───────────────────────────────────────────────
+app.set('trust proxy', 1);
 app.use(helmet({
   contentSecurityPolicy: false // Gestito dal proxy Vercel frontend
 }));
@@ -439,11 +453,9 @@ function logAudit(eventType, friendCode, req, details = '') {
 function validatePasswordComplexity(password) {
   if (!password || typeof password !== 'string') return false;
   if (password.length < 8 || password.length > 128) return false;
-  const hasUpper = /[A-Z]/.test(password);
-  const hasLower = /[a-z]/.test(password);
+  const hasLetter = /[a-zA-Z]/.test(password);
   const hasDigit = /[0-9]/.test(password);
-  const hasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
-  return hasUpper && hasLower && hasDigit && hasSpecial;
+  return hasLetter && hasDigit;
 }
 
 function verifyUserPassword(user, passwordOrHash) {
@@ -591,7 +603,7 @@ app.post('/api/auth/register', authLimiter, (req, res) => {
   // Validazione complessità password
   if (!validatePasswordComplexity(password)) {
     return res.status(400).json({ 
-      error: 'La password non rispetta i requisiti minimi: almeno 8 caratteri, una lettera maiuscola, una minuscola, un numero e un carattere speciale.' 
+      error: 'La password non rispetta i requisiti minimi: almeno 8 caratteri, con lettere e numeri.' 
     });
   }
 
@@ -757,29 +769,137 @@ app.post('/api/auth/google', authLimiter, (req, res) => {
 });
 
 /**
- * POST /api/auth/reset-password — Reimposta password verificando Codice Amico ed Email
+ * POST /api/auth/forgot-password — Richiesta OTP per reimpostazione password via Email
+ */
+app.post('/api/auth/forgot-password', authLimiter, async (req, res) => {
+  const { identifier } = req.body || {};
+  if (!identifier) {
+    return res.status(400).json({ error: 'Inserisci la tua email o username.' });
+  }
+
+  const cleanId = String(identifier).trim().toLowerCase();
+  const user = db.prepare(`
+    SELECT id, friend_code, username, full_name, email 
+    FROM users 
+    WHERE LOWER(email) = ? OR LOWER(username) = ?
+  `).get(cleanId, cleanId);
+
+  // Per prevenire user enumeration / timing attacks, rispondiamo sempre con esito positivo
+  if (!user || !user.email) {
+    return res.json({ 
+      success: true, 
+      message: 'Se l\'account esiste, abbiamo inviato un codice OTP alla tua email.' 
+    });
+  }
+
+  // Genera OTP numerico crittograficamente sicuro a 6 cifre
+  const otpCode = String(crypto.randomInt(100000, 1000000));
+  const otpHash = crypto.createHash('sha256').update(AUTH_SALT + otpCode).digest('hex');
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minuti di validità
+
+  db.prepare(`
+    UPDATE users 
+    SET reset_code_hash = ?, reset_code_expires = ?, reset_attempts = 0 
+    WHERE id = ?
+  `).run(otpHash, expiresAt, user.id);
+
+  logAudit('FORGOT_PASSWORD_REQUEST', user.friend_code, req, `Email: ${user.email}`);
+
+  let emailSent = false;
+  try {
+    emailSent = await sendVerificationEmail({
+      toEmail: user.email,
+      otpCode,
+      studentName: user.full_name || user.username,
+      isPasswordReset: true
+    });
+  } catch (err) {
+    console.error('Errore invio email reset password:', err);
+  }
+
+  // Notifica push immediata di monitoraggio su ntfy
+  sendNtfyAlert(
+    'UniPlanner Reset Password',
+    `Richiesto reset password per ${user.email} (${user.username}). Codice OTP: ${otpCode}`,
+    'key,lock',
+    'high'
+  );
+
+  return res.json({
+    success: true,
+    message: 'Se l\'account esiste, abbiamo inviato un codice OTP alla tua email.',
+    // Solo se l'email non può essere recapitata tramite provider, fornisce fallback locale per facilitare i test
+    devOtp: !emailSent ? otpCode : undefined
+  });
+});
+
+/**
+ * POST /api/auth/reset-password — Reimposta password con verifica OTP a 6 cifre
  */
 app.post('/api/auth/reset-password', authLimiter, (req, res) => {
-  const { friendCode, email, newPassword } = req.body;
-  if (!friendCode || !email || !newPassword || newPassword.length < 6) {
-    return res.status(400).json({ error: 'Dati incompleti o password troppo breve (min. 6 caratteri).' });
+  const { identifier, code, newPassword } = req.body || {};
+  if (!identifier || !code || !newPassword) {
+    return res.status(400).json({ error: 'Inserisci email/username, codice OTP e la nuova password.' });
   }
 
-  const cleanCode = String(friendCode).trim().toUpperCase();
-  const cleanEmail = String(email).trim().toLowerCase();
-
-  const user = db.prepare(`SELECT id, friend_code, email, full_name, username FROM users WHERE UPPER(friend_code) = ?`).get(cleanCode);
-  if (!user) {
-    return res.status(404).json({ error: 'Nessun account trovato con questo Codice Amico.' });
+  if (!validatePasswordComplexity(newPassword)) {
+    return res.status(400).json({ 
+      error: 'La nuova password deve contenere almeno 8 caratteri, con lettere e numeri.' 
+    });
   }
 
-  if (user.email && user.email.toLowerCase() !== cleanEmail) {
-    return res.status(403).json({ error: 'L\'email inserita non corrisponde a questo account.' });
+  const cleanId = String(identifier).trim().toLowerCase();
+  const cleanCode = String(code).trim();
+
+  const user = db.prepare(`
+    SELECT id, friend_code, email, reset_code_hash, reset_code_expires, reset_attempts 
+    FROM users 
+    WHERE LOWER(email) = ? OR LOWER(username) = ?
+  `).get(cleanId, cleanId);
+
+  if (!user || !user.reset_code_hash) {
+    return res.status(400).json({ error: 'Nessuna richiesta di reset attiva per questo account o codice non valido.' });
   }
 
+  // Controllo tentativi brute-force su codice a 6 cifre (max 5)
+  if (user.reset_attempts >= 5) {
+    return res.status(429).json({ error: 'Troppi tentativi errati. Per sicurezza richiedi un nuovo codice.' });
+  }
+
+  // Controllo scadenza codice OTP
+  if (!user.reset_code_expires || new Date(user.reset_code_expires).getTime() < Date.now()) {
+    return res.status(400).json({ error: 'Il codice di verifica è scaduto (validità 10 minuti). Richiedine uno nuovo.' });
+  }
+
+  // Verifica crittografica dell'hash OTP
+  const inputHash = crypto.createHash('sha256').update(AUTH_SALT + cleanCode).digest('hex');
+  if (user.reset_code_hash !== inputHash) {
+    db.prepare(`UPDATE users SET reset_attempts = reset_attempts + 1 WHERE id = ?`).run(user.id);
+    return res.status(400).json({ error: 'Codice di verifica non corretto. Riprova.' });
+  }
+
+  // Aggiorna hash password, azzera tentativi e ripulisce il codice di reset
   const newHash = crypto.createHash('sha256').update(AUTH_SALT + newPassword).digest('hex');
-  db.prepare(`UPDATE users SET password_hash = ?, failed_login_attempts = 0, locked_until = NULL, updated_at = CURRENT_TIMESTAMP WHERE UPPER(friend_code) = ?`).run(newHash, cleanCode);
-  logAudit('RESET_PASSWORD_SUCCESS', cleanCode, req);
+  db.prepare(`
+    UPDATE users 
+    SET password_hash = ?, 
+        reset_code_hash = NULL, 
+        reset_code_expires = NULL, 
+        reset_attempts = 0, 
+        failed_login_attempts = 0, 
+        locked_until = NULL, 
+        updated_at = CURRENT_TIMESTAMP 
+    WHERE id = ?
+  `).run(newHash, user.id);
+
+  logAudit('RESET_PASSWORD_SUCCESS', user.friend_code, req);
+
+  sendNtfyAlert(
+    'UniPlanner Password Cambiata',
+    `Password reimpostata con successo per ${user.email} (${user.friend_code})`,
+    'shield,check',
+    'default'
+  );
 
   return res.json({ success: true, message: 'Password aggiornata con successo! Ora puoi accedere.' });
 });

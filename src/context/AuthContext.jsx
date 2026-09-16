@@ -9,6 +9,7 @@ import {
   safeJsonParse 
 } from '../utils/security';
 import { 
+  registerUserOnline,
   loginUserOnline, 
   loginGoogleOnline,
   verify2FAOnline, 
@@ -123,13 +124,29 @@ export const AuthProvider = ({ children }) => {
       throw new Error('Inserisci un indirizzo email valido.');
     }
     if (!validatePassword(password)) {
-      throw new Error('La password deve contenere almeno 6 caratteri.');
+      throw new Error('La password deve contenere almeno 8 caratteri, con lettere e numeri.');
     }
 
-    // Check unique username and email
-    const exists = users.some(u => u.username.toLowerCase() === cleanUsername.toLowerCase() || u.email.toLowerCase() === cleanEmail);
-    if (exists) {
-      throw new Error('Uno username o un account con questa email è già registrato.');
+    // Call backend registration
+    let onlineRes = null;
+    try {
+      onlineRes = await registerUserOnline({
+        username: cleanUsername,
+        fullName: cleanFullName,
+        email: cleanEmail,
+        password,
+        university: cleanUni,
+        degreeCourse: cleanDegree
+      });
+    } catch (onlineErr) {
+      if (onlineErr.message && (
+        onlineErr.message.includes('esiste già') || 
+        onlineErr.message.includes('requisiti minimi') ||
+        onlineErr.message.includes('obbligatori')
+      )) {
+        throw onlineErr;
+      }
+      console.warn('Registrazione online backend fallita, procedo in modalità offline:', onlineErr);
     }
 
     const passwordHash = await hashPassword(password);
@@ -137,7 +154,7 @@ export const AuthProvider = ({ children }) => {
     const randomColor = avatarColors[Math.floor(Math.random() * avatarColors.length)];
 
     const newUser = {
-      id: `usr_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      id: onlineRes?.user?.id || `usr_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
       username: cleanUsername,
       fullName: cleanFullName || cleanUsername,
       email: cleanEmail,
@@ -145,17 +162,17 @@ export const AuthProvider = ({ children }) => {
       university: cleanUni || 'Università',
       degreeCourse: cleanDegree || 'Corso di Studi',
       avatarColor: randomColor,
-      friendCode: generateFriendCode(),
+      friendCode: onlineRes?.user?.friendCode || generateFriendCode(),
       bio: 'Studente UniPlanner',
       status: 'Libero ☕',
       shareGrades: true,
       twoFactorEnabled: false,
-      isPremium: false,
-      role: 'student',
+      isPremium: Boolean(onlineRes?.user?.isPremium),
+      role: onlineRes?.user?.role || 'student',
       createdAt: new Date().toISOString()
     };
 
-    setUsers(prev => [...prev, newUser]);
+    setUsers(prev => [...prev.filter(u => u.friendCode !== newUser.friendCode && u.username !== newUser.username), newUser]);
     setCurrentUser(newUser);
 
     try {

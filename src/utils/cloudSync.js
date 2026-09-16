@@ -321,24 +321,78 @@ export const sendBugReport = async ({ friendCode, username, message, errorLog })
 };
 
 /**
- * Resetta la password dell'utente verificando Codice Amico ed Email
+ * Registra un nuovo utente direttamente nel database SQLite del backend
  */
-export const resetUserPassword = async (friendCode, email, newPassword) => {
-  const cleanCode = normalizeFriendCode(friendCode);
-  const cleanEmail = sanitizeText(email, 100).toLowerCase();
+export const registerUserOnline = async ({ username, fullName, email, password, university, degreeCourse }) => {
+  try {
+    const res = await apiFetch('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        username: sanitizeText(username, 30),
+        fullName: sanitizeText(fullName, 50),
+        email: sanitizeText(email, 100).toLowerCase(),
+        password,
+        university: sanitizeText(university, 80),
+        degreeCourse: sanitizeText(degreeCourse, 80)
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Errore durante la registrazione.');
+    if (data.token) {
+      setAuthToken(data.token);
+    }
+    return data;
+  } catch (err) {
+    logger.error('Errore registrazione online:', err.message);
+    throw err;
+  }
+};
+
+/**
+ * Richiede il codice OTP a 6 cifre per il reset della password
+ */
+export const requestPasswordResetOtp = async (identifier) => {
+  const cleanId = sanitizeText(identifier, 100).trim();
+  try {
+    const res = await apiFetch('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ identifier: cleanId })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Impossibile inviare il codice di verifica.');
+    return data;
+  } catch (err) {
+    logger.warn('Richiesta codice reset password fallita:', err.message);
+    throw err;
+  }
+};
+
+/**
+ * Convalida il codice OTP a 6 cifre e imposta la nuova password
+ */
+export const verifyPasswordResetOtp = async ({ identifier, code, newPassword }) => {
+  const cleanId = sanitizeText(identifier, 100).trim();
+  const cleanCode = sanitizeText(code, 6).trim();
 
   try {
     const res = await apiFetch('/auth/reset-password', {
       method: 'POST',
-      body: JSON.stringify({ friendCode: cleanCode, email: cleanEmail, newPassword })
+      body: JSON.stringify({ identifier: cleanId, code: cleanCode, newPassword })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Impossibile resettare la password.');
+    if (!res.ok) throw new Error(data.error || 'Impossibile reimpostare la password.');
     return data;
   } catch (err) {
-    logger.warn('Tentativo di reset password fallito:', err.message);
+    logger.warn('Verifica reset password fallita:', err.message);
     throw err;
   }
+};
+
+/**
+ * Funzione di compatibilità legacy
+ */
+export const resetUserPassword = async (friendCode, email, newPassword) => {
+  return verifyPasswordResetOtp({ identifier: email || friendCode, code: '', newPassword });
 };
 
 /**
